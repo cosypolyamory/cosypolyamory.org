@@ -1,2 +1,8 @@
 flask
 jinja2
+flask-login
+flask-session
+peewee
+authlib
+requests
+python-dotenv

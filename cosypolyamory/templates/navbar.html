@@ -65,8 +65,8 @@
                   </a></li>
                 {% endif %}
                 
-                {% if current_user.role == 'admin' %}
-                  <li><a class="dropdown-item" href="{{ url_for('moderate') }}">
+                {% if current_user.role in ['admin', 'organizer'] %}
+                  <li><a class="dropdown-item" href="{{ url_for('moderate_applications') }}">
                     <i class="fas fa-gavel me-2"></i>Moderate Applications
                   </a></li>
                   <li><a class="dropdown-item" href="{{ url_for('admin') }}">

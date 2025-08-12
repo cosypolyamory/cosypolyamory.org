@@ -5,3 +5,5 @@ mayhem_cat/cache
 .ve
 *.swp
 config.py
+.env
+*.db

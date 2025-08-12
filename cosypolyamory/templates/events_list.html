@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Community Events{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Community Events</h1>
+        {% if current_user.role in ['admin', 'organizer'] %}
+            <a href="{{ url_for('create_event') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create Event
+            </a>
+        {% endif %}
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Filter/Sort Options -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="btn-group" role="group" aria-label="Event filters">
+                <input type="radio" class="btn-check" name="filter" id="upcoming" value="upcoming" checked>
+                <label class="btn btn-outline-primary" for="upcoming">
+                    <i class="fas fa-calendar-alt me-1"></i>Upcoming
+                </label>
+                
+                <input type="radio" class="btn-check" name="filter" id="past" value="past">
+                <label class="btn btn-outline-primary" for="past">
+                    <i class="fas fa-history me-1"></i>Past Events
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Events Display -->
+    <div id="events-container">
+        {% if events %}
+            <div class="row">
+                {% for event in events %}
+                    <div class="col-md-6 col-lg-4 mb-4 event-card" 
+                         data-event-date="{{ event.date_time.isoformat() }}"
+                         data-event-status="{{ 'past' if event.date_time < now else 'upcoming' }}">
+                        <div class="card h-100 {% if event.date_time < now %}opacity-75{% endif %}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    {% if event.date_time < now %}
+                                        <i class="fas fa-history me-1"></i>Past Event
+                                    {% else %}
+                                        <i class="fas fa-calendar-alt me-1"></i>Upcoming
+                                    {% endif %}
+                                </small>
+                                {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{{ url_for('edit_event', event_id=event.id) }}">
+                                                <i class="fas fa-edit me-2"></i>Edit
+                                            </a></li>
+                                            {% if current_user.role == 'admin' %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#" 
+                                                       onclick="confirmDelete('{{ event.id }}', '{{ event.title }}')">
+                                                    <i class="fas fa-trash me-2"></i>Delete
+                                                </a></li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-body">
+                                <h5 class="card-title">{{ event.title }}</h5>
+                                <p class="card-text">{{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}</p>
+                                
+                                <div class="mb-2">
+                                    <i class="fas fa-calendar me-2 text-muted"></i>
+                                    <strong>{{ event.date_time.strftime('%A, %B %d, %Y') }}</strong>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <i class="fas fa-clock me-2 text-muted"></i>
+                                    {% if current_user.role == 'approved' %}
+                                        {{ event.date_time.strftime('%H:%M') }}
+                                    {% else %}
+                                        {{ event.time_period }}
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <i class="fas fa-map-marker-alt me-2 text-muted"></i>
+                                    {% if current_user.role == 'approved' %}
+                                        {{ event.establishment_name }}
+                                    {% else %}
+                                        {{ event.barrio }}
+                                    {% endif %}
+                                </div>
+                                
+                                {% if event.max_attendees %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-users me-2 text-muted"></i>
+                                        {{ rsvp_counts[event.id] or 0 }}/{{ event.max_attendees }} attendees
+                                        <div class="progress mt-1" style="height: 4px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ ((rsvp_counts[event.id] or 0) / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if event.organizer %}
+                                    <div class="mb-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>
+                                            Organized by {{ event.organizer.display_name or event.organizer.username }}
+                                        </small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-footer">
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-info-circle me-2"></i>View Details
+                                    </a>
+                                    
+                                    {% if current_user.role == 'approved' and event.date_time > now %}
+                                        {% if user_rsvps.get(event.id) %}
+                                            <form method="POST" action="{{ url_for('toggle_rsvp', event_id=event.id) }}" class="mb-0">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                                    <i class="fas fa-times me-1"></i>Cancel RSVP
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            {% if not event.max_attendees or (rsvp_counts[event.id] or 0) < event.max_attendees %}
+                                                <form method="POST" action="{{ url_for('toggle_rsvp', event_id=event.id) }}" class="mb-0">
+                                                    <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                                                        <i class="fas fa-check me-1"></i>RSVP
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+                                                    <i class="fas fa-users me-1"></i>Full
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-calendar-times fa-3x mb-3 text-muted"></i>
+                <h5>No Events Yet</h5>
+                <p>There are no events scheduled at this time. Check back soon!</p>
+                {% if current_user.role in ['admin', 'organizer'] %}
+                    <a href="{{ url_for('create_event') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create First Event
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="eventToDelete"></strong>?</p>
+                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="deleteForm" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Delete Event</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+.event-card.hidden { display: none !important; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Event filtering
+document.querySelectorAll('input[name="filter"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const filter = this.value;
+        const eventCards = document.querySelectorAll('.event-card');
+        
+        eventCards.forEach(card => {
+            const eventStatus = card.dataset.eventStatus;
+            if (filter === 'upcoming' && eventStatus === 'upcoming') {
+                card.classList.remove('hidden');
+            } else if (filter === 'past' && eventStatus === 'past') {
+                card.classList.remove('hidden');
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+    });
+});
+
+// Delete confirmation
+function confirmDelete(eventId, eventTitle) {
+    document.getElementById('eventToDelete').textContent = eventTitle;
+    document.getElementById('deleteForm').action = `/events/${eventId}/delete`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Initialize filter on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('upcoming').click();
+});
+</script>
+{% endblock %}

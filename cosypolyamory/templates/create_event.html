@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h1>Create New Event</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_event') }}">
+                    <!-- Basic Info -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">Basic Information</h5>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="title" class="form-label">Event Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" required 
+                                   placeholder="e.g., Community Game Night">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required 
+                                      placeholder="Describe your event..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Date & Time -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">Date & Time</h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Date *</label>
+                            <input type="date" class="form-control" id="date" name="date" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="time" class="form-label">Time *</label>
+                            <input type="time" class="form-control" id="time" name="time" required>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="time_period" class="form-label">Time Period (Public) *</label>
+                            <input type="text" class="form-control" id="time_period" name="time_period" required 
+                                   placeholder="e.g., Evening, Afternoon, Late Morning">
+                            <div class="form-text">This is what non-approved members will see instead of the exact time</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Location -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">Location</h5>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="establishment_name" class="form-label">Establishment Name *</label>
+                            <input type="text" class="form-control" id="establishment_name" name="establishment_name" required 
+                                   placeholder="e.g., Port Bay, Barna Brew, Venus">
+                            <div class="form-text">Name of the venue, restaurant, or meeting place</div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="google_maps_link" class="form-label">Google Maps Link *</label>
+                            <input type="url" class="form-control" id="google_maps_link" name="google_maps_link" required 
+                                   placeholder="https://maps.google.com/...">
+                            <div class="form-text">Approved members will see an embedded map preview</div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="barrio" class="form-label">Barrio (Public) *</label>
+                            <input type="text" class="form-control" id="barrio" name="barrio" required 
+                                   placeholder="e.g., The Born, Gòtic, Poble Sec">
+                            <div class="form-text">This is what non-approved members will see instead of the exact location</div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="location_notes" class="form-label">Location Notes</label>
+                            <textarea class="form-control" id="location_notes" name="location_notes" rows="2" 
+                                      placeholder="e.g., Enter via side door, look for the group in the back room, second floor"></textarea>
+                            <div class="form-text">Additional directions or meeting details</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Event Settings -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">Event Settings</h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="max_attendees" class="form-label">Maximum Attendees</label>
+                            <input type="number" class="form-control" id="max_attendees" name="max_attendees" 
+                                   min="1" placeholder="Leave empty for unlimited">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="tips_for_attendees" class="form-label">Tips for Attendees</label>
+                            <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3" 
+                                      placeholder="e.g., Please bring ID, suitable for ages 18+, bring cash for drinks, dress casually"></textarea>
+                            <div class="form-text">Helpful tips and things attendees should know or bring</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Privacy Notice -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Privacy Information</h6>
+                        <p class="mb-2">This event will be visible with different levels of detail:</p>
+                        <ul class="mb-0">
+                            <li><strong>Public visitors:</strong> Can see title, description, area, and time period</li>
+                            <li><strong>Approved members:</strong> Can see full address, exact time, and RSVP</li>
+                            <li><strong>You and other organizers:</strong> Can see attendee list and manage the event</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Submit -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('events_list') }}" class="btn btn-outline-secondary me-md-2">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-calendar-plus me-2"></i>
+                            Create Event
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    dateInput.value = today;
+    
+    // Set default time to next hour
+    const timeInput = document.getElementById('time');
+    const now = new Date();
+    now.setHours(now.getHours() + 1, 0, 0, 0);
+    timeInput.value = now.toTimeString().slice(0, 5);
+});
+</script>
+{% endblock %}
