@@ -726,16 +726,15 @@ def reject_application(application_id):
 
 # Events System Routes
 @app.route('/events')
-@login_required
 def events_list():
     """List all events with appropriate visibility"""
     from datetime import datetime
     events = Event.select().where(Event.is_active == True).order_by(Event.exact_time)
-    can_see_details = current_user.can_see_full_event_details()
+    can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
     
     # Get user RSVPs for easy access in template
     user_rsvps = {}
-    if current_user.role == 'approved':
+    if current_user.is_authenticated and current_user.role == 'approved':
         rsvps = RSVP.select().where(RSVP.user == current_user, RSVP.status == 'yes')
         user_rsvps = {rsvp.event.id: rsvp for rsvp in rsvps}
     
@@ -753,22 +752,26 @@ def events_list():
                          now=datetime.now())
 
 @app.route('/events/<int:event_id>')
-@login_required
 def event_detail(event_id):
     """Show event details"""
     try:
         event = Event.get_by_id(event_id)
-        can_see_details = current_user.can_see_full_event_details()
+        can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
         
-        # Get user's RSVP if exists
+        # Get user's RSVP if exists and user is authenticated
         user_rsvp = None
-        try:
-            user_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
-        except RSVP.DoesNotExist:
-            pass
+        if current_user.is_authenticated:
+            try:
+                user_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
+            except RSVP.DoesNotExist:
+                pass
         
         # Get RSVP counts  
         rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+        rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
+        
+        # Get RSVPs for attendees list (only "yes" RSVPs)
+        rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
         
         from datetime import datetime
         return render_template('event_detail.html', 
@@ -776,6 +779,8 @@ def event_detail(event_id):
                              can_see_details=can_see_details,
                              user_rsvp=user_rsvp,
                              rsvp_count=rsvp_count,
+                             rsvp_no_count=rsvp_no_count,
+                             rsvps=rsvps,
                              now=datetime.now())
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
