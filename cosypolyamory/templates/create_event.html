@@ -84,11 +84,11 @@
                         </div>
                         
                         <div class="col-12 mb-3">
-                            <label for="google_maps_link" class="form-label">Google Maps Link *</label>
-                            <input type="url" class="form-control" id="google_maps_link" name="google_maps_link" required 
+                            <label for="google_maps_link" class="form-label">Google Maps Link</label>
+                            <input type="url" class="form-control" id="google_maps_link" name="google_maps_link"
                                    placeholder="https://maps.app.goo.gl/... or https://maps.google.com/..."
                                    value="{% if event %}{{ event.google_maps_link }}{% endif %}">
-                            <div class="form-text">Approved members will see an embedded map preview</div>
+                            <div class="form-text">Optional. Approved members will see an embedded map preview if provided.</div>
                         </div>
                         
                         <div class="col-12 mb-3">

@@ -26,31 +26,68 @@
                     
                     <!-- Event Details -->
                     <div class="row mt-4">
+                        <!-- Organizers Row -->
+                        {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
                         <div class="col-md-6">
+                            <h6><i class="fas fa-user-tie me-2 text-primary"></i>Primary Organizer</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                {% if event.organizer.avatar_url %}
+                                    <img src="{{ event.organizer.avatar_url }}" alt="{{ event.organizer.name }}" 
+                                         class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px; display: none;">
+                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ event.organizer.name }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% if event.co_host %}
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-user-tie me-2 text-success"></i>Co-host</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                {% if event.co_host.avatar_url %}
+                                    <img src="{{ event.co_host.avatar_url }}" alt="{{ event.co_host.name }}" 
+                                         class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px; display: none;">
+                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ event.co_host.name }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                        <!-- Date and Location Row -->
+                        <div class="col-md-6 mt-3">
                             <h6><i class="fas fa-calendar me-2 text-primary"></i>Date</h6>
                             <p>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
-                            <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
-                            {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
-                                <p>{{ event.exact_time.strftime('%H:%M') }}</p>
-                            {% else %}
-                                <p>{{ event.time_period }}</p>
-                            {% endif %}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 mt-3">
                             <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
                             {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
                                 <h6>{{ event.establishment_name }}</h6>
                             {% else %}
                                 <p><i class="fas fa-map-marker-alt me-2"></i>{{ event.barrio }}</p>
                             {% endif %}
-                            {% if event.max_attendees %}
-                                <h6><i class="fas fa-users me-2 text-primary"></i>Capacity</h6>
-                                <p>{{ rsvp_count }}/{{ event.max_attendees }} attendees</p>
-                                <div class="progress mb-2" style="height: 8px;">
-                                    <div class="progress-bar" role="progressbar" 
-                                         style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
-                                </div>
-                            {% endif %}
+                        </div>
                         </div>
                     </div>
 
@@ -89,72 +126,6 @@
                     </div>
                     {% endif %}
                     
-                    <!-- Organizers Section -->
-                    {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
-                        <!-- Show full details for logged in approved users, admins, and organizers -->
-                        <div class="mt-4">
-                            <h6><i class="fas fa-user-tie me-2 text-primary"></i>Event Organizers</h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="d-flex align-items-center mb-2">
-                                        {% if event.organizer.avatar_url %}
-                                            <img src="{{ event.organizer.avatar_url }}" alt="{{ event.organizer.name }}" 
-                                                 class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                                 style="width: 40px; height: 40px; display: none;">
-                                                <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                            </div>
-                                        {% else %}
-                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                                 style="width: 40px; height: 40px;">
-                                                <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                            </div>
-                                        {% endif %}
-                                        <div>
-                                            <strong>{{ event.organizer.name }}</strong>
-                                            <div class="text-muted small">Primary Organizer</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {% if event.co_host %}
-                                <div class="col-md-6">
-                                    <div class="d-flex align-items-center mb-2">
-                                        {% if event.co_host.avatar_url %}
-                                            <img src="{{ event.co_host.avatar_url }}" alt="{{ event.co_host.name }}" 
-                                                 class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                            <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                                 style="width: 40px; height: 40px; display: none;">
-                                                <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                            </div>
-                                        {% else %}
-                                            <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                                 style="width: 40px; height: 40px;">
-                                                <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                            </div>
-                                        {% endif %}
-                                        <div>
-                                            <strong>{{ event.co_host.name }}</strong>
-                                            <div class="text-muted small">Co-host</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% elif not current_user.is_authenticated or current_user.role in ['pending', 'rejected'] %}
-                        <!-- Show reduced details for non-logged in users, pending, or rejected users -->
-                        <div class="mt-4">
-                            <h6><i class="fas fa-user-tie me-2 text-primary"></i>Organized by Community Members</h6>
-                            <p class="text-muted">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Organizer details are available to approved community members.
-                            </p>
-                        </div>
-                    {% endif %}
-                    
                     {% if event.tips_for_attendees and (current_user.is_authenticated and current_user.role not in ['pending', 'rejected']) %}
                         <div class="mt-4 mb-4">
                             <h6><i class="fas fa-lightbulb me-2 text-info"></i>Tips for Attendees</h6>
@@ -166,52 +137,88 @@
                 </div>
             </div>
             
-            <!-- RSVP Actions -->
-            {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] and event.exact_time > now %}
-                <div class="card mt-3">
-                    <div class="card-body text-center">
-                        {% if user_rsvp %}
-                            <h5 class="text-success">
-                                <i class="fas fa-check-circle me-2"></i>
-                                You're attending this event!
-                            </h5>
-                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mt-3">
-                                <button type="submit" class="btn btn-outline-danger">
-                                    <i class="fas fa-times me-2"></i>Cancel RSVP
-                                </button>
-                            </form>
-                        {% else %}
-                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
-                                <h5>Will you be attending?</h5>
+            <!-- RSVP Actions (now only as wide as main columns) -->
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] and event.exact_time > now %}
+                    <div class="card mt-3">
+                        <div class="card-body text-center">
+                            {% if user_rsvp %}
+                                <h5 class="text-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    You're attending this event!
+                                </h5>
                                 <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mt-3">
-                                    <button type="submit" class="btn btn-success btn-lg">
-                                        <i class="fas fa-check me-2"></i>RSVP Yes
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="fas fa-times me-2"></i>Cancel RSVP
                                     </button>
                                 </form>
                             {% else %}
-                                <h5 class="text-muted">
-                                    <i class="fas fa-users me-2"></i>
-                                    Event is Full
-                                </h5>
-                                <p>This event has reached its maximum capacity.</p>
+                                {% if not event.max_attendees or rsvp_count < event.max_attendees %}
+                                    <h5>Will you be attending?</h5>
+                                    <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mt-3">
+                                        <button type="submit" class="btn btn-success btn-lg">
+                                            <i class="fas fa-check me-2"></i>RSVP Yes
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <h5 class="text-muted">
+                                        <i class="fas fa-users me-2"></i>
+                                        Event is Full
+                                    </h5>
+                                    <p>This event has reached its maximum capacity.</p>
+                                {% endif %}
                             {% endif %}
+                        </div>
+                    </div>
+                {% elif (not current_user.is_authenticated or current_user.role in ['pending', 'rejected']) and current_user.role == 'rejected' %}
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="fas fa-info-circle me-2"></i>Want to attend events?</h6>
+                        <p class="mb-2">You need to be an approved community member to RSVP to events.</p>
+                        {% if not current_user.application %}
+                            <a href="{{ url_for('apply') }}" class="btn btn-primary">
+                                <i class="fas fa-edit me-2"></i>Apply to Join Community
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('application_status') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-clock me-2"></i>Check Application Status
+                            </a>
                         {% endif %}
                     </div>
+                {% endif %}
                 </div>
-            {% elif (not current_user.is_authenticated or current_user.role in ['pending', 'rejected']) and current_user.role == 'rejected' %}
-                <div class="alert alert-info mt-3">
-                    <h6><i class="fas fa-info-circle me-2"></i>Want to attend events?</h6>
-                    <p class="mb-2">You need to be an approved community member to RSVP to events.</p>
-                    {% if not current_user.application %}
-                        <a href="{{ url_for('apply') }}" class="btn btn-primary">
-                            <i class="fas fa-edit me-2"></i>Apply to Join Community
-                        </a>
-                    {% else %}
-                        <a href="{{ url_for('application_status') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-clock me-2"></i>Check Application Status
-                        </a>
-                    {% endif %}
+            </div>
+
+            <!-- Attendees List at Bottom -->
+            {% if rsvps %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Attendees ({{ rsvp_count }})
+                    </h6>
                 </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for rsvp in rsvps %}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="me-2">
+                                    <i class="fas fa-user-circle fa-lg text-muted"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ rsvp.user.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        RSVP'd {{ rsvp.created_at.strftime('%b %d') }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
             {% endif %}
         </div>
         
