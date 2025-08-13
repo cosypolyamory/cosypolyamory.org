@@ -88,6 +88,20 @@
                                 <p><i class="fas fa-map-marker-alt me-2"></i>{{ event.barrio }}</p>
                             {% endif %}
                         </div>
+                            <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
+                            {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
+                                <h6>{{ event.establishment_name }}</h6>
+                            {% else %}
+                                <p><i class="fas fa-map-marker-alt me-2"></i>{{ event.barrio }}</p>
+                            {% endif %}
+                            {% if event.max_attendees %}
+                                <h6><i class="fas fa-users me-2 text-primary"></i>Capacity</h6>
+                                <p>{{ rsvp_count }}/{{ event.max_attendees }} attendees</p>
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -137,9 +151,9 @@
                 </div>
             </div>
             
-            <!-- RSVP Actions (now only as wide as main columns) -->
+            <!-- RSVP Actions (width matches main columns) -->
             <div class="row justify-content-center">
-                <div class="col-md-10">
+                <div class="col-12 col-md-12">
                 {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] and event.exact_time > now %}
                     <div class="card mt-3">
                         <div class="card-body text-center">
@@ -188,38 +202,6 @@
                 {% endif %}
                 </div>
             </div>
-
-            <!-- Attendees List at Bottom -->
-            {% if rsvps %}
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-users me-2"></i>
-                        Attendees ({{ rsvp_count }})
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for rsvp in rsvps %}
-                        <div class="col-md-6 mb-2">
-                            <div class="d-flex align-items-center">
-                                <div class="me-2">
-                                    <i class="fas fa-user-circle fa-lg text-muted"></i>
-                                </div>
-                                <div>
-                                    <strong>{{ rsvp.user.name }}</strong>
-                                    <br>
-                                    <small class="text-muted">
-                                        RSVP'd {{ rsvp.created_at.strftime('%b %d') }}
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
         
         <!-- Sidebar -->
