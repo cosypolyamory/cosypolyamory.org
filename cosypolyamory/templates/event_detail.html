@@ -29,7 +29,6 @@
                         <div class="col-md-6">
                             <h6><i class="fas fa-calendar me-2 text-primary"></i>Date</h6>
                             <p>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
-                            
                             <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
                             {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
                                 <p>{{ event.exact_time.strftime('%H:%M') }}</p>
@@ -37,35 +36,13 @@
                                 <p>{{ event.time_period }}</p>
                             {% endif %}
                         </div>
-                        
                         <div class="col-md-6">
                             <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
                             {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
                                 <h6>{{ event.establishment_name }}</h6>
-                                <div class="mb-3">
-                                    <!-- Google Maps Preview -->
-                                    <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                        <div class="text-center text-muted">
-                                            <i class="fas fa-map fa-3x mb-2"></i>
-                                            <br>
-                                            <small>Map preview will be available when Google Maps API is configured</small>
-                                        </div>
-                                    </div>
-                                    <div class="mt-2">
-                                        <a href="{{ event.google_maps_link }}" target="_blank" class="btn btn-primary btn-sm">
-                                            <i class="fas fa-external-link-alt me-1"></i>Open in Google Maps
-                                        </a>
-                                    </div>
-                                </div>
-                                {% if event.location_notes %}
-                                    <div class="alert alert-info">
-                                        <small><i class="fas fa-info-circle me-1"></i><strong>Directions:</strong> {{ event.location_notes }}</small>
-                                    </div>
-                                {% endif %}
                             {% else %}
                                 <p><i class="fas fa-map-marker-alt me-2"></i>{{ event.barrio }}</p>
                             {% endif %}
-                            
                             {% if event.max_attendees %}
                                 <h6><i class="fas fa-users me-2 text-primary"></i>Capacity</h6>
                                 <p>{{ rsvp_count }}/{{ event.max_attendees }} attendees</p>
@@ -76,6 +53,26 @@
                             {% endif %}
                         </div>
                     </div>
+
+                    {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
+                    <!-- Google Maps Preview - full width under time/location -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-map fa-3x mb-2"></i>
+                                    <br>
+                                    <small>Map preview will be available when Google Maps API is configured</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="{{ event.google_maps_link }}" target="_blank" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in Google Maps
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                     
                     <!-- Member-only notice -->
                     {% if not current_user.is_authenticated or current_user.role in ['pending', 'rejected'] %}
@@ -159,9 +156,9 @@
                     {% endif %}
                     
                     {% if event.tips_for_attendees and (current_user.is_authenticated and current_user.role not in ['pending', 'rejected']) %}
-                        <div class="mt-4">
+                        <div class="mt-4 mb-4">
                             <h6><i class="fas fa-lightbulb me-2 text-info"></i>Tips for Attendees</h6>
-                            <div class="alert alert-info">
+                            <div class="ps-2">
                                 {{ event.tips_for_attendees | replace('\n', '<br>') | safe }}
                             </div>
                         </div>
