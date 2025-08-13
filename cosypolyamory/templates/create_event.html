@@ -37,7 +37,7 @@
                         
                         <div class="col-12 mb-3">
                             <label for="description" class="form-label">Description *</label>
-                            <textarea class="form-control" id="description" name="description" rows="4" required 
+                            <textarea class="form-control" id="description" name="description" rows="8" required 
                                       placeholder="Describe your event...">{% if event %}{{ event.description }}{% endif %}</textarea>
                         </div>
                     </div>
@@ -242,6 +242,49 @@ function loadOrganizers() {
     if (form.dataset.currentCohost) {
         coHostSelect.value = form.dataset.currentCohost;
     }
+    
+    // Add validation to prevent same person as organizer and co-host
+    function validateOrganizerSelection() {
+        const organizerId = organizerSelect.value;
+        const coHostId = coHostSelect.value;
+        
+        if (organizerId && coHostId && organizerId === coHostId) {
+            // Show error message
+            const errorDiv = document.getElementById('organizer-error') || document.createElement('div');
+            errorDiv.id = 'organizer-error';
+            errorDiv.className = 'alert alert-danger mt-2';
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>The primary organizer and co-host cannot be the same person.';
+            
+            // Insert error message after co-host select
+            const coHostContainer = coHostSelect.parentElement;
+            if (!document.getElementById('organizer-error')) {
+                coHostContainer.appendChild(errorDiv);
+            }
+            
+            // Reset co-host selection
+            coHostSelect.value = '';
+            return false;
+        } else {
+            // Remove error message if it exists
+            const errorDiv = document.getElementById('organizer-error');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+            return true;
+        }
+    }
+    
+    // Add event listeners for validation
+    organizerSelect.addEventListener('change', validateOrganizerSelection);
+    coHostSelect.addEventListener('change', validateOrganizerSelection);
+    
+    // Add form submission validation
+    form.addEventListener('submit', function(e) {
+        if (!validateOrganizerSelection()) {
+            e.preventDefault();
+            return false;
+        }
+    });
 }
 </script>
 {% endblock %}

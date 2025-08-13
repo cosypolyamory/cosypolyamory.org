@@ -736,7 +736,7 @@ def events_list():
     # Get user RSVPs for easy access in template
     user_rsvps = {}
     if current_user.role == 'approved':
-        rsvps = RSVP.select().where(RSVP.user == current_user, RSVP.status == 'attending')
+        rsvps = RSVP.select().where(RSVP.user == current_user, RSVP.status == 'yes')
         user_rsvps = {rsvp.event.id: rsvp for rsvp in rsvps}
     
     # Get RSVP counts for each event
@@ -768,7 +768,7 @@ def event_detail(event_id):
             pass
         
         # Get RSVP counts  
-        rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'attending')).count()
+        rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
         
         from datetime import datetime
         return render_template('event_detail.html', 
@@ -1030,6 +1030,16 @@ def rsvp_event(event_id):
         status = request.form.get('status')
         notes = request.form.get('notes', '')
         
+        # Handle RSVP cancellation (empty status)
+        if status == '' or status is None:
+            try:
+                rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
+                rsvp.delete_instance()
+                flash('RSVP cancelled', 'success')
+            except RSVP.DoesNotExist:
+                flash('No RSVP found to cancel.', 'info')
+            return redirect(url_for('event_detail', event_id=event_id))
+        
         if status not in ['yes', 'no', 'maybe']:
             flash('Invalid RSVP status.', 'error')
             return redirect(url_for('event_detail', event_id=event_id))
@@ -1041,7 +1051,8 @@ def rsvp_event(event_id):
             rsvp.notes = notes
             rsvp.updated_at = datetime.now()
             rsvp.save()
-            flash(f'RSVP updated to "{status.title()}"', 'success')
+            status_text = 'Attending' if status == 'yes' else 'Not Attending' if status == 'no' else 'Maybe'
+            flash(f'RSVP updated to "{status_text}"', 'success')
         except RSVP.DoesNotExist:
             RSVP.create(
                 event=event,
@@ -1049,7 +1060,8 @@ def rsvp_event(event_id):
                 status=status,
                 notes=notes
             )
-            flash(f'RSVP set to "{status.title()}"', 'success')
+            status_text = 'Attending' if status == 'yes' else 'Not Attending' if status == 'no' else 'Maybe'
+            flash(f'RSVP set to "{status_text}"', 'success')
         
         return redirect(url_for('event_detail', event_id=event_id))
         
