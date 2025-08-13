@@ -21,7 +21,7 @@ class User(UserMixin, BaseModel):
     is_admin = BooleanField(default=False)
     is_organizer = BooleanField(default=False)
     is_approved = BooleanField(default=False)  # Whether user passed community approval
-    role = CharField(default='pending')  # 'admin', 'organizer', 'approved', 'pending'
+    role = CharField(default='new')  # 'admin', 'organizer', 'approved', 'pending', 'new'
     
     class Meta:
         table_name = 'users'

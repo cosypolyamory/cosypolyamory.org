@@ -381,19 +381,70 @@ def api_admin_users_by_role(role):
         per_page = int(request.args.get('per_page', 50))
         
         # Validate role
-        valid_roles = ['pending', 'approved', 'organizer', 'rejected', 'admin']
-        if role not in valid_roles:
+        valid_roles = ['pending', 'approved', 'organizer', 'rejected', 'admin', 'new']
+        if role == 'pending':
+            # Show both 'pending' and 'new' users under the pending tab
+            # Fetch all users with role 'pending' or 'new'
+            all_pending_new = list(User.select().where(User.role.in_(['pending', 'new'])))
+            from cosypolyamory.models.user_application import UserApplication
+            # Split into those with a pending application and those without
+            with_pending_app = []
+            without_pending_app = []
+            for user in all_pending_new:
+                application = UserApplication.select().where((UserApplication.user == user) & (UserApplication.status == 'pending')).first()
+                if application:
+                    with_pending_app.append((user, application))
+                else:
+                    without_pending_app.append((user, None))
+            # Sort with_pending_app by application.submitted_at ascending (oldest first)
+            with_pending_app.sort(key=lambda tup: tup[1].submitted_at if tup[1] else user.created_at)
+            # Sort without_pending_app by user.created_at descending (most recent first)
+            without_pending_app.sort(key=lambda tup: tup[0].created_at, reverse=True)
+            # Merge
+            sorted_users = with_pending_app + without_pending_app
+            # For pagination
+            total = len(sorted_users)
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 50))
+            paged = sorted_users[(page-1)*per_page:page*per_page]
+            user_list = []
+            for user, application in paged:
+                user_list.append({
+                    'id': user.id,
+                    'name': user.name,
+                    'email': user.email,
+                    'avatar_url': user.avatar_url,
+                    'provider': user.provider,
+                    'role': user.role,
+                    'created_at': user.created_at.isoformat(),
+                    'last_login': user.last_login.isoformat() if user.last_login else None,
+                    'has_application': bool(application),
+                    'application_id': application.id if application else None,
+                    'application_status': application.status if application else None
+                })
+            return jsonify({
+                'users': user_list,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': total,
+                    'pages': (total + per_page - 1) // per_page
+                }
+            })
+        elif role in valid_roles:
+            query = User.select().where(User.role == role).order_by(User.created_at.desc())
+        else:
             return jsonify({'error': 'Invalid role'}), 400
-        
-        # Get users for this role
-        query = User.select().where(User.role == role).order_by(User.created_at.desc())
         
         # Calculate pagination
         total = query.count()
         users = query.paginate(page, per_page)
         
         user_list = []
+        from cosypolyamory.models.user_application import UserApplication
         for user in users:
+            # Always get the most recent application for this user
+            application = UserApplication.select().where(UserApplication.user == user).order_by(UserApplication.submitted_at.desc()).first()
             user_list.append({
                 'id': user.id,
                 'name': user.name,
@@ -402,7 +453,10 @@ def api_admin_users_by_role(role):
                 'provider': user.provider,
                 'role': user.role,
                 'created_at': user.created_at.isoformat(),
-                'last_login': user.last_login.isoformat() if user.last_login else None
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+                'has_application': bool(application),
+                'application_id': application.id if application else None,
+                'application_status': application.status if application else None
             })
         
         return jsonify({
@@ -576,7 +630,9 @@ def submit_application():
         question_6_answer=request.form.get('question_6', ''),
         question_7_answer=request.form.get('question_7', ''),
     )
-    
+    # Set user role to 'pending' after application submission
+    current_user.role = 'pending'
+    current_user.save()
     flash('Your application has been submitted! You will be notified once it has been reviewed.', 'success')
     return redirect(url_for('application_status'))
 
@@ -788,13 +844,13 @@ def create_event_post():
         date = dt.strptime(date_str, '%Y-%m-%d')
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
         
-        # Validate Google Maps link
+        # Validate Google Maps link if provided
         valid_maps_domains = ['maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps']
-        is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
-        
-        if not google_maps_link or not is_valid_maps_link:
-            flash('Please provide a valid Google Maps link (maps.google.com or maps.app.goo.gl).', 'error')
-            return redirect(url_for('create_event'))
+        if google_maps_link:
+            is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
+            if not is_valid_maps_link:
+                flash('If provided, Google Maps link must be from maps.google.com or maps.app.goo.gl.', 'error')
+                return redirect(url_for('create_event'))
         
         # Handle co-host
         co_host = None
@@ -916,13 +972,13 @@ def edit_event_post(event_id):
         date = dt.strptime(date_str, '%Y-%m-%d')
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
         
-        # Validate Google Maps link
+        # Validate Google Maps link if provided
         valid_maps_domains = ['maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps']
-        is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
-        
-        if not google_maps_link or not is_valid_maps_link:
-            flash('Please provide a valid Google Maps link (maps.google.com or maps.app.goo.gl).', 'error')
-            return redirect(url_for('edit_event', event_id=event_id))
+        if google_maps_link:
+            is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
+            if not is_valid_maps_link:
+                flash('If provided, Google Maps link must be from maps.google.com or maps.app.goo.gl.', 'error')
+                return redirect(url_for('edit_event', event_id=event_id))
         
         # Handle co-host
         co_host = None
@@ -1007,4 +1063,12 @@ def admin():
     """Admin dashboard"""
     users = list(User.select())
     return render_template('admin.html', users=users)
+
+# Register additional API routes
+import cosypolyamory.api_admin_application
+import cosypolyamory.api_admin_application_by_user
+import cosypolyamory.api_admin_application_review
+
+# Register additional API routes
+import cosypolyamory.api_admin_application
 

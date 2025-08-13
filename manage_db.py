@@ -39,8 +39,9 @@ def make_admin(email):
     try:
         user = User.get(User.email == email)
         user.is_admin = True
+        user.role = 'admin'
         user.save()
-        print(f"✅ User {email} is now an admin")
+        print(f"✅ User {email} is now an admin (role set to 'admin')")
     except User.DoesNotExist:
         print(f"❌ User with email {email} not found")
     database.close()
@@ -52,8 +53,11 @@ def remove_admin(email):
     try:
         user = User.get(User.email == email)
         user.is_admin = False
+        # Set role to 'approved' if user was admin, otherwise leave as is
+        if user.role == 'admin':
+            user.role = 'approved'
         user.save()
-        print(f"✅ Admin status removed from {email}")
+        print(f"✅ Admin status removed from {email} (role set to '{user.role}')")
     except User.DoesNotExist:
         print(f"❌ User with email {email} not found")
     database.close()
