@@ -106,7 +106,7 @@
                     <div class="card mb-3">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>{{ application.user.display_name or application.user.username }}</strong>
+                                <strong>{{ application.user.name }}</strong>
                                 <span class="text-muted">({{ application.user.email }})</span>
                             </div>
                             <small class="text-muted">
@@ -154,7 +154,7 @@
                                                         </div>
                                                         <form method="POST" action="{{ url_for('reject_application', application_id=application.id) }}">
                                                             <div class="modal-body">
-                                                                <p>Reject application from <strong>{{ application.user.display_name or application.user.username }}</strong>?</p>
+                                                                <p>Reject application from <strong>{{ application.user.name }}</strong>?</p>
                                                                 <div class="mb-3">
                                                                     <label for="admin_notes{{ application.id }}" class="form-label">
                                                                         Feedback (optional, will be shown to applicant):
@@ -204,7 +204,7 @@
                         <tbody>
                             {% for application in approved_applications %}
                                 <tr>
-                                    <td>{{ application.user.display_name or application.user.username }}</td>
+                                    <td>{{ application.user.name }}</td>
                                     <td>{{ application.user.email }}</td>
                                     <td>{{ application.submitted_at.strftime('%b %d, %Y') }}</td>
                                     <td>{{ application.reviewed_at.strftime('%b %d, %Y') if application.reviewed_at }}</td>
@@ -242,7 +242,7 @@
                         <tbody>
                             {% for application in rejected_applications %}
                                 <tr>
-                                    <td>{{ application.user.display_name or application.user.username }}</td>
+                                    <td>{{ application.user.name }}</td>
                                     <td>{{ application.user.email }}</td>
                                     <td>{{ application.submitted_at.strftime('%b %d, %Y') }}</td>
                                     <td>{{ application.reviewed_at.strftime('%b %d, %Y') if application.reviewed_at }}</td>

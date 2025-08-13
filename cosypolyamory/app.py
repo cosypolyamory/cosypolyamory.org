@@ -595,8 +595,37 @@ def application_status():
 @organizer_required
 def moderate_applications():
     """Application moderation queue"""
-    pending_applications = UserApplication.select().where(UserApplication.status == 'pending').order_by(UserApplication.submitted_at)
-    return render_template('moderate.html', applications=pending_applications)
+    # Get all applications by status
+    pending_applications = list(UserApplication.select().where(UserApplication.status == 'pending').order_by(UserApplication.submitted_at))
+    approved_applications = list(UserApplication.select().where(UserApplication.status == 'approved').order_by(UserApplication.reviewed_at.desc()))
+    rejected_applications = list(UserApplication.select().where(UserApplication.status == 'rejected').order_by(UserApplication.reviewed_at.desc()))
+    
+    # Calculate counts
+    pending_count = len(pending_applications)
+    approved_count = len(approved_applications)
+    rejected_count = len(rejected_applications)
+    total_count = pending_count + approved_count + rejected_count
+    
+    # Get questions from environment for display
+    questions = {
+        'question_1': os.getenv('APPLICATION_QUESTION_1', 'Question 1'),
+        'question_2': os.getenv('APPLICATION_QUESTION_2', 'Question 2'),
+        'question_3': os.getenv('APPLICATION_QUESTION_3', 'Question 3'),
+        'question_4': os.getenv('APPLICATION_QUESTION_4', 'Question 4'),
+        'question_5': os.getenv('APPLICATION_QUESTION_5', 'Question 5'),
+        'question_6': os.getenv('APPLICATION_QUESTION_6', 'Question 6'),
+        'question_7': os.getenv('APPLICATION_QUESTION_7', 'Question 7'),
+    }
+    
+    return render_template('moderate.html',
+                         pending_applications=pending_applications,
+                         approved_applications=approved_applications,
+                         rejected_applications=rejected_applications,
+                         pending_count=pending_count,
+                         approved_count=approved_count,
+                         rejected_count=rejected_count,
+                         total_count=total_count,
+                         questions=questions)
 
 @app.route('/moderate/<int:application_id>/approve', methods=['POST'])
 @organizer_required
