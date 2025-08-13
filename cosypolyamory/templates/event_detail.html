@@ -3,9 +3,47 @@
 {% block title %}{{ event.title }}{% endblock %}
 
 {% block content %}
+<!-- Quick Actions - Top Right Sticky -->
+<div class="position-fixed" style="top: 80px; right: 20px; z-index: 1030; width: 250px;">
+    <div class="card shadow">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-bolt me-2"></i>
+                Quick Actions
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('events_list') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Events
+                </a>
+                
+                {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
+                    <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-edit me-2"></i>Edit Event
+                    </a>
+                {% endif %}
+                
+                {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
+                    <a href="mailto:?subject={{ event.title | urlencode }}&body={{ 'Check out this event: ' + request.url | urlencode }}" 
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-share me-2"></i>Share Event
+                    </a>
+                {% endif %}
+                
+                {% if current_user.role in ['admin', 'organizer'] %}
+                    <a href="{{ url_for('create_event') }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-plus me-2"></i>Create New Event
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container">
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-12">
             <!-- Event Header -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -38,22 +76,57 @@
                         </div>
                     </div>
                     
-                    <!-- Description Section -->
-                    <h6><i class="fas fa-info-circle me-2 text-primary"></i>Description</h6>
-                    <div class="card-text lead">
-                        {% if event.description %}
-                            {% for paragraph in event.description.split('\n') %}
-                                {% if paragraph.strip() %}
-                                    <p>{{ paragraph.strip() }}</p>
+                    <!-- Main Content Row -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Description Section -->
+                            <h6><i class="fas fa-info-circle me-2 text-primary"></i>Description</h6>
+                            <div class="card-text lead">
+                                {% if event.description %}
+                                    {% for paragraph in event.description.split('\n') %}
+                                        {% if paragraph.strip() %}
+                                            <p>{{ paragraph.strip() }}</p>
+                                        {% endif %}
+                                    {% endfor %}
                                 {% endif %}
-                            {% endfor %}
-                        {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <!-- Attendees List -->
+                            {% if rsvps and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id or (current_user.is_authenticated and current_user.role not in ['pending', 'rejected'])) %}
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-users me-2"></i>
+                                            Attendees ({{ rsvp_count }})
+                                        </h6>
+                                    </div>
+                                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                                        {% for rsvp in rsvps %}
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="me-2">
+                                                    <i class="fas fa-user-circle fa-lg text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ rsvp.user.name }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        RSVP'd {{ rsvp.created_at.strftime('%b %d') }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                     
                     <!-- RSVP Section - moved under description -->
                     {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] and event.exact_time > now %}
                     <div class="row mt-4 mb-4">
-                        <div class="col-md-8 mx-auto">
+                        <div class="col-12">
                             <div class="card">
                                 <div class="card-body text-center">
                                     {% if user_rsvp and user_rsvp.status == 'yes' %}
@@ -64,7 +137,7 @@
                                         <div class="mt-3">
                                             <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block me-2">
                                                 <input type="hidden" name="status" value="no">
-                                                <button type="submit" class="btn btn-outline-danger">
+                                                <button type="submit" class="btn btn-danger">
                                                     <i class="fas fa-times me-2"></i>Change to No
                                                 </button>
                                             </form>
@@ -106,7 +179,7 @@
                                                 </form>
                                                 <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block">
                                                     <input type="hidden" name="status" value="no">
-                                                    <button type="submit" class="btn btn-outline-danger btn-lg">
+                                                    <button type="submit" class="btn btn-danger btn-lg">
                                                         <i class="fas fa-times me-2"></i>RSVP No
                                                     </button>
                                                 </form>
@@ -120,7 +193,7 @@
                                             <div class="mt-3">
                                                 <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block">
                                                     <input type="hidden" name="status" value="no">
-                                                    <button type="submit" class="btn btn-outline-danger">
+                                                    <button type="submit" class="btn btn-danger">
                                                         <i class="fas fa-times me-2"></i>RSVP No
                                                     </button>
                                                 </form>
@@ -133,7 +206,7 @@
                     </div>
                     {% elif (not current_user.is_authenticated or current_user.role in ['pending', 'rejected']) and current_user.role == 'rejected' %}
                     <div class="row mt-4 mb-4">
-                        <div class="col-md-8 mx-auto">
+                        <div class="col-12">
                             <div class="alert alert-info">
                                 <h6><i class="fas fa-info-circle me-2"></i>Want to attend events?</h6>
                                 <p class="mb-2">You need to be an approved community member to RSVP to events.</p>
@@ -269,86 +342,10 @@
                 </div>
             </div>
             
-            <!-- RSVP Actions (width matches main columns) -->
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-12">
-                </div>
-            </div>
-        </div>
-        
-        <!-- Sidebar -->
-        <div class="col-md-4">
-            <!-- Attendees List -->
-            {% if rsvps and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id or (current_user.is_authenticated and current_user.role not in ['pending', 'rejected'])) %}
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">
-                            <i class="fas fa-users me-2"></i>
-                            Attendees ({{ rsvp_count }})
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        {% for rsvp in rsvps %}
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="me-2">
-                                    <i class="fas fa-user-circle fa-lg text-muted"></i>
-                                </div>
-                                <div>
-                                    <strong>{{ rsvp.user.name }}</strong>
-                                    <br>
-                                    <small class="text-muted">
-                                        RSVP'd {{ rsvp.created_at.strftime('%b %d') }}
-                                    </small>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-            
-            <!-- Quick Actions and Stats Row -->
-            <div class="row mt-3">
-                <!-- Quick Actions -->
-                <div class="col-12 {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}col-lg-6{% endif %}">
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="mb-0">
-                                <i class="fas fa-bolt me-2"></i>
-                                Quick Actions
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <a href="{{ url_for('events_list') }}" class="btn btn-outline-primary">
-                                    <i class="fas fa-arrow-left me-2"></i>Back to Events
-                                </a>
-                                
-                                {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
-                                    <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-outline-warning">
-                                        <i class="fas fa-edit me-2"></i>Edit Event
-                                    </a>
-                                {% endif %}
-                                
-                                {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
-                                    <a href="mailto:?subject={{ event.title | urlencode }}&body={{ 'Check out this event: ' + request.url | urlencode }}" 
-                                       class="btn btn-outline-secondary">
-                                        <i class="fas fa-share me-2"></i>Share Event
-                                    </a>
-                                {% endif %}
-                                
-                                {% if current_user.role in ['admin', 'organizer'] %}
-                                    <a href="{{ url_for('create_event') }}" class="btn btn-outline-success">
-                                        <i class="fas fa-plus me-2"></i>Create New Event
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Event Stats (for organizers) -->
-                {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
-                <div class="col-12 col-lg-6">
+            <!-- Event Stats (full width) -->
+            {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
+            <div class="row mt-4">
+                <div class="col-12">
                     <div class="card">
                         <div class="card-header">
                             <h6 class="mb-0">
@@ -358,21 +355,28 @@
                         </div>
                         <div class="card-body">
                             <div class="row text-center">
-                                <div class="col-6">
+                                <div class="col-md-3">
                                     <h4 class="text-primary">{{ rsvp_count }}</h4>
                                     <small class="text-muted">RSVPs</small>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-md-3">
                                     <h4 class="text-info">{{ views_count or 0 }}</h4>
                                     <small class="text-muted">Views</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <h4 class="text-success">{{ event.max_attendees or '∞' }}</h4>
+                                    <small class="text-muted">Max Capacity</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <h4 class="text-warning">{{ ((event.max_attendees - rsvp_count) if event.max_attendees else '∞') }}</h4>
+                                    <small class="text-muted">Spots Left</small>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                {% endif %}
             </div>
-        </div>
+            {% endif %}
     </div>
 </div>
 {% endblock %}
