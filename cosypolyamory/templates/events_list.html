@@ -103,8 +103,8 @@
                                 {% if event.organizer %}
                                     <div class="mb-3">
                                         <small class="text-muted">
-                                            <i class="fas fa-user me-1"></i>
-                                            Organized by {{ event.organizer.display_name or event.organizer.username }}
+                                            <i class="fas fa-users me-1"></i>
+                                            Hosts: {{ event.organizer.name }}{% if event.co_host and event.co_host.id != event.organizer.id %}, {{ event.co_host.name }}{% endif %}
                                         </small>
                                     </div>
                                 {% endif %}
@@ -155,6 +155,24 @@
                 {% endif %}
             </div>
         {% endif %}
+        
+        <!-- Empty state messages for filtered views -->
+        <div id="no-upcoming-events" class="alert alert-info text-center" style="display: none;">
+            <i class="fas fa-calendar-plus fa-3x mb-3 text-muted"></i>
+            <h5>No Upcoming Events</h5>
+            <p>There are no upcoming events scheduled at this time. Check back soon for new events!</p>
+            {% if current_user.role in ['admin', 'organizer'] %}
+                <a href="{{ url_for('create_event') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Event
+                </a>
+            {% endif %}
+        </div>
+        
+        <div id="no-past-events" class="alert alert-secondary text-center" style="display: none;">
+            <i class="fas fa-history fa-3x mb-3 text-muted"></i>
+            <h5>No Past Events</h5>
+            <p>There are no past events to display. Once events have happened, they'll appear here.</p>
+        </div>
     </div>
 </div>
 
@@ -177,16 +195,37 @@ document.querySelectorAll('input[name="filter"]').forEach(radio => {
         const filter = this.value;
         const eventCards = document.querySelectorAll('.event-card');
         
+        let visibleCount = 0;
+        
         eventCards.forEach(card => {
             const eventStatus = card.dataset.eventStatus;
             if (filter === 'upcoming' && eventStatus === 'upcoming') {
                 card.classList.remove('hidden');
+                visibleCount++;
             } else if (filter === 'past' && eventStatus === 'past') {
                 card.classList.remove('hidden');
+                visibleCount++;
             } else {
                 card.classList.add('hidden');
             }
         });
+        
+        // Show/hide empty state messages
+        const noUpcomingMsg = document.getElementById('no-upcoming-events');
+        const noPastMsg = document.getElementById('no-past-events');
+        
+        // Hide both messages first
+        noUpcomingMsg.style.display = 'none';
+        noPastMsg.style.display = 'none';
+        
+        // Show appropriate message if no events visible
+        if (visibleCount === 0) {
+            if (filter === 'upcoming') {
+                noUpcomingMsg.style.display = 'block';
+            } else if (filter === 'past') {
+                noPastMsg.style.display = 'block';
+            }
+        }
     });
 });
 
