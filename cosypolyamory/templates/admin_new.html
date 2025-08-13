@@ -21,7 +21,7 @@
         {% endwith %}
         
         <!-- User Management Tabs -->
-        <div class="card mt-4" style="min-height: 80vh;">
+        <div class="card mt-4">
             <div class="card-header">
                 <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -36,17 +36,17 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="organizers-tab" data-bs-toggle="tab" data-bs-target="#organizers" type="button" role="tab" aria-controls="organizers" aria-selected="false">
-                            Organizers <span class="badge bg-purple ms-1 tab-badge" id="organizers-count">0</span>
+                            Organizers <span class="badge bg-primary ms-1 tab-badge" id="organizers-count">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab" aria-controls="rejected" aria-selected="false">
-                            Rejected <span class="badge bg-danger ms-1 tab-badge" id="rejected-count">0</span>
+                            Rejected <span class="badge bg-secondary ms-1 tab-badge" id="rejected-count">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="admins-tab" data-bs-toggle="tab" data-bs-target="#admins" type="button" role="tab" aria-controls="admins" aria-selected="false">
-                            Admins <span class="badge bg-orange ms-1 tab-badge" id="admins-count">0</span>
+                            Admins <span class="badge bg-danger ms-1 tab-badge" id="admins-count">0</span>
                         </button>
                     </li>
                 </ul>
@@ -187,43 +187,14 @@
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
     .user-list {
-        max-height: 75vh;
+        max-height: 600px;
         overflow-y: auto;
-        padding-bottom: 50px;
     }
     .role-badge {
         font-size: 0.75rem;
     }
     .tab-badge {
         font-size: 0.7rem;
-    }
-    .bg-purple {
-        background-color: #6f42c1 !important;
-    }
-    .bg-orange {
-        background-color: #fd7e14 !important;
-    }
-    .dropdown-menu {
-        z-index: 1050;
-        min-width: 180px;
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    .user-card {
-        position: relative;
-        overflow: visible;
-    }
-    .user-card .dropdown {
-        position: static;
-    }
-    .user-card .btn-group {
-        position: relative;
-    }
-    .card-body {
-        overflow: visible;
-    }
-    .user-list {
-        overflow-x: visible;
     }
 </style>
 {% endblock %}
@@ -242,8 +213,7 @@ let currentPages = {
 const pageSize = 50;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Load all user counts and pending users by default
-    loadAllUserCounts();
+    // Load pending users by default
     loadUsers('pending');
     
     // Add tab change listeners
@@ -257,23 +227,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
-function loadAllUserCounts() {
-    const roles = ['pending', 'approved', 'organizer', 'rejected', 'admin'];
-    roles.forEach(role => {
-        fetch(`/api/admin/users/${role}?page=1&per_page=1`)
-            .then(response => response.json())
-            .then(data => {
-                const tabName = role === 'approved' ? 'members' :
-                               role === 'organizer' ? 'organizers' :
-                               role === 'admin' ? 'admins' : role;
-                updateTabCount(tabName, data.pagination.total);
-            })
-            .catch(error => {
-                console.error(`Error loading ${role} count:`, error);
-            });
-    });
-}
 
 function loadUsers(role, page = 1) {
     currentPages[role] = page;
@@ -307,11 +260,11 @@ function updateUserList(tabName, users) {
 
 function createUserCard(user) {
     const roleColors = {
-        admin: 'orange',  // Orange
-        organizer: 'purple',  // Purple
+        admin: 'danger',
+        organizer: 'primary', 
         approved: 'success',
         pending: 'warning',
-        rejected: 'danger'  // Red
+        rejected: 'secondary'
     };
     
     const roleName = {
@@ -326,19 +279,15 @@ function createUserCard(user) {
         <div class="user-card">
             <div class="d-flex align-items-center">
                 <div class="me-3">
-                    ${user.avatar_url && user.avatar_url.trim() !== '' ? 
-                        `<img src="${user.avatar_url}" alt="${user.name} Avatar" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 50px; height: 50px;\\'><i class=\\'fas fa-user text-white\\'></i></div>';">` :
+                    ${user.avatar_url ? 
+                        `<img src="${user.avatar_url}" alt="Avatar" class="rounded-circle" style="width: 50px; height: 50px;">` :
                         `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                             <i class="fas fa-user text-white"></i>
                         </div>`
                     }
                 </div>
                 <div class="flex-grow-1">
-                    <h6 class="mb-1">
-                        <a href="javascript:void(0)" onclick="viewUser('${user.id}')" class="text-decoration-none" title="Click to view user details">
-                            ${user.name}
-                        </a>
-                    </h6>
+                    <h6 class="mb-1">${user.name}</h6>
                     <p class="text-muted mb-1" title="${user.email}">
                         <i class="fas fa-envelope me-1"></i>${user.email}
                     </p>
@@ -353,17 +302,16 @@ function createUserCard(user) {
                         <button class="btn btn-outline-primary btn-sm" onclick="viewUser('${user.id}')" title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <div class="btn-group dropdown position-relative">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Click to change user role" aria-expanded="false">
-                                Change Role
+                        <div class="btn-group">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Change Role">
+                                <i class="fas fa-user-cog"></i>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow">
-                                <li><h6 class="dropdown-header">Change User Role</h6></li>
+                            <ul class="dropdown-menu">
                                 <li><button class="dropdown-item" onclick="changeRole('${user.id}', 'admin')">
-                                    <i class="fas fa-crown me-2" style="color: #fd7e14;"></i>Make Admin
+                                    <i class="fas fa-crown text-danger me-2"></i>Make Admin
                                 </button></li>
                                 <li><button class="dropdown-item" onclick="changeRole('${user.id}', 'organizer')">
-                                    <i class="fas fa-calendar me-2" style="color: #6f42c1;"></i>Make Organizer
+                                    <i class="fas fa-calendar text-primary me-2"></i>Make Organizer
                                 </button></li>
                                 <li><button class="dropdown-item" onclick="changeRole('${user.id}', 'approved')">
                                     <i class="fas fa-check text-success me-2"></i>Approve Member
@@ -374,12 +322,10 @@ function createUserCard(user) {
                                 <li><button class="dropdown-item" onclick="changeRole('${user.id}', 'rejected')">
                                     <i class="fas fa-times text-danger me-2"></i>Reject
                                 </button></li>
-                                ${user.role !== 'admin' ? `
                                 <li><hr class="dropdown-divider"></li>
                                 <li><button class="dropdown-item text-danger" onclick="deleteUser('${user.id}', '${user.name}')">
                                     <i class="fas fa-trash me-2"></i>Delete User
                                 </button></li>
-                                ` : ''}
                             </ul>
                         </div>
                     </div>
@@ -461,21 +407,14 @@ function changeRole(userId, newRole) {
 }
 
 function viewUser(userId) {
-    console.log('Opening user profile for:', userId);
     fetch(`/api/user/${userId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('User data received:', data);
             const modalBody = document.getElementById('userModalBody');
             modalBody.innerHTML = `
                 <div class="text-center mb-3">
-                    ${data.avatar_url && data.avatar_url.trim() !== '' ? 
-                        `<img src="${data.avatar_url}" alt="${data.name} Avatar" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;" onerror="this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto\\' style=\\'width: 100px; height: 100px;\\'><i class=\\'fas fa-user fa-2x text-white\\'></i></div>';">` :
+                    ${data.avatar_url ? 
+                        `<img src="${data.avatar_url}" alt="Avatar" class="rounded-circle" style="width: 100px; height: 100px;">` :
                         `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
                             <i class="fas fa-user fa-2x text-white"></i>
                         </div>`
@@ -491,25 +430,11 @@ function viewUser(userId) {
                     <dt class="col-sm-4">User ID:</dt>
                     <dd class="col-sm-8"><code>${data.id}</code></dd>
                     <dt class="col-sm-4">Role:</dt>
-                    <dd class="col-sm-8">
-                        <span class="badge bg-${
-                            data.role === 'admin' ? 'orange' : 
-                            data.role === 'organizer' ? 'purple' :
-                            data.role === 'approved' ? 'success' :
-                            data.role === 'pending' ? 'warning' :
-                            data.role === 'rejected' ? 'danger' : 'secondary'
-                        }">${
-                            data.role === 'admin' ? 'Admin' :
-                            data.role === 'organizer' ? 'Organizer' :
-                            data.role === 'approved' ? 'Member' :
-                            data.role === 'pending' ? 'Pending' :
-                            data.role === 'rejected' ? 'Rejected' : data.role
-                        }</span>
-                    </dd>
+                    <dd class="col-sm-8"><span class="badge bg-primary">${data.role}</span></dd>
                     <dt class="col-sm-4">Joined:</dt>
                     <dd class="col-sm-8">${new Date(data.created_at).toLocaleDateString()}</dd>
                     <dt class="col-sm-4">Last Login:</dt>
-                    <dd class="col-sm-8">${data.last_login ? new Date(data.last_login).toLocaleDateString() : 'Never'}</dd>
+                    <dd class="col-sm-8">${new Date(data.last_login).toLocaleDateString()}</dd>
                 </dl>
             `;
             const modal = new bootstrap.Modal(document.getElementById('userModal'));
@@ -530,7 +455,7 @@ function deleteUser(userId, userName) {
     
     document.getElementById('confirmDeleteBtn').onclick = function() {
         fetch(`/api/admin/delete-user`, {
-            method: 'POST',
+            method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
             },

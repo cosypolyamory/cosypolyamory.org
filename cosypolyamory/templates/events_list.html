@@ -49,37 +49,17 @@
             <div class="row">
                 {% for event in events %}
                     <div class="col-md-6 col-lg-4 mb-4 event-card" 
-                         data-event-date="{{ event.date_time.isoformat() }}"
-                         data-event-status="{{ 'past' if event.date_time < now else 'upcoming' }}">
-                        <div class="card h-100 {% if event.date_time < now %}opacity-75{% endif %}">
+                         data-event-date="{{ event.exact_time.isoformat() }}"
+                         data-event-status="{{ 'past' if event.exact_time < now else 'upcoming' }}">
+                        <div class="card h-100 {% if event.exact_time < now %}opacity-75{% endif %}">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <small class="text-muted">
-                                    {% if event.date_time < now %}
+                                    {% if event.exact_time < now %}
                                         <i class="fas fa-history me-1"></i>Past Event
                                     {% else %}
                                         <i class="fas fa-calendar-alt me-1"></i>Upcoming
                                     {% endif %}
                                 </small>
-                                {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary" type="button" 
-                                                data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="{{ url_for('edit_event', event_id=event.id) }}">
-                                                <i class="fas fa-edit me-2"></i>Edit
-                                            </a></li>
-                                            {% if current_user.role == 'admin' %}
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li><a class="dropdown-item text-danger" href="#" 
-                                                       onclick="confirmDelete('{{ event.id }}', '{{ event.title }}')">
-                                                    <i class="fas fa-trash me-2"></i>Delete
-                                                </a></li>
-                                            {% endif %}
-                                        </ul>
-                                    </div>
-                                {% endif %}
                             </div>
                             
                             <div class="card-body">
@@ -88,13 +68,13 @@
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-calendar me-2 text-muted"></i>
-                                    <strong>{{ event.date_time.strftime('%A, %B %d, %Y') }}</strong>
+                                    <strong>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</strong>
                                 </div>
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-clock me-2 text-muted"></i>
                                     {% if current_user.role == 'approved' %}
-                                        {{ event.date_time.strftime('%H:%M') }}
+                                        {{ event.exact_time.strftime('%H:%M') }}
                                     {% else %}
                                         {{ event.time_period }}
                                     {% endif %}
@@ -136,16 +116,16 @@
                                         <i class="fas fa-info-circle me-2"></i>View Details
                                     </a>
                                     
-                                    {% if current_user.role == 'approved' and event.date_time > now %}
+                                    {% if current_user.role == 'approved' and event.exact_time > now %}
                                         {% if user_rsvps.get(event.id) %}
-                                            <form method="POST" action="{{ url_for('toggle_rsvp', event_id=event.id) }}" class="mb-0">
+                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm w-100">
                                                     <i class="fas fa-times me-1"></i>Cancel RSVP
                                                 </button>
                                             </form>
                                         {% else %}
                                             {% if not event.max_attendees or (rsvp_counts[event.id] or 0) < event.max_attendees %}
-                                                <form method="POST" action="{{ url_for('toggle_rsvp', event_id=event.id) }}" class="mb-0">
+                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
                                                     <button type="submit" class="btn btn-outline-success btn-sm w-100">
                                                         <i class="fas fa-check me-1"></i>RSVP
                                                     </button>
@@ -178,27 +158,6 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Delete Event</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong id="eventToDelete"></strong>?</p>
-                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="POST" id="deleteForm" class="d-inline">
-                    <button type="submit" class="btn btn-danger">Delete Event</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block styles %}
@@ -230,13 +189,6 @@ document.querySelectorAll('input[name="filter"]').forEach(radio => {
         });
     });
 });
-
-// Delete confirmation
-function confirmDelete(eventId, eventTitle) {
-    document.getElementById('eventToDelete').textContent = eventTitle;
-    document.getElementById('deleteForm').action = `/events/${eventId}/delete`;
-    new bootstrap.Modal(document.getElementById('deleteModal')).show();
-}
 
 // Initialize filter on page load
 document.addEventListener('DOMContentLoaded', function() {

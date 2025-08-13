@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Create Event{% endblock %}
+{% block title %}{% if is_edit %}Edit Event{% else %}Create Event{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <h1>Create New Event</h1>
+    <div class="col-lg-10 col-xl-9">
+        <h1>{% if is_edit %}Edit Event{% else %}Create New Event{% endif %}</h1>
         
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -22,7 +22,7 @@
         
         <div class="card mt-4">
             <div class="card-body">
-                <form method="POST" action="{{ url_for('create_event') }}">
+                <form method="POST" action="{% if is_edit %}{{ url_for('edit_event_post', event_id=event.id) }}{% else %}{{ url_for('create_event') }}{% endif %}"{% if event %} data-current-organizer="{{ event.organizer.id }}"{% if event.co_host %} data-current-cohost="{{ event.co_host.id }}"{% endif %}{% endif %}>
                     <!-- Basic Info -->
                     <div class="row mb-4">
                         <div class="col-12">
@@ -32,13 +32,13 @@
                         <div class="col-12 mb-3">
                             <label for="title" class="form-label">Event Title *</label>
                             <input type="text" class="form-control" id="title" name="title" required 
-                                   placeholder="e.g., Community Game Night">
+                                   placeholder="e.g., Community Game Night" value="{% if event %}{{ event.title }}{% endif %}">
                         </div>
                         
                         <div class="col-12 mb-3">
                             <label for="description" class="form-label">Description *</label>
                             <textarea class="form-control" id="description" name="description" rows="4" required 
-                                      placeholder="Describe your event..."></textarea>
+                                      placeholder="Describe your event...">{% if event %}{{ event.description }}{% endif %}</textarea>
                         </div>
                     </div>
                     
@@ -50,18 +50,21 @@
                         
                         <div class="col-md-6 mb-3">
                             <label for="date" class="form-label">Date *</label>
-                            <input type="date" class="form-control" id="date" name="date" required>
+                            <input type="date" class="form-control" id="date" name="date" required
+                                   value="{% if event %}{{ event.date.strftime('%Y-%m-%d') }}{% endif %}">
                         </div>
                         
                         <div class="col-md-6 mb-3">
                             <label for="time" class="form-label">Time *</label>
-                            <input type="time" class="form-control" id="time" name="time" required>
+                            <input type="time" class="form-control" id="time" name="time" required
+                                   value="{% if event %}{{ event.exact_time.strftime('%H:%M') }}{% endif %}">
                         </div>
                         
                         <div class="col-12 mb-3">
                             <label for="time_period" class="form-label">Time Period (Public) *</label>
                             <input type="text" class="form-control" id="time_period" name="time_period" required 
-                                   placeholder="e.g., Evening, Afternoon, Late Morning">
+                                   placeholder="e.g., Evening, Afternoon, Late Morning"
+                                   value="{% if event %}{{ event.time_period }}{% endif %}">
                             <div class="form-text">This is what non-approved members will see instead of the exact time</div>
                         </div>
                     </div>
@@ -75,28 +78,31 @@
                         <div class="col-12 mb-3">
                             <label for="establishment_name" class="form-label">Establishment Name *</label>
                             <input type="text" class="form-control" id="establishment_name" name="establishment_name" required 
-                                   placeholder="e.g., Port Bay, Barna Brew, Venus">
+                                   placeholder="e.g., Port Bay, Barna Brew, Venus"
+                                   value="{% if event %}{{ event.establishment_name }}{% endif %}">
                             <div class="form-text">Name of the venue, restaurant, or meeting place</div>
                         </div>
                         
                         <div class="col-12 mb-3">
                             <label for="google_maps_link" class="form-label">Google Maps Link *</label>
                             <input type="url" class="form-control" id="google_maps_link" name="google_maps_link" required 
-                                   placeholder="https://maps.google.com/...">
+                                   placeholder="https://maps.app.goo.gl/... or https://maps.google.com/..."
+                                   value="{% if event %}{{ event.google_maps_link }}{% endif %}">
                             <div class="form-text">Approved members will see an embedded map preview</div>
                         </div>
                         
                         <div class="col-12 mb-3">
                             <label for="barrio" class="form-label">Barrio (Public) *</label>
                             <input type="text" class="form-control" id="barrio" name="barrio" required 
-                                   placeholder="e.g., The Born, Gòtic, Poble Sec">
+                                   placeholder="e.g., The Born, Gòtic, Poble Sec"
+                                   value="{% if event %}{{ event.barrio }}{% endif %}">
                             <div class="form-text">This is what non-approved members will see instead of the exact location</div>
                         </div>
                         
                         <div class="col-12 mb-3">
                             <label for="location_notes" class="form-label">Location Notes</label>
                             <textarea class="form-control" id="location_notes" name="location_notes" rows="2" 
-                                      placeholder="e.g., Enter via side door, look for the group in the back room, second floor"></textarea>
+                                      placeholder="e.g., Enter via side door, look for the group in the back room, second floor">{% if event %}{{ event.location_notes }}{% endif %}</textarea>
                             <div class="form-text">Additional directions or meeting details</div>
                         </div>
                     </div>
@@ -108,15 +114,33 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
+                            <label for="organizer_id" class="form-label">Primary Organizer *</label>
+                            <select class="form-select" id="organizer_id" name="organizer_id" required>
+                                <option value="">Loading organizers...</option>
+                            </select>
+                            <div class="form-text">The primary organizer responsible for the event</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="co_host_id" class="form-label">Co-host (Optional)</label>
+                            <select class="form-select" id="co_host_id" name="co_host_id">
+                                <option value="">No co-host</option>
+                            </select>
+                            <div class="form-text">Optional second organizer to help with the event</div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
                             <label for="max_attendees" class="form-label">Maximum Attendees</label>
                             <input type="number" class="form-control" id="max_attendees" name="max_attendees" 
-                                   min="1" placeholder="Leave empty for unlimited">
+                                   min="1" placeholder="Unlimited"
+                                   value="{% if event and event.max_attendees %}{{ event.max_attendees }}{% endif %}">
+                            <div class="form-text">Leave empty for unlimited capacity</div>
                         </div>
                         
                         <div class="col-12 mb-3">
                             <label for="tips_for_attendees" class="form-label">Tips for Attendees</label>
                             <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3" 
-                                      placeholder="e.g., Please bring ID, suitable for ages 18+, bring cash for drinks, dress casually"></textarea>
+                                      placeholder="e.g., Please bring ID, suitable for ages 18+, bring cash for drinks, dress casually">{% if event %}{{ event.tips_for_attendees }}{% endif %}</textarea>
                             <div class="form-text">Helpful tips and things attendees should know or bring</div>
                         </div>
                     </div>
@@ -134,12 +158,12 @@
                     
                     <!-- Submit -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{{ url_for('events_list') }}" class="btn btn-outline-secondary me-md-2">
+                        <a href="{% if event %}{{ url_for('event_detail', event_id=event.id) }}{% else %}{{ url_for('events_list') }}{% endif %}" class="btn btn-outline-secondary me-md-2">
                             Cancel
                         </a>
                         <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-calendar-plus me-2"></i>
-                            Create Event
+                            <i class="fas fa-{% if is_edit %}save{% else %}calendar-plus{% endif %} me-2"></i>
+                            {% if is_edit %}Update Event{% else %}Create Event{% endif %}
                         </button>
                     </div>
                 </form>
@@ -157,6 +181,9 @@
 {% block scripts %}
 {{ super() }}
 <script>
+// Organizers data from server
+const organizersData = {{ organizers|tojson if organizers else "[]" }};
+
 // Set minimum date to today
 document.addEventListener('DOMContentLoaded', function() {
     const dateInput = document.getElementById('date');
@@ -169,6 +196,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const now = new Date();
     now.setHours(now.getHours() + 1, 0, 0, 0);
     timeInput.value = now.toTimeString().slice(0, 5);
+    
+    // Load organizers from server data
+    loadOrganizers();
 });
+
+function loadOrganizers() {
+    const organizerSelect = document.getElementById('organizer_id');
+    const coHostSelect = document.getElementById('co_host_id');
+    const form = document.querySelector('form');
+    
+    if (organizersData.length === 0) {
+        organizerSelect.innerHTML = '<option value="">No organizers available</option>';
+        coHostSelect.innerHTML = '<option value="">No co-host</option>';
+        return;
+    }
+    
+    // Clear existing options (except placeholder for co-host)
+    organizerSelect.innerHTML = '';
+    coHostSelect.innerHTML = '<option value="">No co-host</option>';
+    
+    // Add organizers to both dropdowns
+    organizersData.forEach(organizer => {
+        const option1 = document.createElement('option');
+        option1.value = organizer.id;
+        option1.textContent = `${organizer.name} (${organizer.role})`;
+        
+        const option2 = document.createElement('option');
+        option2.value = organizer.id;
+        option2.textContent = `${organizer.name} (${organizer.role})`;
+        
+        organizerSelect.appendChild(option1);
+        coHostSelect.appendChild(option2);
+        
+        // Select current user as default organizer for new events
+        if (organizer.is_current_user && !form.dataset.currentOrganizer) {
+            option1.selected = true;
+        }
+    });
+    
+    // If we're editing an event, select the current organizer and co-host
+    if (form.dataset.currentOrganizer) {
+        organizerSelect.value = form.dataset.currentOrganizer;
+    }
+    if (form.dataset.currentCohost) {
+        coHostSelect.value = form.dataset.currentCohost;
+    }
+}
 </script>
 {% endblock %}

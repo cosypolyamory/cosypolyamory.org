@@ -48,8 +48,8 @@ class User(UserMixin, BaseModel):
     
     def can_organize_events(self):
         """Check if user can organize events"""
-        return self.is_organizer or self.is_admin
+        return self.role in ['admin', 'organizer']
     
     def can_see_full_event_details(self):
         """Check if user can see full event details"""
-        return self.is_approved or self.is_organizer or self.is_admin
+        return self.role in ['admin', 'organizer', 'approved']

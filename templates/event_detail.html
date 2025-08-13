@@ -117,7 +117,7 @@
                                 <i class="fas fa-check-circle me-2"></i>
                                 You're attending this event!
                             </h5>
-                            <form method="POST" action="{{ url_for('toggle_rsvp', event_id=event.id) }}" class="mt-3">
+                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mt-3">
                                 <button type="submit" class="btn btn-outline-danger">
                                     <i class="fas fa-times me-2"></i>Cancel RSVP
                                 </button>
@@ -125,7 +125,7 @@
                         {% else %}
                             {% if not event.max_attendees or rsvp_count < event.max_attendees %}
                                 <h5>Will you be attending?</h5>
-                                <form method="POST" action="{{ url_for('toggle_rsvp', event_id=event.id) }}" class="mt-3">
+                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mt-3">
                                     <button type="submit" class="btn btn-success btn-lg">
                                         <i class="fas fa-check me-2"></i>RSVP Yes
                                     </button>

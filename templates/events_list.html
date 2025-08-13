@@ -138,14 +138,14 @@
                                     
                                     {% if current_user.role == 'approved' and event.date_time > now %}
                                         {% if user_rsvps.get(event.id) %}
-                                            <form method="POST" action="{{ url_for('toggle_rsvp', event_id=event.id) }}" class="mb-0">
+                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm w-100">
                                                     <i class="fas fa-times me-1"></i>Cancel RSVP
                                                 </button>
                                             </form>
                                         {% else %}
                                             {% if not event.max_attendees or (rsvp_counts[event.id] or 0) < event.max_attendees %}
-                                                <form method="POST" action="{{ url_for('toggle_rsvp', event_id=event.id) }}" class="mb-0">
+                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
                                                     <button type="submit" class="btn btn-outline-success btn-sm w-100">
                                                         <i class="fas fa-check me-1"></i>RSVP
                                                     </button>

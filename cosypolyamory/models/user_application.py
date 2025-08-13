@@ -22,6 +22,8 @@ class UserApplication(BaseModel):
     question_3_answer = TextField(null=True)
     question_4_answer = TextField(null=True)
     question_5_answer = TextField(null=True)
+    question_6_answer = TextField(null=True)
+    question_7_answer = TextField(null=True)
     
     submitted_at = DateTimeField(default=datetime.now)
     reviewed_at = DateTimeField(null=True)

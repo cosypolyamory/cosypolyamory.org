@@ -347,6 +347,97 @@ def api_user():
         'role': current_user.get_role_display()
     })
 
+@app.route('/api/organizers')
+@login_required
+def api_organizers():
+    """Return list of users who can organize events"""
+    try:
+        # Get all users who can organize events (admins and organizers)
+        organizers = User.select().where(User.role.in_(['admin', 'organizer']))
+        
+        organizer_list = []
+        for organizer in organizers:
+            organizer_list.append({
+                'id': organizer.id,
+                'name': organizer.name,
+                'email': organizer.email,
+                'role': organizer.role,
+                'is_current_user': organizer.id == current_user.id
+            })
+        
+        # Sort by name
+        organizer_list.sort(key=lambda x: x['name'])
+        
+        return jsonify(organizer_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/users/<role>')
+@admin_required
+def api_admin_users_by_role(role):
+    """Return paginated list of users by role"""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+        
+        # Validate role
+        valid_roles = ['pending', 'approved', 'organizer', 'rejected', 'admin']
+        if role not in valid_roles:
+            return jsonify({'error': 'Invalid role'}), 400
+        
+        # Get users for this role
+        query = User.select().where(User.role == role).order_by(User.created_at.desc())
+        
+        # Calculate pagination
+        total = query.count()
+        users = query.paginate(page, per_page)
+        
+        user_list = []
+        for user in users:
+            user_list.append({
+                'id': user.id,
+                'name': user.name,
+                'email': user.email,
+                'avatar_url': user.avatar_url,
+                'provider': user.provider,
+                'role': user.role,
+                'created_at': user.created_at.isoformat(),
+                'last_login': user.last_login.isoformat() if user.last_login else None
+            })
+        
+        return jsonify({
+            'users': user_list,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'pages': (total + per_page - 1) // per_page
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<user_id>')
+@admin_required
+def api_user_details(user_id):
+    """Return detailed user information"""
+    try:
+        user = User.get_by_id(user_id)
+        return jsonify({
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'avatar_url': user.avatar_url,
+            'provider': user.provider,
+            'role': user.role,
+            'created_at': user.created_at.isoformat(),
+            'last_login': user.last_login.isoformat() if user.last_login else None
+        })
+    except User.DoesNotExist:
+        return jsonify({'error': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/admin/change-role', methods=['POST'])
 @admin_required
 def api_change_user_role():
@@ -390,7 +481,7 @@ def api_change_user_role():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/admin/delete-user', methods=['DELETE'])
+@app.route('/api/admin/delete-user', methods=['POST'])
 @admin_required
 def api_delete_user():
     """Delete a user (admin only)"""
@@ -410,6 +501,10 @@ def api_delete_user():
         # Prevent self-deletion
         if user.id == current_user.id:
             return jsonify({'success': False, 'error': 'Cannot delete your own account'})
+        
+        # Prevent deletion of admin users
+        if user.role == 'admin':
+            return jsonify({'success': False, 'error': 'Admin users cannot be deleted'})
         
         # Delete related records first (UserApplication, RSVP, etc.)
         from cosypolyamory.models.user_application import UserApplication
@@ -452,6 +547,8 @@ def apply():
         'question_3': os.getenv('APPLICATION_QUESTION_3', 'Question 3'),
         'question_4': os.getenv('APPLICATION_QUESTION_4', 'Question 4'),
         'question_5': os.getenv('APPLICATION_QUESTION_5', 'Question 5'),
+        'question_6': os.getenv('APPLICATION_QUESTION_6', 'Question 6'),
+        'question_7': os.getenv('APPLICATION_QUESTION_7', 'Question 7'),
     }
     
     return render_template('apply.html', questions=questions)
@@ -476,6 +573,8 @@ def submit_application():
         question_3_answer=request.form.get('question_3', ''),
         question_4_answer=request.form.get('question_4', ''),
         question_5_answer=request.form.get('question_5', ''),
+        question_6_answer=request.form.get('question_6', ''),
+        question_7_answer=request.form.get('question_7', ''),
     )
     
     flash('Your application has been submitted! You will be notified once it has been reviewed.', 'success')
@@ -545,9 +644,28 @@ def reject_application(application_id):
 @login_required
 def events_list():
     """List all events with appropriate visibility"""
-    events = Event.select().where(Event.is_active == True).order_by(Event.date)
+    from datetime import datetime
+    events = Event.select().where(Event.is_active == True).order_by(Event.exact_time)
     can_see_details = current_user.can_see_full_event_details()
-    return render_template('events_list.html', events=events, can_see_details=can_see_details)
+    
+    # Get user RSVPs for easy access in template
+    user_rsvps = {}
+    if current_user.role == 'approved':
+        rsvps = RSVP.select().where(RSVP.user == current_user, RSVP.status == 'attending')
+        user_rsvps = {rsvp.event.id: rsvp for rsvp in rsvps}
+    
+    # Get RSVP counts for each event
+    rsvp_counts = {}
+    for event in events:
+        count = RSVP.select().where(RSVP.event == event, RSVP.status == 'attending').count()
+        rsvp_counts[event.id] = count
+    
+    return render_template('events_list.html', 
+                         events=events, 
+                         can_see_details=can_see_details,
+                         user_rsvps=user_rsvps,
+                         rsvp_counts=rsvp_counts,
+                         now=datetime.now())
 
 @app.route('/events/<int:event_id>')
 @login_required
@@ -564,18 +682,16 @@ def event_detail(event_id):
         except RSVP.DoesNotExist:
             pass
         
-        # Get RSVP counts
-        rsvp_counts = {
-            'yes': RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count(),
-            'maybe': RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).count(),
-            'no': RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
-        }
+        # Get RSVP counts  
+        rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'attending')).count()
         
+        from datetime import datetime
         return render_template('event_detail.html', 
                              event=event, 
                              can_see_details=can_see_details,
                              user_rsvp=user_rsvp,
-                             rsvp_counts=rsvp_counts)
+                             rsvp_count=rsvp_count,
+                             now=datetime.now())
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
         return redirect(url_for('events_list'))
@@ -584,7 +700,19 @@ def event_detail(event_id):
 @organizer_required
 def create_event():
     """Create new event form"""
-    return render_template('create_event.html')
+    # Get organizers to pass to template
+    organizers = User.select().where(User.role.in_(['admin', 'organizer']))
+    organizer_list = []
+    for organizer in organizers:
+        organizer_list.append({
+            'id': organizer.id,
+            'name': organizer.name,
+            'role': organizer.role,
+            'is_current_user': organizer.id == current_user.id
+        })
+    organizer_list.sort(key=lambda x: x['name'])
+    
+    return render_template('create_event.html', organizers=organizer_list)
 
 @app.route('/events/create', methods=['POST'])
 @organizer_required
@@ -605,15 +733,38 @@ def create_event_post():
         location_notes = request.form.get('location_notes')
         tips_for_attendees = request.form.get('tips_for_attendees')
         max_attendees = request.form.get('max_attendees')
+        organizer_id = request.form.get('organizer_id')
         co_host_id = request.form.get('co_host_id', '')
+        
+        # Validate organizer
+        if not organizer_id:
+            flash('Please select a primary organizer.', 'error')
+            return redirect(url_for('create_event'))
+            
+        try:
+            organizer = User.get_by_id(organizer_id)
+            if not organizer.can_organize_events():
+                flash('Selected organizer does not have permission to organize events.', 'error')
+                return redirect(url_for('create_event'))
+        except User.DoesNotExist:
+            flash('Selected organizer not found.', 'error')
+            return redirect(url_for('create_event'))
+        
+        # Check permission: only admins or the selected organizer can create events for that organizer
+        if not (current_user.role == 'admin' or current_user.id == organizer_id):
+            flash('You can only create events as yourself unless you are an admin.', 'error')
+            return redirect(url_for('create_event'))
         
         # Parse dates and times
         date = dt.strptime(date_str, '%Y-%m-%d')
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
         
         # Validate Google Maps link
-        if not google_maps_link or 'maps.google' not in google_maps_link.lower():
-            flash('Please provide a valid Google Maps link.', 'error')
+        valid_maps_domains = ['maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps']
+        is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
+        
+        if not google_maps_link or not is_valid_maps_link:
+            flash('Please provide a valid Google Maps link (maps.google.com or maps.app.goo.gl).', 'error')
             return redirect(url_for('create_event'))
         
         # Handle co-host
@@ -639,7 +790,7 @@ def create_event_post():
             google_maps_link=google_maps_link,
             location_notes=location_notes or None,
             exact_time=exact_time,
-            organizer=current_user,
+            organizer=organizer,
             co_host=co_host,
             tips_for_attendees=tips_for_attendees or None,
             max_attendees=int(max_attendees) if max_attendees else None
@@ -654,6 +805,136 @@ def create_event_post():
     except Exception as e:
         flash(f'Unexpected error: {str(e)}', 'error')
         return redirect(url_for('create_event'))
+
+@app.route('/events/<int:event_id>/edit')
+@login_required
+def edit_event(event_id):
+    """Edit event form"""
+    try:
+        event = Event.get_by_id(event_id)
+        
+        # Check permissions - only admin, organizers, or event creator can edit
+        if not (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id):
+            flash('You do not have permission to edit this event.', 'error')
+            return redirect(url_for('event_detail', event_id=event_id))
+        
+        # Get organizers to pass to template
+        organizers = User.select().where(User.role.in_(['admin', 'organizer']))
+        organizer_list = []
+        for organizer in organizers:
+            organizer_list.append({
+                'id': organizer.id,
+                'name': organizer.name,
+                'role': organizer.role,
+                'is_current_user': organizer.id == current_user.id
+            })
+        organizer_list.sort(key=lambda x: x['name'])
+
+        return render_template('create_event.html', event=event, is_edit=True, organizers=organizer_list)
+    except Event.DoesNotExist:
+        flash('Event not found.', 'error')
+        return redirect(url_for('events_list'))
+
+@app.route('/events/<int:event_id>/edit', methods=['POST'])
+@login_required
+def edit_event_post(event_id):
+    """Update event"""
+    from datetime import datetime as dt
+    
+    try:
+        event = Event.get_by_id(event_id)
+        
+        # Check permissions
+        if not (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id):
+            flash('You do not have permission to edit this event.', 'error')
+            return redirect(url_for('event_detail', event_id=event_id))
+        
+        # Parse the form data
+        title = request.form.get('title')
+        description = request.form.get('description')
+        barrio = request.form.get('barrio')
+        time_period = request.form.get('time_period')
+        date_str = request.form.get('date')
+        time_str = request.form.get('time')
+        establishment_name = request.form.get('establishment_name')
+        google_maps_link = request.form.get('google_maps_link')
+        location_notes = request.form.get('location_notes')
+        tips_for_attendees = request.form.get('tips_for_attendees')
+        max_attendees = request.form.get('max_attendees')
+        organizer_id = request.form.get('organizer_id')
+        co_host_id = request.form.get('co_host_id', '')
+        
+        # Validate organizer
+        if not organizer_id:
+            flash('Please select a primary organizer.', 'error')
+            return redirect(url_for('edit_event', event_id=event_id))
+            
+        try:
+            organizer = User.get_by_id(organizer_id)
+            if not organizer.can_organize_events():
+                flash('Selected organizer does not have permission to organize events.', 'error')
+                return redirect(url_for('edit_event', event_id=event_id))
+        except User.DoesNotExist:
+            flash('Selected organizer not found.', 'error')
+            return redirect(url_for('edit_event', event_id=event_id))
+        
+        # Check permission: only admins or the original/new organizer can edit
+        if not (current_user.role == 'admin' or current_user.id == event.organizer_id or current_user.id == organizer_id):
+            flash('You can only edit events you organize unless you are an admin.', 'error')
+            return redirect(url_for('edit_event', event_id=event_id))
+        
+        # Parse dates and times
+        date = dt.strptime(date_str, '%Y-%m-%d')
+        exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
+        
+        # Validate Google Maps link
+        valid_maps_domains = ['maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps']
+        is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
+        
+        if not google_maps_link or not is_valid_maps_link:
+            flash('Please provide a valid Google Maps link (maps.google.com or maps.app.goo.gl).', 'error')
+            return redirect(url_for('edit_event', event_id=event_id))
+        
+        # Handle co-host
+        co_host = None
+        if co_host_id:
+            try:
+                co_host = User.get_by_id(co_host_id)
+                if not co_host.can_organize_events():
+                    flash('Co-host must be an organizer.', 'error')
+                    return redirect(url_for('edit_event', event_id=event_id))
+            except User.DoesNotExist:
+                flash('Co-host not found.', 'error')
+                return redirect(url_for('edit_event', event_id=event_id))
+        
+        # Update event
+        event.title = title
+        event.description = description
+        event.barrio = barrio
+        event.time_period = time_period
+        event.date = date
+        event.establishment_name = establishment_name
+        event.google_maps_link = google_maps_link
+        event.location_notes = location_notes or None
+        event.exact_time = exact_time
+        event.organizer = organizer
+        event.co_host = co_host
+        event.tips_for_attendees = tips_for_attendees or None
+        event.max_attendees = int(max_attendees) if max_attendees else None
+        event.save()
+        
+        flash(f'Event "{title}" has been updated successfully!', 'success')
+        return redirect(url_for('event_detail', event_id=event.id))
+        
+    except Event.DoesNotExist:
+        flash('Event not found.', 'error')
+        return redirect(url_for('events_list'))
+    except ValueError as e:
+        flash(f'Error updating event: {str(e)}', 'error')
+        return redirect(url_for('edit_event', event_id=event_id))
+    except Exception as e:
+        flash(f'Unexpected error: {str(e)}', 'error')
+        return redirect(url_for('edit_event', event_id=event_id))
 
 @app.route('/events/<int:event_id>/rsvp', methods=['POST'])
 @approved_user_required

@@ -28,6 +28,13 @@
                     This helps us maintain a safe and welcoming space for everyone.
                 </p>
                 
+                <div class="alert alert-info">
+                    <i class="fas fa-book me-2"></i>
+                    <strong>Please read our <a href="https://cosypolyamory.org/code-of-conduct" target="_blank" rel="noopener noreferrer">Code of Conduct</a> before answering the questions below.</strong>
+                    <br>
+                    <small>Understanding our community guidelines will help you provide better answers and show that you're aligned with our values.</small>
+                </div>
+                
                 <form method="POST" action="{{ url_for('submit_application') }}">
                     <div class="mb-4">
                         <label for="question_1" class="form-label">
@@ -65,8 +72,24 @@
                         <label for="question_5" class="form-label">
                             <strong>{{ questions.question_5 }}</strong>
                         </label>
-                        <textarea class="form-control" id="question_5" name="question_5" rows="4" 
-                                  placeholder="Optional - anything else you'd like us to know..."></textarea>
+                        <textarea class="form-control" id="question_5" name="question_5" rows="4" required
+                                  placeholder="Please share your thoughts..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="question_6" class="form-label">
+                            <strong>{{ questions.question_6 }}</strong>
+                        </label>
+                        <textarea class="form-control" id="question_6" name="question_6" rows="4" required
+                                  placeholder="Please share your thoughts..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="question_7" class="form-label">
+                            <strong>{{ questions.question_7 }}</strong>
+                        </label>
+                        <textarea class="form-control" id="question_7" name="question_7" rows="4" required
+                                  placeholder="Please share your thoughts..."></textarea>
                     </div>
                     
                     <div class="mb-3">
