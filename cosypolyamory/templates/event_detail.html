@@ -20,8 +20,35 @@
                 </div>
                 
                 <div class="card-body">
-                    <h1 class="card-title">{{ event.title }}</h1>
-                    <p class="card-text lead">{{ event.description }}</p>
+                    <h1 class="card-title mb-4">{{ event.title }}</h1>
+                    
+                    <!-- Date and Location Row - moved under title -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calendar me-2 text-primary"></i>Date</h6>
+                            <p>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
+                            {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
+                                <p>{{ event.establishment_name }}</p>
+                            {% else %}
+                                <p>{{ event.barrio }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Description Section -->
+                    <h6><i class="fas fa-info-circle me-2 text-primary"></i>Description</h6>
+                    <div class="card-text lead">
+                        {% if event.description %}
+                            {% for paragraph in event.description.split('\n') %}
+                                {% if paragraph.strip() %}
+                                    <p>{{ paragraph.strip() }}</p>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                     
                     
                     <!-- Event Details -->
@@ -75,34 +102,18 @@
                         </div>
                         {% endif %}
                         {% endif %}
-                        <!-- Date and Location Row -->
-                        <div class="col-md-6 mt-3">
-                            <h6><i class="fas fa-calendar me-2 text-primary"></i>Date</h6>
-                            <p>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
+                        
+                        <!-- Capacity Information -->
+                        {% if event.max_attendees %}
+                        <div class="col-12 mt-3">
+                            <h6><i class="fas fa-users me-2 text-primary"></i>Capacity</h6>
+                            <p>{{ rsvp_count }}/{{ event.max_attendees }} attendees</p>
+                            <div class="progress mb-2" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mt-3">
-                            <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
-                            {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
-                                <h6>{{ event.establishment_name }}</h6>
-                            {% else %}
-                                <p><i class="fas fa-map-marker-alt me-2"></i>{{ event.barrio }}</p>
-                            {% endif %}
-                        </div>
-                            <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
-                            {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
-                                <h6>{{ event.establishment_name }}</h6>
-                            {% else %}
-                                <p><i class="fas fa-map-marker-alt me-2"></i>{{ event.barrio }}</p>
-                            {% endif %}
-                            {% if event.max_attendees %}
-                                <h6><i class="fas fa-users me-2 text-primary"></i>Capacity</h6>
-                                <p>{{ rsvp_count }}/{{ event.max_attendees }} attendees</p>
-                                <div class="progress mb-2" style="height: 8px;">
-                                    <div class="progress-bar" role="progressbar" 
-                                         style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
-                                </div>
-                            {% endif %}
-                        </div>
+                        {% endif %}
                     </div>
 
                     {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
