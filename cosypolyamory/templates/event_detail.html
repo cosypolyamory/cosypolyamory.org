@@ -29,10 +29,9 @@
                         </div>
                         
                         <div class="d-flex flex-wrap gap-2">
-                            <a href="mailto:?subject={{ event.title | urlencode }}&body={{ 'Check out this event: ' + request.url | urlencode }}" 
-                               class="btn btn-outline-secondary btn-sm">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
                                 <i class="fas fa-share me-2"></i>Share Event
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -497,6 +496,106 @@
             {% endif %}
     </div>
 </div>
+
+<!-- Share Event Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">
+                    <i class="fas fa-share me-2"></i>Share Event
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-4">Choose the format you'd like to copy and share:</p>
+                
+                <!-- Format Selection Tabs -->
+                <ul class="nav nav-tabs mb-3" id="shareFormatTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="plain-tab" data-bs-toggle="tab" data-bs-target="#plain-content" type="button" role="tab">
+                            <i class="fas fa-file-alt me-2"></i>Plain Text
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" type="button" role="tab">
+                            <i class="fab fa-html5 me-2"></i>HTML
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="markdown-tab" data-bs-toggle="tab" data-bs-target="#markdown-content" type="button" role="tab">
+                            <i class="fab fa-markdown me-2"></i>Markdown
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Tab Content -->
+                <div class="tab-content" id="shareFormatTabsContent">
+                    <!-- Plain Text -->
+                    <div class="tab-pane fade show active" id="plain-content" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Plain Text Format:</strong>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="copyToClipboard('plain-text')">
+                                <i class="fas fa-copy me-2"></i>Copy
+                            </button>
+                        </div>
+                        <textarea id="plain-text" class="form-control" rows="8" readonly>{{ event.title }}
+
+Date: {{ event.exact_time.strftime('%A, %B %d, %Y') }}
+Approximate time: Morning
+Location: {{ event.barrio }}
+
+{{ event.description | striptags }}
+
+Log in or join our community for more details: {{ request.url }}</textarea>
+                    </div>
+                    
+                    <!-- HTML -->
+                    <div class="tab-pane fade" id="html-content" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>HTML Format:</strong>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="copyToClipboard('html-text')">
+                                <i class="fas fa-copy me-2"></i>Copy
+                            </button>
+                        </div>
+                        <textarea id="html-text" class="form-control" rows="8" readonly><h2>{{ event.title | e }}</h2>
+
+<p><strong>📅 Date:</strong> {{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
+<p><strong>🕐 Approximate time:</strong> Morning</p>
+<p><strong>📍 Location:</strong> {{ event.barrio | e }}</p>
+
+<p>{{ event.description | e | replace('\n', '<br>') | safe }}</p>
+
+<p><a href="{{ request.url }}">Log in or join our community for more details</a></p></textarea>
+                    </div>
+                    
+                    <!-- Markdown -->
+                    <div class="tab-pane fade" id="markdown-content" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Markdown Format:</strong>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="copyToClipboard('markdown-text')">
+                                <i class="fas fa-copy me-2"></i>Copy
+                            </button>
+                        </div>
+                        <textarea id="markdown-text" class="form-control" rows="8" readonly>## {{ event.title }}
+
+**📅 Date:** {{ event.exact_time.strftime('%A, %B %d, %Y') }}
+**🕐 Approximate time:** Morning
+**📍 Location:** {{ event.barrio }}
+
+{{ event.description | striptags }}
+
+[Log in or join our community for more details]({{ request.url }})</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block styles %}
@@ -628,5 +727,48 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Copy to clipboard function for share modal
+function copyToClipboard(elementId) {
+    const textarea = document.getElementById(elementId);
+    textarea.select();
+    textarea.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+        document.execCommand('copy');
+        
+        // Show success feedback
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-primary');
+        }, 2000);
+        
+    } catch (err) {
+        // Fallback for modern browsers
+        navigator.clipboard.writeText(textarea.value).then(() => {
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-success');
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+            }, 2000);
+        }).catch(() => {
+            alert('Could not copy to clipboard. Please select and copy manually.');
+        });
+    }
+}
 </script>
 {% endblock %}
