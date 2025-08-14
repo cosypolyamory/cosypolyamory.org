@@ -178,7 +178,7 @@ def create_sample_users():
         
         # Create application if needed
         if user_data['has_application']:
-            create_user_application(user, user_data['application_status'], fake)
+            create_user_application(user, user_data['application_status'])
     
     print(f"   ✅ Created {len(created_users)} users")
     print(f"      - 1 admin, 2 organizers")
@@ -188,46 +188,87 @@ def create_sample_users():
     
     return created_users
 
-def create_user_application(user, status, fake):
-    """Create a realistic user application"""
+def create_user_application(user, status):
+    """Create a user application with realistic responses"""
+    fake = Faker()
     
-    # Sample application responses
+    # Sample responses for each question based on the actual application questions
     sample_responses = {
-        'about_yourself': [
-            "I'm a software developer interested in ethical non-monogamy and building meaningful connections.",
-            "I work in healthcare and am exploring polyamory after ending a long-term monogamous relationship.", 
-            "I'm an artist and writer who believes in authentic communication and consensual relationships.",
-            "I'm a teacher who has been practicing polyamory for 2 years and looking for community.",
-            "I work in tech and am new to polyamory but excited to learn and connect with like-minded people."
+        'question_1': [  # Why interested in our group?
+            "I'm new to Barcelona and looking to connect with like-minded people in the polyamory community.",
+            "I've been practicing polyamory for a while and would love to meet others who share similar values.",
+            "I'm interested in learning more about ethical non-monogamy in a supportive environment.",
+            "I want to be part of a community where I can be open about my relationship style.",
+            "I'm looking for friendship, community, and possibly romantic connections in a safe space.",
+            "I've recently discovered polyamory and would like guidance from experienced practitioners.",
+            "I want to attend social events where I don't have to hide my relationship orientation."
         ],
-        'why_join': [
-            "I want to connect with other polyamorous people and learn from experienced practitioners.",
-            "I'm looking for a supportive community where I can be open about my relationship style.",
-            "I'd like to attend events and meet people who understand non-monogamy.",
-            "I want to learn more about polyamory and meet potential partners in a respectful environment.",
-            "I'm seeking community, friendship, and possibly romantic connections."
+        'question_2': [  # Experience with polyamory
+            "I'm completely new to polyamory but have done extensive reading and feel ready to explore.",
+            "I've been practicing polyamory for about 6 months and am still learning the ropes.",
+            "I've been polyamorous for 2 years and have had several meaningful relationships.",
+            "I've been in open relationships before but am new to the formal polyamory community.",
+            "I've been practicing ethical non-monogamy for over a year with my primary partner.",
+            "I'm just starting out but have been researching polyamory for several months.",
+            "I've been polyamorous for 3+ years and am experienced with multiple relationships."
         ],
-        'experience_polyamory': [
-            "I've been practicing polyamory for about 6 months and am still learning.",
-            "I've been in open relationships before but am new to the polyamory community.",
-            "I've been polyamorous for 2 years and have had a few meaningful relationships.",
-            "I'm completely new but have done a lot of reading and feel ready to explore.",
-            "I've been practicing ethical non-monogamy for over a year."
+        'question_3': [  # English level
+            "Native",
+            "Advanced",
+            "Upper Intermediate", 
+            "Intermediate",
+            "Advanced - I'm a native Spanish speaker but very comfortable in English",
+            "Upper Intermediate - I can communicate well but sometimes need clarification",
+            "Advanced - English is my second language but I'm fluent"
         ],
-        'community_guidelines': [
-            "Yes, I've read and agree to follow all community guidelines and the code of conduct.",
-            "I understand and agree to the community standards and will respect all members.",
-            "Yes, I commit to following the guidelines and creating a safe space for everyone."
+        'question_4': [  # Previous community experience
+            "No, this would be my first polyamory community but I'm excited to learn.",
+            "I was part of an online polyamory forum but haven't joined an in-person group before.",
+            "Yes, I was active in a poly meetup group in London before moving to Barcelona.",
+            "I've attended a few polyamory workshops but haven't been part of a regular community.",
+            "I was in a polyamory discussion group in my university but nothing since then.",
+            "No previous formal community experience, but I have poly friends who recommended your group.",
+            "I was part of a small poly social group in my previous city for about a year."
+        ],
+        'question_5': [  # About using group as dating service
+            "The group is not a dating service but a community for support, friendship, and social connection.",
+            "This is a community focused on friendship and support, not primarily for dating or hookups.",
+            "The group emphasizes community building and education rather than being a dating platform.",
+            "It's about creating genuine connections and community, not treating it like a dating app.",
+            "The focus should be on building friendships and community first, with dating being secondary.",
+            "This is a social community for polyamorous people, not a matchmaking service.",
+            "The group prioritizes authentic relationships and community over casual dating."
+        ],
+        'question_6': [  # About direct messages
+            "Direct messages should be respectful and consensual, not used for unwanted advances.",
+            "DMs should be used appropriately - for logistics, genuine conversation, not for harassment.",
+            "Direct messaging should respect boundaries and not be used to pressure anyone.",
+            "Messages should be sent with consent and respect, following community guidelines.",
+            "DMs are for appropriate communication only, not for unsolicited romantic/sexual messages.",
+            "Direct messages should follow the same respect and consent rules as in-person interactions.",
+            "Messaging should be consensual and respectful, not used to circumvent group boundaries."
+        ],
+        'question_7': [  # About monologues
+            "Conversations should be balanced - listen as much as you speak and make space for others.",
+            "Avoid dominating conversations; ensure everyone has a chance to participate and be heard.",
+            "Long monologues can exclude others from discussion - keep contributions proportional.",
+            "Be mindful of speaking time and make sure discussions remain inclusive for all participants.",
+            "Conversations work best when everyone can contribute - avoid monopolizing group discussions.",
+            "Share the conversational space and be aware of taking up too much time with personal stories.",
+            "Group discussions should involve everyone, not become one person's extended storytelling."
         ]
     }
     
     UserApplication.create(
         user=user,
         status=status,
-        about_yourself=random.choice(sample_responses['about_yourself']),
-        why_join=random.choice(sample_responses['why_join']), 
-        experience_polyamory=random.choice(sample_responses['experience_polyamory']),
-        community_guidelines_agreement=random.choice(sample_responses['community_guidelines']),
+        question_1_answer=random.choice(sample_responses['question_1']),
+        question_2_answer=random.choice(sample_responses['question_2']),
+        question_3_answer=random.choice(sample_responses['question_3']),
+        question_4_answer=random.choice(sample_responses['question_4']),
+        question_5_answer=random.choice(sample_responses['question_5']),
+        question_6_answer=random.choice(sample_responses['question_6']),
+        question_7_answer=random.choice(sample_responses['question_7']),
         submitted_at=fake.date_time_between(start_date='-2M', end_date='now')
     )
 
