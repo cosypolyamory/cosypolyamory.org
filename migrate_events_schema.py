@@ -8,11 +8,19 @@ Migration script to update Event schema with new fields:
 
 import sqlite3
 import sys
+import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Get database path from environment
+DATABASE_PATH = os.getenv('DATABASE_PATH', 'cosypolyamory.db')
 
 def migrate_events_schema():
     """Migrate the events table to the new schema"""
-    conn = sqlite3.connect('cosypolyamory.db')
+    conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
     try:
