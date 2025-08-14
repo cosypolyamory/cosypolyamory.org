@@ -3,60 +3,56 @@
 {% block title %}{{ event.title }}{% endblock %}
 
 {% block content %}
-<!-- Quick Actions - Top Right Sticky -->
-<div class="position-fixed" style="top: 80px; right: 20px; z-index: 1020; width: 250px;">
-    <div class="card shadow">
-        <div class="card-header">
-            <h6 class="mb-0">
-                <i class="fas fa-bolt me-2"></i>
-                Quick Actions
-            </h6>
-        </div>
-        <div class="card-body">
-            <div class="d-grid gap-2">
-                <a href="{{ url_for('events_list') }}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-arrow-left me-2"></i>Back to Events
-                </a>
-                
-                {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) %}
-                    <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-outline-warning btn-sm">
-                        <i class="fas fa-edit me-2"></i>Edit Event
-                    </a>
-                {% endif %}
-                
-                <a href="mailto:?subject={{ event.title | urlencode }}&body={{ 'Check out this event: ' + request.url | urlencode }}" 
-                   class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-share me-2"></i>Share Event
-                </a>
-                
-                {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] %}
-                    <a href="{{ url_for('create_event') }}" class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-plus me-2"></i>Create New Event
-                    </a>
-                {% endif %}
+<div class="container">
+    <!-- Quick Actions - Top Row -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body py-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('events_list') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Events
+                            </a>
+                            
+                            {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) %}
+                                <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
+                                    <i class="fas fa-edit me-2"></i>Edit Event
+                                </a>
+                            {% endif %}
+                            
+                            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] %}
+                                <a href="{{ url_for('create_event') }}" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-plus me-2"></i>Create New Event
+                                </a>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="mailto:?subject={{ event.title | urlencode }}&body={{ 'Check out this event: ' + request.url | urlencode }}" 
+                               class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-share me-2"></i>Share Event
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="container">
     <div class="row">
         <div class="col-12">
             <!-- Event Header -->
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <h1 class="card-title mb-0">{{ event.title }}</h1>
                         {% if event.exact_time < now %}
-                            <span class="badge bg-secondary">Past Event</span>
+                            <span class="badge bg-secondary fs-6">Past Event</span>
                         {% else %}
-                            <span class="badge bg-primary">Upcoming</span>
+                            <span class="badge bg-primary fs-6">Upcoming</span>
                         {% endif %}
                     </div>
-                    </div>
-                </div>
-                
-                <div class="card-body">
-                    <h1 class="card-title mb-4">{{ event.title }}</h1>
                     
                     <!-- Date and Location Row - moved under title -->
                     <div class="row mb-4">
