@@ -23,6 +23,7 @@ from cosypolyamory.models.user import User
 from cosypolyamory.models.event import Event
 from cosypolyamory.models.rsvp import RSVP
 from cosypolyamory.models.user_application import UserApplication
+from cosypolyamory.models.event_note import EventNote
 
 def get_user_confirmation():
     """Require explicit YES confirmation before proceeding"""
@@ -39,8 +40,9 @@ def get_user_confirmation():
         event_count = Event.select().count()
         rsvp_count = RSVP.select().count()
         app_count = UserApplication.select().count()
+        note_count = EventNote.select().count()
         
-        print(f"Current contents: {user_count} users, {event_count} events, {rsvp_count} RSVPs, {app_count} applications")
+        print(f"Current contents: {user_count} users, {event_count} events, {rsvp_count} RSVPs, {app_count} applications, {note_count} event notes")
         
         if user_count > 0:
             print("🚨 EXISTING DATA DETECTED - This will add to existing data!")
@@ -66,6 +68,11 @@ def clear_existing_test_data():
     print("🧹 Clearing existing test data...")
     
     try:
+        # Delete sample event notes
+        deleted_notes = EventNote.delete().where(
+            EventNote.name.in_(["Hiking Safety & Guidelines", "Social Drinks Guidelines"])
+        ).execute()
+        
         # Delete test users (those with IDs starting with 'test_user_')
         test_users = User.select().where(User.id.startswith('test_user_'))
         deleted_users = 0
@@ -82,6 +89,8 @@ def clear_existing_test_data():
             deleted_users += 1
         
         print(f"   ✅ Removed {deleted_users} test users and their related data")
+        if deleted_notes > 0:
+            print(f"   ✅ Removed {deleted_notes} sample event notes")
         
     except Exception as e:
         print(f"   ⚠️  Error clearing test data: {e}")
@@ -106,7 +115,7 @@ def create_sample_users():
         
         # Organizers (2)
         {
-            'name': 'Kirsten Organizer',
+            'name': 'Evil-Momma',
             'email': 'kirsten@example.com',
             'role': 'organizer', 
             'has_application': True,
@@ -416,6 +425,85 @@ def display_summary():
     print(f"📋 Applications: {total_apps} total")
     print(f"   - Pending: {pending_apps}")
     print(f"   - Approved: {approved_apps}")
+    
+    # Count event notes
+    total_notes = EventNote.select().count()
+    print(f"📝 Event Notes: {total_notes} total")
+
+def create_sample_event_notes():
+    """Create sample event notes with useful information"""
+    print("📝 Creating sample event notes...")
+    
+    # Hiking Event Note
+    hiking_note = EventNote.create(
+        name="Hiking Safety & Guidelines",
+        note="""🥾 **Hiking Event Guidelines**
+
+**What to Bring:**
+• Comfortable hiking shoes with good grip
+• Water bottle (at least 1L per person)
+• Snacks or light lunch
+• Weather-appropriate clothing (layers recommended)
+• Small backpack
+• Sunscreen and hat
+• Personal first aid items if needed
+
+**Safety Guidelines:**
+• Stay with the group - don't wander off alone
+• Inform the organizer of any medical conditions or limitations
+• Check weather conditions before departure
+• Let someone know your expected return time
+• Follow Leave No Trace principles
+
+**Meeting Point:**
+We'll meet at the specified location 15 minutes before departure time. Please arrive on time as we'll brief everyone about the route and safety considerations.
+
+**Difficulty Level:**
+This hike is suitable for beginners to intermediate levels. Total duration is approximately 3-4 hours including breaks.
+
+**Weather Policy:**
+In case of heavy rain or dangerous weather conditions, the event may be cancelled. Check for updates 2 hours before the event."""
+    )
+    
+    # Drinks Event Note
+    drinks_note = EventNote.create(
+        name="Social Drinks Guidelines",
+        note="""🍻 **Social Drinks Event Guidelines**
+
+**Code of Conduct Reminder:**
+This is a community event where our full Code of Conduct applies. Please review it before attending. Key points:
+
+• **Consent is Essential:** Always ask before physical contact, respect boundaries
+• **Inclusive Environment:** Welcome people of all backgrounds, experiences, and identities  
+• **No Harassment:** Zero tolerance for unwanted advances, inappropriate comments, or discriminatory behavior
+• **Respect Privacy:** Don't share personal information or photos without permission
+
+**Event Logistics:**
+• Arrive on time - we'll have reserved seating
+• Each person covers their own drinks and food
+• Please drink responsibly and know your limits
+• Designated meeting spot will be shared 1 hour before event
+
+**Creating Connections:**
+• Be open to meeting new people
+• Include others in conversations
+• Respect that not everyone may want to socialize the same way
+• Exchange contact info consensually
+
+**Safety:**
+• Look out for fellow community members
+• Report any concerns to organizers immediately
+• Plan your transportation home in advance
+• Stay hydrated and eat something if drinking
+
+Remember: This is about building community connections in a safe, respectful environment. Let's make everyone feel welcome! 🌟"""
+    )
+    
+    print(f"   ✅ Created 2 event notes:")
+    print(f"      - {hiking_note.name}")
+    print(f"      - {drinks_note.name}")
+    
+    return [hiking_note, drinks_note]
 
 def main():
     """Main execution function"""
@@ -438,6 +526,9 @@ def main():
         print()
         
         # Generate sample data
+        event_notes = create_sample_event_notes()
+        print()
+        
         users = create_sample_users()
         print()
         
