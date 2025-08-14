@@ -70,3 +70,12 @@ h4 {
 .navbar .dropdown-menu {
   z-index: 1050 !important;
 }
+
+/* Custom role badge colors */
+.bg-purple {
+  background-color: #6f42c1 !important;
+}
+
+.bg-orange {
+  background-color: #fd7e14 !important;
+}

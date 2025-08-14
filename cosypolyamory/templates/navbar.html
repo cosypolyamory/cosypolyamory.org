@@ -35,9 +35,9 @@
                 {% endif %}
                 <span class="text-truncate me-1">{{ current_user.display_name or current_user.username }}</span>
                 {% if current_user.role == 'admin' %}
-                  <span class="badge bg-danger ms-1 flex-shrink-0">Admin</span>
+                  <span class="badge bg-orange ms-1 flex-shrink-0">Admin</span>
                 {% elif current_user.role == 'organizer' %}
-                  <span class="badge bg-primary ms-1 flex-shrink-0">Org</span>
+                  <span class="badge bg-purple ms-1 flex-shrink-0">Org</span>
                 {% elif current_user.role == 'approved' %}
                   <span class="badge bg-success ms-1 flex-shrink-0">Member</span>
                 {% elif current_user.role == 'pending' %}
