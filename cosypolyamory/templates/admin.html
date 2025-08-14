@@ -356,26 +356,22 @@ function createUserCard(user) {
         new: 'New'
     };
     let applicationInfo = '';
-    if (user.has_application && user.application_id) {
-        // Show 'Review Application' for pending/new, 'See Application' for others
-        if (user.role === 'pending' || user.role === 'new') {
+    // Only show application buttons for pending users
+    if (user.role === 'pending' || user.role === 'new') {
+        if (user.has_application && user.application_id) {
             applicationInfo = `<div class="mt-1">
                 <a href="#" onclick="openApplicationReviewModal(${user.application_id})" class="btn btn-info fw-bold px-3 py-1" style="font-size:1rem;">Review Application</a>
             </div>`;
+        } else if (user.has_application && !user.application_id) {
+            applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-warning\">Application data unavailable</span></div>`;
         } else {
-            applicationInfo = `<div class="mt-1">
-                <a href="#" onclick="openApplicationReviewModal(${user.application_id})" class="btn btn-outline-info fw-bold px-3 py-1" style="font-size:1rem;">See Application</a>
-            </div>`;
+            applicationInfo = `<div class="mt-1"><span class="badge bg-secondary">No application submitted</span></div>`;
         }
-    } else if (user.has_application && !user.application_id) {
-        applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-warning\">Application data unavailable</span></div>`;
-    } else if (user.role === 'pending' || user.role === 'new') {
-        applicationInfo = `<div class="mt-1"><span class="badge bg-secondary">No application submitted</span></div>`;
     }
     return `
         <div class="user-card">
-            <div class="d-flex align-items-center">
-                <div class="me-3">
+            <div class="row align-items-center">
+                <div class="col-12 col-sm-auto me-3 mb-2 mb-sm-0">
                     ${user.avatar_url && user.avatar_url.trim() !== '' ? 
                         `<img src="${user.avatar_url}" alt="${user.name} Avatar" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 50px; height: 50px;\\'><i class=\\'fas fa-user text-white\\'></i></div>';">` :
                         `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
@@ -383,7 +379,7 @@ function createUserCard(user) {
                         </div>`
                     }
                 </div>
-                <div class="flex-grow-1">
+                <div class="col-12 col-sm">
                     <h6 class="mb-1">
                         <a href="javascript:void(0)" onclick="viewUser('${user.id}')" class="text-decoration-none" title="Click to view user details">
                             ${user.name}
@@ -392,14 +388,9 @@ function createUserCard(user) {
                     <p class="text-muted mb-1" title="${user.email}">
                         <i class="fas fa-envelope me-1"></i>${user.email}
                     </p>
-                    <small class="text-muted">
-                        <i class="fas fa-calendar me-1"></i>Joined ${new Date(user.created_at).toLocaleDateString()}
-                        <i class="fab fa-${user.provider} ms-2 me-1"></i>${user.provider}
-                    </small>
                     ${applicationInfo}
                 </div>
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-${roleColors[user.role]} role-badge me-3">${roleName[user.role]}</span>
+                <div class="col-12 col-sm-auto mt-2 mt-sm-0">
                     <div class="btn-group dropdown position-relative">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Click to change user role" aria-expanded="false">
                             Change role
