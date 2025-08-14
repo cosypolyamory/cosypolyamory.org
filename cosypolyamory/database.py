@@ -31,6 +31,7 @@ def init_database():
     from cosypolyamory.models.user_application import UserApplication
     from cosypolyamory.models.event import Event
     from cosypolyamory.models.rsvp import RSVP
+    from cosypolyamory.models.event_note import EventNote
     
     # Get absolute path for logging
     abs_db_path = os.path.abspath(DATABASE_PATH)
@@ -63,7 +64,7 @@ def init_database():
     
     try:
         database.connect()
-        database.create_tables([User, UserApplication, Event, RSVP], safe=True)
+        database.create_tables([User, UserApplication, Event, RSVP, EventNote], safe=True)
         
         # Create a "Deleted User" placeholder if it doesn't exist
         deleted_user, created = User.get_or_create(

@@ -911,7 +911,9 @@ def create_event():
         })
     organizer_list.sort(key=lambda x: x['name'])
     
-    return render_template('create_event.html', organizers=organizer_list)
+    # Get event notes for dropdown
+    event_notes = list(EventNote.select().order_by(EventNote.name))
+    return render_template('create_event.html', organizers=organizer_list, event_notes=event_notes)
 
 @app.route('/events/create', methods=['POST'])
 @organizer_required
@@ -1029,7 +1031,9 @@ def edit_event(event_id):
             })
         organizer_list.sort(key=lambda x: x['name'])
 
-        return render_template('create_event.html', event=event, is_edit=True, organizers=organizer_list)
+        # Get event notes for dropdown
+        event_notes = list(EventNote.select().order_by(EventNote.name))
+        return render_template('create_event.html', event=event, is_edit=True, organizers=organizer_list, event_notes=event_notes)
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
         return redirect(url_for('events_list'))
@@ -1189,6 +1193,59 @@ def admin():
     """Admin dashboard"""
     users = list(User.select())
     return render_template('admin.html', users=users)
+
+
+# Event Notes Admin Routes (admins and organizers only)
+from cosypolyamory.models.event_note import EventNote
+
+@app.route('/admin/event-notes')
+@admin_or_organizer_required
+def event_notes():
+    notes = EventNote.select().order_by(EventNote.name)
+    return render_template('event_notes.html', event_notes=notes)
+
+@app.route('/admin/event-notes/add', methods=['GET', 'POST'])
+@admin_or_organizer_required
+def add_event_note():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        note = request.form.get('note', '').strip()
+        if not name or not note:
+            flash('Both name and note are required.', 'error')
+            return render_template('add_event_note.html')
+        # Check for duplicate name
+        if EventNote.select().where(EventNote.name == name).exists():
+            flash('A note with this name already exists.', 'error')
+            return render_template('add_event_note.html')
+        EventNote.create(name=name, note=note)
+        flash('Event note added successfully.', 'success')
+        return redirect(url_for('event_notes'))
+    return render_template('add_event_note.html')
+
+@app.route('/admin/event-notes/<int:note_id>/edit', methods=['GET', 'POST'])
+@admin_or_organizer_required
+def edit_event_note(note_id):
+    try:
+        note = EventNote.get_by_id(note_id)
+    except EventNote.DoesNotExist:
+        flash('Event note not found.', 'error')
+        return redirect(url_for('event_notes'))
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        note_text = request.form.get('note', '').strip()
+        if not name or not note_text:
+            flash('Both name and note are required.', 'error')
+            return render_template('edit_event_note.html', note=note)
+        # Check for duplicate name (excluding self)
+        if EventNote.select().where((EventNote.name == name) & (EventNote.id != note.id)).exists():
+            flash('A note with this name already exists.', 'error')
+            return render_template('edit_event_note.html', note=note)
+        note.name = name
+        note.note = note_text
+        note.save()
+        flash('Event note updated successfully.', 'success')
+        return redirect(url_for('event_notes'))
+    return render_template('edit_event_note.html', note=note)
 
 # Register additional API routes
 import cosypolyamory.api_admin_application

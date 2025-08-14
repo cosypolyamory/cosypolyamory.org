@@ -57,15 +57,16 @@
                 {% endif %}
                 
                 <!-- Admin/Organizer tools -->
+
                 {% if current_user.role in ['admin', 'organizer'] %}
                   <li><hr class="dropdown-divider"></li>
                   <li><h6 class="dropdown-header">Organizer Tools</h6></li>
                   <li><a class="dropdown-item" href="{{ url_for('create_event') }}">
                     <i class="fas fa-calendar-plus me-2"></i>Create Event
                   </a></li>
-                {% endif %}
-                
-                {% if current_user.role in ['admin', 'organizer'] %}
+                  <li><a class="dropdown-item" href="{{ url_for('event_notes') }}">
+                    <i class="fas fa-sticky-note me-2"></i>Event Notes
+                  </a></li>
                   <li><a class="dropdown-item" href="{{ url_for('moderate_applications') }}">
                     <i class="fas fa-gavel me-2"></i>Review Applications
                   </a></li>

@@ -138,10 +138,18 @@
                         </div>
                         
                         <div class="col-12 mb-3">
-                            <label for="tips_for_attendees" class="form-label">Tips for Attendees</label>
-                            <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3" 
-                                      placeholder="e.g., Please bring ID, suitable for ages 18+, bring cash for drinks, dress casually">{% if event %}{{ event.tips_for_attendees }}{% endif %}</textarea>
-                            <div class="form-text">Helpful tips and things attendees should know or bring</div>
+                            <label class="form-label">Event Notes</label>
+                            <select class="form-select mb-2" id="event_note_select">
+                                <option value="">-- Select a standard event note --</option>
+                                {% for note in event_notes %}
+                                    <option value="{{ note.id }}" data-note="{{ note.note|tojson }}"{% if event and event.event_note_id == note.id %} selected{% endif %}>{{ note.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="selected_event_note_box" class="border rounded bg-light p-2 mb-2" style="display:none; white-space:pre-line;"></div>
+                            <label for="tips_for_attendees" class="form-label">Additional notes for this event</label>
+                            <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3"
+                                      placeholder="Add any event-specific notes here">{% if event %}{{ event.tips_for_attendees }}{% endif %}</textarea>
+                            <div class="form-text">You can add extra notes for this event. The selected standard note will be shown above.</div>
                         </div>
                     </div>
                     
@@ -286,5 +294,42 @@ function loadOrganizers() {
         }
     });
 }
+// Event Notes dropdown logic
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('event_note_select');
+    const noteBox = document.getElementById('selected_event_note_box');
+    function updateNotePreview() {
+        const selected = select.options[select.selectedIndex];
+        let note = selected.getAttribute('data-note');
+        if (note && select.value) {
+            try {
+                note = JSON.parse(note);
+            } catch (e) {
+                // fallback: use as-is
+            }
+            // Show only the first 5 lines, format as paragraphs (split on double newlines for paragraphs)
+            let lines = note.split(/\r?\n/).slice(0, 5);
+            let preview = lines.join('\n');
+            let paragraphs = preview.split(/\n\s*\n/);
+            noteBox.innerHTML = '';
+            paragraphs.forEach(paragraph => {
+                if (paragraph.trim()) {
+                    const p = document.createElement('p');
+                    p.textContent = paragraph;
+                    noteBox.appendChild(p);
+                }
+            });
+            noteBox.style.display = '';
+        } else {
+            noteBox.innerHTML = '';
+            noteBox.style.display = 'none';
+        }
+    }
+    if (select && noteBox) {
+        select.addEventListener('change', updateNotePreview);
+        // Show preview on page load if a note is already selected
+        updateNotePreview();
+    }
+});
 </script>
 {% endblock %}
