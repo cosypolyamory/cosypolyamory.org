@@ -87,7 +87,7 @@
                     </div>
                     
                     <!-- Attendees Section -->
-                    {% if rsvps and can_see_details %}
+                    {% if (rsvps or rsvps_no) and can_see_details %}
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <div class="card">
@@ -98,20 +98,61 @@
                                     </h6>
                                 </div>
                                 <div class="card-body" style="max-height: 300px; overflow-y: auto;">
-                                    {% for rsvp in rsvps %}
-                                        <div class="d-flex align-items-center mb-2">
-                                            <div class="me-2">
-                                                <i class="fas fa-user-circle fa-lg text-muted"></i>
+                                    {% if rsvps %}
+                                        {% for rsvp in rsvps %}
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="me-2">
+                                                    <i class="fas fa-user-circle fa-lg text-success"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ rsvp.user.name }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        Confirmed {{ rsvp.created_at.strftime('%b %d') }}
+                                                    </small>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <strong>{{ rsvp.user.name }}</strong>
-                                                <br>
-                                                <small class="text-muted">
-                                                    Confirmed {{ rsvp.created_at.strftime('%b %d') }}
-                                                </small>
-                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted text-center py-3">
+                                            <i class="fas fa-users fa-2x mb-2"></i>
+                                            <p>No one has confirmed attendance yet.</p>
                                         </div>
-                                    {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user-times me-2"></i>
+                                        Not Attending ({{ rsvp_no_count }})
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                                    {% if rsvps_no %}
+                                        {% for rsvp in rsvps_no %}
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="me-2">
+                                                    <i class="fas fa-user-circle fa-lg text-danger"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ rsvp.user.name }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        Confirmed {{ rsvp.created_at.strftime('%b %d') }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted text-center py-3">
+                                            <i class="fas fa-user-times fa-2x mb-2"></i>
+                                            <p>No one has said they can't attend.</p>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

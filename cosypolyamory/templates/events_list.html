@@ -224,14 +224,14 @@
                                                                 <button type="button" class="btn btn-outline-success btn-sm w-100 attendance-btn" 
                                                                         data-event-id="{{ event.id }}" data-status="yes" data-current="no"
                                                                         style="font-size: 0.75rem;">
-                                                                    <i class="fas fa-check me-1"></i>I want to go!
+                                                                    <i class="fas fa-check me-1"></i>I can now go!
                                                                 </button>
                                                             </div>
                                                             <div class="col-6">
                                                                 <button type="button" class="btn btn-danger btn-sm w-100 attendance-btn" 
                                                                         data-event-id="{{ event.id }}" data-status="yes" data-current="no"
                                                                         style="font-size: 0.75rem;" disabled>
-                                                                    <i class="fas fa-times me-1"></i>I can't
+                                                                    <i class="fas fa-times me-1"></i>I can't go
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -265,7 +265,7 @@
                                                                 <button type="button" class="btn btn-outline-danger btn-sm w-100 attendance-btn" 
                                                                         data-event-id="{{ event.id }}" data-status="no" data-current="none"
                                                                         style="font-size: 0.75rem;">
-                                                                    <i class="fas fa-times me-1"></i>I can't
+                                                                    <i class="fas fa-times me-1"></i>I can't go
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         } else if (newStatus === 'no') {
-            // User can't go - show two buttons: outline "I want to go!" and solid red "I can't"
+            // User can't go - show two buttons: outline "I can now go!" and solid red "I can't go"
             attendanceContainer.innerHTML = `
                 <div class="d-grid gap-1">
                     <div class="row g-1">
@@ -512,14 +512,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             <button type="button" class="btn btn-outline-success btn-sm w-100 attendance-btn" 
                                     data-event-id="${eventId}" data-status="yes" data-current="no"
                                     style="font-size: 0.75rem;">
-                                <i class="fas fa-check me-1"></i>I want to go!
+                                <i class="fas fa-check me-1"></i>I can now go!
                             </button>
                         </div>
                         <div class="col-6">
                             <button type="button" class="btn btn-danger btn-sm w-100 attendance-btn" 
                                     data-event-id="${eventId}" data-status="yes" data-current="no"
                                     style="font-size: 0.75rem;" disabled>
-                                <i class="fas fa-times me-1"></i>I can't
+                                <i class="fas fa-times me-1"></i>I can't go
                             </button>
                         </div>
                     </div>

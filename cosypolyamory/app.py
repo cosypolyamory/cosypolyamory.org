@@ -939,6 +939,9 @@ def event_detail(event_id):
         # Get RSVPs for attendees list (only "yes" RSVPs)
         rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
         
+        # Get RSVPs for non-attendees list (only "no" RSVPs)
+        rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+        
         # Extract Google Maps information
         google_maps_info = extract_google_maps_info(event.google_maps_link) if event.google_maps_link else None
         
@@ -950,6 +953,7 @@ def event_detail(event_id):
                              rsvp_count=rsvp_count,
                              rsvp_no_count=rsvp_no_count,
                              rsvps=rsvps,
+                             rsvps_no=rsvps_no,
                              google_maps_api_key=os.getenv('GOOGLE_MAPS_API_KEY'),
                              google_maps_info=google_maps_info,
                              now=datetime.now())
