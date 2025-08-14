@@ -190,9 +190,14 @@ def approved_user_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': 'Please log in to continue.'})
             return redirect(url_for('login'))
-        if not current_user.is_approved and not current_user.is_organizer and not current_user.is_admin:
-            flash('Community approval required to access this feature.', 'info')
+        if current_user.role not in ['approved', 'admin', 'organizer']:
+            message = 'Community approval required to access this feature.'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': message})
+            flash(message, 'info')
             return redirect(url_for('application_status'))
         return f(*args, **kwargs)
     return decorated_function
@@ -894,7 +899,7 @@ def events_list():
     
     # Get user RSVPs for easy access in template
     user_rsvps = {}
-    if current_user.is_authenticated and current_user.role == 'approved':
+    if current_user.is_authenticated and current_user.role in ['approved', 'admin', 'organizer']:
         rsvps = RSVP.select().where(RSVP.user == current_user)
         user_rsvps = {rsvp.event.id: rsvp for rsvp in rsvps}
     
@@ -912,6 +917,7 @@ def events_list():
                          now=datetime.now())
 
 @app.route('/events/<int:event_id>')
+@approved_user_required
 def event_detail(event_id):
     """Show event details"""
     try:
@@ -1234,13 +1240,22 @@ def rsvp_event(event_id):
             try:
                 rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
                 rsvp.delete_instance()
-                flash('RSVP cancelled', 'success')
+                message = 'Attendance cancelled'
+                if request.headers.get('Accept') == 'application/json':
+                    return jsonify({'success': True, 'message': message, 'status': None})
+                flash(message, 'success')
             except RSVP.DoesNotExist:
-                flash('No RSVP found to cancel.', 'info')
+                message = 'No attendance record found to cancel.'
+                if request.headers.get('Accept') == 'application/json':
+                    return jsonify({'success': False, 'message': message})
+                flash(message, 'info')
             return redirect(url_for('event_detail', event_id=event_id))
         
         if status not in ['yes', 'no', 'maybe']:
-            flash('Invalid RSVP status.', 'error')
+            message = 'Invalid attendance status.'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': message})
+            flash(message, 'error')
             return redirect(url_for('event_detail', event_id=event_id))
         
         # Update or create RSVP
@@ -1250,8 +1265,11 @@ def rsvp_event(event_id):
             rsvp.notes = notes
             rsvp.updated_at = datetime.now()
             rsvp.save()
-            status_text = 'Attending' if status == 'yes' else 'Not Attending' if status == 'no' else 'Maybe'
-            flash(f'RSVP updated to "{status_text}"', 'success')
+            status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
+            message = f'Attendance confirmed: {status_text}'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': True, 'message': message, 'status': status})
+            flash(message, 'success')
         except RSVP.DoesNotExist:
             RSVP.create(
                 event=event,
@@ -1259,13 +1277,19 @@ def rsvp_event(event_id):
                 status=status,
                 notes=notes
             )
-            status_text = 'Attending' if status == 'yes' else 'Not Attending' if status == 'no' else 'Maybe'
-            flash(f'RSVP set to "{status_text}"', 'success')
+            status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
+            message = f'Attendance confirmed: {status_text}'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': True, 'message': message, 'status': status})
+            flash(message, 'success')
         
         return redirect(url_for('event_detail', event_id=event_id))
         
     except Event.DoesNotExist:
-        flash('Event not found.', 'error')
+        message = 'Event not found.'
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': message})
+        flash(message, 'error')
         return redirect(url_for('events_list'))
 
 @app.route('/admin')

@@ -111,7 +111,7 @@
                                                 <strong>{{ rsvp.user.name }}</strong>
                                                 <br>
                                                 <small class="text-muted">
-                                                    RSVP'd {{ rsvp.created_at.strftime('%b %d') }}
+                                                    Confirmed {{ rsvp.created_at.strftime('%b %d') }}
                                                 </small>
                                             </div>
                                         </div>
@@ -122,83 +122,64 @@
                     </div>
                     {% endif %}
                     
-                    <!-- RSVP Section - moved under description -->
+                    <!-- Attendance Confirmation Section - moved under description -->
                     {% if can_see_details and event.exact_time > now %}
                     <div class="row mt-4 mb-4">
                         <div class="col-12">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    {% if user_rsvp and user_rsvp.status == 'yes' %}
-                                        <h5 class="text-success">
-                                            <i class="fas fa-check-circle me-2"></i>
-                                            You're attending this event!
-                                        </h5>
-                                        <div class="mt-3">
-                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block me-2">
-                                                <input type="hidden" name="status" value="no">
-                                                <button type="submit" class="btn btn-danger">
-                                                    <i class="fas fa-times me-2"></i>Change to No
-                                                </button>
-                                            </form>
-                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block">
-                                                <input type="hidden" name="status" value="">
-                                                <button type="submit" class="btn btn-outline-secondary">
-                                                    <i class="fas fa-trash me-2"></i>Cancel RSVP
-                                                </button>
-                                            </form>
-                                        </div>
-                                    {% elif user_rsvp and user_rsvp.status == 'no' %}
-                                        <h5 class="text-danger">
-                                            <i class="fas fa-times-circle me-2"></i>
-                                            You're not attending this event
-                                        </h5>
-                                        <div class="mt-3">
-                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block me-2">
-                                                <input type="hidden" name="status" value="yes">
-                                                <button type="submit" class="btn btn-outline-success">
-                                                    <i class="fas fa-check me-2"></i>Change to Yes
-                                                </button>
-                                            </form>
-                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block">
-                                                <input type="hidden" name="status" value="">
-                                                <button type="submit" class="btn btn-outline-secondary">
-                                                    <i class="fas fa-trash me-2"></i>Cancel RSVP
-                                                </button>
-                                            </form>
-                                        </div>
-                                    {% else %}
-                                        {% if not event.max_attendees or rsvp_count < event.max_attendees %}
-                                            <h5>Will you be attending?</h5>
+                                    <div id="attendance-section">
+                                        {% if user_rsvp and user_rsvp.status == 'yes' %}
+                                            <h5 class="text-success">
+                                                <i class="fas fa-check-circle me-2"></i>
+                                                You're going to this event!
+                                            </h5>
                                             <div class="mt-3">
-                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block me-2">
-                                                    <input type="hidden" name="status" value="yes">
-                                                    <button type="submit" class="btn btn-success btn-lg">
-                                                        <i class="fas fa-check me-2"></i>RSVP Yes
-                                                    </button>
-                                                </form>
-                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block">
-                                                    <input type="hidden" name="status" value="no">
-                                                    <button type="submit" class="btn btn-danger btn-lg">
-                                                        <i class="fas fa-times me-2"></i>RSVP No
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn btn-success btn-lg me-2" id="attending-btn" disabled>
+                                                    <i class="fas fa-check me-2"></i>I'm going
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-lg" id="not-attending-btn" data-status="no">
+                                                    <i class="fas fa-times me-2"></i>I can't go
+                                                </button>
+                                            </div>
+                                        {% elif user_rsvp and user_rsvp.status == 'no' %}
+                                            <h5 class="text-muted">
+                                                <i class="fas fa-times-circle me-2"></i>
+                                                You can't make this event
+                                            </h5>
+                                            <div class="mt-3">
+                                                <button type="button" class="btn btn-outline-success btn-lg me-2" id="attending-btn" data-status="yes">
+                                                    <i class="fas fa-check me-2"></i>I want to go!
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-lg" id="not-attending-btn" disabled>
+                                                    <i class="fas fa-times me-2"></i>I can't
+                                                </button>
                                             </div>
                                         {% else %}
-                                            <h5 class="text-muted">
-                                                <i class="fas fa-users me-2"></i>
-                                                Event is Full
-                                            </h5>
-                                            <p>This event has reached its maximum capacity.</p>
-                                            <div class="mt-3">
-                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="d-inline-block">
-                                                    <input type="hidden" name="status" value="no">
-                                                    <button type="submit" class="btn btn-danger">
-                                                        <i class="fas fa-times me-2"></i>RSVP No
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
+                                                <h5>Will you be attending?</h5>
+                                                <div class="mt-3">
+                                                    <button type="button" class="btn btn-outline-success btn-lg me-2" id="attending-btn" data-status="yes">
+                                                        <i class="fas fa-check me-2"></i>I want to go!
                                                     </button>
-                                                </form>
-                                            </div>
+                                                    <button type="button" class="btn btn-outline-danger btn-lg" id="not-attending-btn" data-status="no">
+                                                        <i class="fas fa-times me-2"></i>I can't
+                                                    </button>
+                                                </div>
+                                            {% else %}
+                                                <h5 class="text-muted">
+                                                    <i class="fas fa-users me-2"></i>
+                                                    Event is Full
+                                                </h5>
+                                                <p>This event has reached its maximum capacity.</p>
+                                                <div class="mt-3">
+                                                    <button type="button" class="btn btn-outline-danger btn-lg" id="not-attending-btn" data-status="no">
+                                                        <i class="fas fa-times me-2"></i>I can't
+                                                    </button>
+                                                </div>
+                                            {% endif %}
                                         {% endif %}
-                                    {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -419,7 +400,7 @@
                         <div class="col-12">
                             <div class="alert alert-info">
                                 <h6><i class="fas fa-info-circle me-2"></i>Want to attend events?</h6>
-                                <p class="mb-2">You need to be an approved community member to RSVP to events.</p>
+                                <p class="mb-2">You need to be an approved community member to confirm your attendance at events.</p>
                                 {% if not current_user.is_authenticated %}
                                     <a href="{{ url_for('login') }}" class="btn btn-primary">
                                         <i class="fas fa-sign-in-alt me-2"></i>Login to Apply
@@ -457,11 +438,11 @@
                             <div class="row text-center">
                                 <div class="col-md-2">
                                     <h4 class="text-success">{{ rsvp_count }}</h4>
-                                    <small class="text-muted">RSVP Yes</small>
+                                    <small class="text-muted">Going</small>
                                 </div>
                                 <div class="col-md-2">
                                     <h4 class="text-danger">{{ rsvp_no_count or 0 }}</h4>
-                                    <small class="text-muted">RSVP No</small>
+                                    <small class="text-muted">Can't Go</small>
                                 </div>
                                 <div class="col-md-2">
                                     <h4 class="text-info">{{ views_count or 0 }}</h4>
@@ -492,4 +473,127 @@
 .bg-orange { background-color: #fd7e14 !important; }
 .bg-purple { background-color: #6f42c1 !important; }
 </style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const attendingBtn = document.getElementById('attending-btn');
+    const notAttendingBtn = document.getElementById('not-attending-btn');
+    const eventId = {{ event.id }};
+    
+    function updateAttendanceStatus(status, button) {
+        // Show loading state
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+        
+        // Make AJAX request
+        fetch(`/events/${eventId}/rsvp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: `status=${status}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateButtonStates(data.status);
+                showMessage(data.message, 'success');
+                
+                // Update page title message
+                const attendanceSection = document.getElementById('attendance-section');
+                const titleElement = attendanceSection.querySelector('h5');
+                if (status === 'yes') {
+                    titleElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>You\'re going to this event!';
+                    titleElement.className = 'text-success';
+                } else if (status === 'no') {
+                    titleElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>You can\'t make this event';
+                    titleElement.className = 'text-muted';
+                }
+            } else {
+                showMessage(data.message, 'error');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('An error occurred while updating your attendance.', 'error');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+    
+    function updateButtonStates(status) {
+        if (status === 'yes') {
+            // User is going - green solid button for "I'm going", outline for "I can't"
+            attendingBtn.className = 'btn btn-success btn-lg me-2';
+            attendingBtn.innerHTML = '<i class="fas fa-check me-2"></i>I\'m going';
+            attendingBtn.disabled = true;
+            attendingBtn.removeAttribute('data-status');
+            
+            notAttendingBtn.className = 'btn btn-outline-danger btn-lg';
+            notAttendingBtn.innerHTML = '<i class="fas fa-times me-2"></i>I can\'t go';
+            notAttendingBtn.disabled = false;
+            notAttendingBtn.setAttribute('data-status', 'no');
+        } else if (status === 'no') {
+            // User can't go - outline for "I want to go!", solid red for "I can't"
+            attendingBtn.className = 'btn btn-outline-success btn-lg me-2';
+            attendingBtn.innerHTML = '<i class="fas fa-check me-2"></i>I want to go!';
+            attendingBtn.disabled = false;
+            attendingBtn.setAttribute('data-status', 'yes');
+            
+            notAttendingBtn.className = 'btn btn-danger btn-lg';
+            notAttendingBtn.innerHTML = '<i class="fas fa-times me-2"></i>I can\'t';
+            notAttendingBtn.disabled = true;
+            notAttendingBtn.removeAttribute('data-status');
+        }
+    }
+    
+    function showMessage(message, type) {
+        // Create a simple alert message
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert the message at the top of the attendance section
+        const attendanceSection = document.getElementById('attendance-section');
+        attendanceSection.insertBefore(alertDiv, attendanceSection.firstChild);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+    }
+    
+    // Attach event listeners
+    if (attendingBtn) {
+        attendingBtn.addEventListener('click', function() {
+            const status = this.getAttribute('data-status');
+            if (status) {
+                updateAttendanceStatus(status, this);
+            }
+        });
+    }
+    
+    if (notAttendingBtn) {
+        notAttendingBtn.addEventListener('click', function() {
+            const status = this.getAttribute('data-status');
+            if (status) {
+                updateAttendanceStatus(status, this);
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

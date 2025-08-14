@@ -112,78 +112,116 @@
                             
                             <div class="card-footer">
                                 <div class="d-grid gap-2">
-                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline-primary">
-                                        <i class="fas fa-info-circle me-2"></i>View details
-                                    </a>
+                                    {% if current_user.role in ['approved', 'admin', 'organizer'] %}
+                                        <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-info-circle me-2"></i>View details
+                                        </a>
+                                    {% else %}
+                                        <!-- Message for non-approved users -->
+                                        {% if not current_user.is_authenticated %}
+                                            <div class="text-center py-2">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-lock me-1"></i>
+                                                    <a href="{{ url_for('login') }}" class="text-decoration-none">Login</a> to see event details
+                                                </small>
+                                            </div>
+                                        {% elif current_user.role in ['new', 'pending'] %}
+                                            <div class="text-center py-2">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    Community approval required for details
+                                                </small>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
                                     
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] and event.exact_time > now %}
-                                        {% set user_rsvp = user_rsvps.get(event.id) %}
-                                        {% if user_rsvp %}
-                                            {% if user_rsvp.status == 'yes' %}
-                                                <!-- Already RSVP'd Yes - show green button -->
-                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                    <input type="hidden" name="status" value="no">
-                                                    <button type="submit" class="btn btn-success btn-sm w-100">
-                                                        <i class="fas fa-check me-1"></i>RSVP Yes
-                                                    </button>
-                                                </form>
-                                            {% elif user_rsvp.status == 'no' %}
-                                                <!-- Already RSVP'd No - show red button -->
-                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                    <input type="hidden" name="status" value="yes">
-                                                    <button type="submit" class="btn btn-danger btn-sm w-100">
-                                                        <i class="fas fa-times me-1"></i>RSVP No
-                                                    </button>
-                                                </form>
-                                            {% elif user_rsvp.status == 'maybe' %}
-                                                <!-- Already RSVP'd Maybe - show yellow button -->
-                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                    <input type="hidden" name="status" value="yes">
-                                                    <button type="submit" class="btn btn-warning btn-sm w-100">
-                                                        <i class="fas fa-question me-1"></i>RSVP Maybe
-                                                    </button>
-                                                </form>
-                                            {% elif user_rsvp.status == 'waitlist' %}
-                                                <!-- Waitlisted - show secondary button -->
-                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                    <input type="hidden" name="status" value="yes">
-                                                    <button type="submit" class="btn btn-secondary btn-sm w-100">
-                                                        <i class="fas fa-clock me-1"></i>RSVP Waitlist
-                                                    </button>
-                                                </form>
-                                            {% endif %}
-                                        {% else %}
-                                            <!-- Not RSVP'd yet - show Yes and No buttons -->
-                                            {% if not event.max_attendees or (rsvp_counts[event.id] or 0) < event.max_attendees %}
-                                                <div class="d-grid gap-1">
-                                                    <div class="row g-1">
-                                                        <div class="col-6">
-                                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                                <input type="hidden" name="status" value="yes">
-                                                                <button type="submit" class="btn btn-outline-success btn-sm w-100" style="font-size: 0.75rem;">
-                                                                    <i class="fas fa-check me-1"></i>RSVP Yes
+                                        <div class="attendance-buttons-container">
+                                            {% set user_rsvp = user_rsvps.get(event.id) %}
+                                            {% if user_rsvp %}
+                                                {% if user_rsvp.status == 'yes' %}
+                                                    <!-- Already confirmed going - show green button -->
+                                                    <div class="d-grid gap-1">
+                                                        <div class="row g-1">
+                                                            <div class="col-6">
+                                                                <button type="button" class="btn btn-success btn-sm w-100 attendance-btn" 
+                                                                        data-event-id="{{ event.id }}" data-status="no" data-current="yes"
+                                                                        style="font-size: 0.75rem;" disabled>
+                                                                    <i class="fas fa-check me-1"></i>I'm going
                                                                 </button>
-                                                            </form>
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                                <input type="hidden" name="status" value="no">
-                                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;">
-                                                                    <i class="fas fa-times me-1"></i>RSVP No
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button type="button" class="btn btn-outline-danger btn-sm w-100 attendance-btn" 
+                                                                        data-event-id="{{ event.id }}" data-status="no" data-current="yes"
+                                                                        style="font-size: 0.75rem;">
+                                                                    <i class="fas fa-times me-1"></i>I can't anymore
                                                                 </button>
-                                                            </form>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                {% elif user_rsvp.status == 'no' %}
+                                                    <!-- Already confirmed can't go - show red button -->
+                                                    <div class="d-grid gap-1">
+                                                        <div class="row g-1">
+                                                            <div class="col-6">
+                                                                <button type="button" class="btn btn-outline-success btn-sm w-100 attendance-btn" 
+                                                                        data-event-id="{{ event.id }}" data-status="yes" data-current="no"
+                                                                        style="font-size: 0.75rem;">
+                                                                    <i class="fas fa-check me-1"></i>I want to go!
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button type="button" class="btn btn-danger btn-sm w-100 attendance-btn" 
+                                                                        data-event-id="{{ event.id }}" data-status="yes" data-current="no"
+                                                                        style="font-size: 0.75rem;" disabled>
+                                                                    <i class="fas fa-times me-1"></i>I can't
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% elif user_rsvp.status == 'maybe' %}
+                                                    <!-- Already said maybe - show yellow button -->
+                                                    <button type="button" class="btn btn-warning btn-sm w-100 attendance-btn" 
+                                                            data-event-id="{{ event.id }}" data-status="yes" data-current="maybe">
+                                                        <i class="fas fa-question me-1"></i>Maybe
+                                                    </button>
+                                                {% elif user_rsvp.status == 'waitlist' %}
+                                                    <!-- Waitlisted - show secondary button -->
+                                                    <button type="button" class="btn btn-secondary btn-sm w-100 attendance-btn" 
+                                                            data-event-id="{{ event.id }}" data-status="yes" data-current="waitlist">
+                                                        <i class="fas fa-clock me-1"></i>Waitlist
+                                                    </button>
+                                                {% endif %}
                                             {% else %}
-                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                    <input type="hidden" name="status" value="waitlist">
-                                                    <button type="submit" class="btn btn-outline-warning btn-sm w-100" title="Event is at capacity - join waitlist">
+                                                <!-- Haven't confirmed yet - show I want to go and I can't buttons -->
+                                                {% if not event.max_attendees or (rsvp_counts[event.id] or 0) < event.max_attendees %}
+                                                    <div class="d-grid gap-1">
+                                                        <div class="row g-1">
+                                                            <div class="col-6">
+                                                                <button type="button" class="btn btn-outline-success btn-sm w-100 attendance-btn" 
+                                                                        data-event-id="{{ event.id }}" data-status="yes" data-current="none"
+                                                                        style="font-size: 0.75rem;">
+                                                                    <i class="fas fa-check me-1"></i>I want to go!
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button type="button" class="btn btn-outline-danger btn-sm w-100 attendance-btn" 
+                                                                        data-event-id="{{ event.id }}" data-status="no" data-current="none"
+                                                                        style="font-size: 0.75rem;">
+                                                                    <i class="fas fa-times me-1"></i>I can't
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% else %}
+                                                    <button type="button" class="btn btn-outline-warning btn-sm w-100 attendance-btn" 
+                                                            data-event-id="{{ event.id }}" data-status="waitlist" data-current="none"
+                                                            title="Event is at capacity - join waitlist">
                                                         <i class="fas fa-clock me-1"></i>Join Waitlist
                                                     </button>
-                                                </form>
+                                                {% endif %}
                                             {% endif %}
-                                        {% endif %}
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -284,6 +322,161 @@ document.addEventListener('DOMContentLoaded', function() {
     if (upcomingRadio) {
         upcomingRadio.checked = true;
         upcomingRadio.dispatchEvent(new Event('change'));
+    }
+    
+    // Handle attendance confirmation buttons
+    document.querySelectorAll('.attendance-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const eventId = this.getAttribute('data-event-id');
+            const status = this.getAttribute('data-status');
+            const currentStatus = this.getAttribute('data-current');
+            
+            updateAttendanceStatus(eventId, status, this, currentStatus);
+        });
+    });
+    
+    function updateAttendanceStatus(eventId, status, button, currentStatus) {
+        console.log('updateAttendanceStatus called:', {eventId, status, currentStatus});
+        
+        // Show loading state
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+        
+        // Make AJAX request
+        fetch(`/events/${eventId}/rsvp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: `status=${status}`
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                updateButtonState(button, data.status, eventId);
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'error');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred while updating your attendance.', 'error');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+    
+    function updateButtonState(button, newStatus, eventId) {
+        const eventCard = button.closest('.card');
+        const buttonContainer = button.closest('.card-footer');
+        
+        // Find or create the attendance buttons container
+        let attendanceContainer = buttonContainer.querySelector('.attendance-buttons-container');
+        if (!attendanceContainer) {
+            // If no attendance container exists, create one
+            const viewDetailsBtn = buttonContainer.querySelector('a[href*="event_detail"]');
+            attendanceContainer = document.createElement('div');
+            attendanceContainer.className = 'attendance-buttons-container';
+            if (viewDetailsBtn) {
+                // Insert after the view details button if it exists
+                viewDetailsBtn.parentNode.insertBefore(attendanceContainer, viewDetailsBtn.nextSibling);
+            } else {
+                // If no view details button, just append to the container
+                buttonContainer.appendChild(attendanceContainer);
+            }
+        }
+        
+        if (newStatus === 'yes') {
+            // User is going - show two buttons: solid green "I'm going" and outline "I can't anymore"
+            attendanceContainer.innerHTML = `
+                <div class="d-grid gap-1">
+                    <div class="row g-1">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-success btn-sm w-100 attendance-btn" 
+                                    data-event-id="${eventId}" data-status="no" data-current="yes"
+                                    style="font-size: 0.75rem;" disabled>
+                                <i class="fas fa-check me-1"></i>I'm going
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100 attendance-btn" 
+                                    data-event-id="${eventId}" data-status="no" data-current="yes"
+                                    style="font-size: 0.75rem;">
+                                <i class="fas fa-times me-1"></i>I can't anymore
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (newStatus === 'no') {
+            // User can't go - show two buttons: outline "I want to go!" and solid red "I can't"
+            attendanceContainer.innerHTML = `
+                <div class="d-grid gap-1">
+                    <div class="row g-1">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-success btn-sm w-100 attendance-btn" 
+                                    data-event-id="${eventId}" data-status="yes" data-current="no"
+                                    style="font-size: 0.75rem;">
+                                <i class="fas fa-check me-1"></i>I want to go!
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="button" class="btn btn-danger btn-sm w-100 attendance-btn" 
+                                    data-event-id="${eventId}" data-status="yes" data-current="no"
+                                    style="font-size: 0.75rem;" disabled>
+                                <i class="fas fa-times me-1"></i>I can't
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Re-attach event listeners to the new buttons
+        const newButtons = attendanceContainer.querySelectorAll('.attendance-btn');
+        newButtons.forEach(newButton => {
+            newButton.addEventListener('click', function() {
+                const eventId = this.getAttribute('data-event-id');
+                const status = this.getAttribute('data-status');
+                const currentStatus = this.getAttribute('data-current');
+                updateAttendanceStatus(eventId, status, this, currentStatus);
+            });
+        });
+    }
+    
+    function showToast(message, type) {
+        // Create a simple toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert ${type === 'success' ? 'alert-success' : 'alert-danger'} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" style="float: right; margin-left: 10px;"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 3000);
+        
+        // Handle manual close
+        const closeBtn = toast.querySelector('.btn-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => toast.remove());
+        }
     }
 });
 </script>
