@@ -116,24 +116,72 @@
                                         <i class="fas fa-info-circle me-2"></i>View Details
                                     </a>
                                     
-                                    {% if current_user.role == 'approved' and event.exact_time > now %}
-                                        {% if user_rsvps.get(event.id) %}
-                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
-                                                    <i class="fas fa-times me-1"></i>Cancel RSVP
-                                                </button>
-                                            </form>
-                                        {% else %}
-                                            {% if not event.max_attendees or (rsvp_counts[event.id] or 0) < event.max_attendees %}
+                                    {% if current_user.role in ['approved', 'admin', 'organizer'] and event.exact_time > now %}
+                                        {% set user_rsvp = user_rsvps.get(event.id) %}
+                                        {% if user_rsvp %}
+                                            {% if user_rsvp.status == 'yes' %}
+                                                <!-- Already RSVP'd Yes - show green button -->
                                                 <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
-                                                    <button type="submit" class="btn btn-outline-success btn-sm w-100">
-                                                        <i class="fas fa-check me-1"></i>RSVP
+                                                    <input type="hidden" name="status" value="no">
+                                                    <button type="submit" class="btn btn-success btn-sm w-100">
+                                                        <i class="fas fa-check me-1"></i>RSVP Yes
                                                     </button>
                                                 </form>
+                                            {% elif user_rsvp.status == 'no' %}
+                                                <!-- Already RSVP'd No - show red button -->
+                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
+                                                    <input type="hidden" name="status" value="yes">
+                                                    <button type="submit" class="btn btn-danger btn-sm w-100">
+                                                        <i class="fas fa-times me-1"></i>RSVP No
+                                                    </button>
+                                                </form>
+                                            {% elif user_rsvp.status == 'maybe' %}
+                                                <!-- Already RSVP'd Maybe - show yellow button -->
+                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
+                                                    <input type="hidden" name="status" value="yes">
+                                                    <button type="submit" class="btn btn-warning btn-sm w-100">
+                                                        <i class="fas fa-question me-1"></i>RSVP Maybe
+                                                    </button>
+                                                </form>
+                                            {% elif user_rsvp.status == 'waitlist' %}
+                                                <!-- Waitlisted - show secondary button -->
+                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
+                                                    <input type="hidden" name="status" value="yes">
+                                                    <button type="submit" class="btn btn-secondary btn-sm w-100">
+                                                        <i class="fas fa-clock me-1"></i>RSVP Waitlist
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% else %}
+                                            <!-- Not RSVP'd yet - show Yes and No buttons -->
+                                            {% if not event.max_attendees or (rsvp_counts[event.id] or 0) < event.max_attendees %}
+                                                <div class="d-grid gap-1">
+                                                    <div class="row g-1">
+                                                        <div class="col-6">
+                                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
+                                                                <input type="hidden" name="status" value="yes">
+                                                                <button type="submit" class="btn btn-outline-success btn-sm w-100" style="font-size: 0.75rem;">
+                                                                    <i class="fas fa-check me-1"></i>RSVP Yes
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
+                                                                <input type="hidden" name="status" value="no">
+                                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;">
+                                                                    <i class="fas fa-times me-1"></i>RSVP No
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             {% else %}
-                                                <button class="btn btn-outline-secondary btn-sm w-100" disabled>
-                                                    <i class="fas fa-users me-1"></i>Full
-                                                </button>
+                                                <form method="POST" action="{{ url_for('rsvp_event', event_id=event.id) }}" class="mb-0">
+                                                    <input type="hidden" name="status" value="waitlist">
+                                                    <button type="submit" class="btn btn-outline-warning btn-sm w-100" title="Event is at capacity - join waitlist">
+                                                        <i class="fas fa-clock me-1"></i>Join Waitlist
+                                                    </button>
+                                                </form>
                                             {% endif %}
                                         {% endif %}
                                     {% endif %}

@@ -839,13 +839,13 @@ def events_list():
     # Get user RSVPs for easy access in template
     user_rsvps = {}
     if current_user.is_authenticated and current_user.role == 'approved':
-        rsvps = RSVP.select().where(RSVP.user == current_user, RSVP.status == 'yes')
+        rsvps = RSVP.select().where(RSVP.user == current_user)
         user_rsvps = {rsvp.event.id: rsvp for rsvp in rsvps}
     
     # Get RSVP counts for each event
     rsvp_counts = {}
     for event in events:
-        count = RSVP.select().where(RSVP.event == event, RSVP.status == 'attending').count()
+        count = RSVP.select().where(RSVP.event == event, RSVP.status == 'yes').count()
         rsvp_counts[event.id] = count
     
     return render_template('events_list.html', 
