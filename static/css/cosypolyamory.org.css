@@ -79,3 +79,8 @@ h4 {
 .bg-orange {
   background-color: #fd7e14 !important;
 }
+
+/* Hidden class for event filtering */
+.hidden {
+  display: none !important;
+}
