@@ -6,6 +6,7 @@ from datetime import datetime
 from peewee import CharField, TextField, DateTimeField, BooleanField, ForeignKeyField, IntegerField
 from cosypolyamory.models import BaseModel
 from cosypolyamory.models.user import User
+from cosypolyamory.models.event_note import EventNote
 
 class Event(BaseModel):
     """Community event model"""
@@ -31,6 +32,7 @@ class Event(BaseModel):
     # Event settings
     max_attendees = IntegerField(null=True)  # Optional capacity limit
     tips_for_attendees = TextField(null=True)  # Changed from requirements
+    event_note = ForeignKeyField(EventNote, null=True, backref='events')
     is_active = BooleanField(default=True)
     requires_approval = BooleanField(default=True)  # Only approved users can see full details
     

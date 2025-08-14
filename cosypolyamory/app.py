@@ -912,6 +912,7 @@ def create_event():
     organizer_list.sort(key=lambda x: x['name'])
     
     # Get event notes for dropdown
+    from cosypolyamory.models.event_note import EventNote
     event_notes = list(EventNote.select().order_by(EventNote.name))
     return render_template('create_event.html', organizers=organizer_list, event_notes=event_notes)
 
@@ -980,6 +981,16 @@ def create_event_post():
                 flash('Co-host not found.', 'error')
                 return redirect(url_for('create_event'))
         
+        # Handle event note
+        event_note_id = request.form.get('event_note_id')
+        event_note = None
+        if event_note_id:
+            try:
+                event_note = EventNote.get_by_id(event_note_id)
+            except EventNote.DoesNotExist:
+                flash('Selected event note not found.', 'error')
+                return redirect(url_for('create_event'))
+
         # Create event
         event = Event.create(
             title=title,
@@ -993,8 +1004,9 @@ def create_event_post():
             exact_time=exact_time,
             organizer=organizer,
             co_host=co_host,
-            tips_for_attendees=tips_for_attendees or None,
-            max_attendees=int(max_attendees) if max_attendees else None
+            tips_for_attendees=tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None,
+            max_attendees=int(max_attendees) if max_attendees else None,
+            event_note=event_note
         )
         
         flash(f'Event "{title}" has been created successfully!', 'success')
@@ -1032,6 +1044,7 @@ def edit_event(event_id):
         organizer_list.sort(key=lambda x: x['name'])
 
         # Get event notes for dropdown
+        from cosypolyamory.models.event_note import EventNote
         event_notes = list(EventNote.select().order_by(EventNote.name))
         return render_template('create_event.html', event=event, is_edit=True, organizers=organizer_list, event_notes=event_notes)
     except Event.DoesNotExist:
@@ -1110,6 +1123,17 @@ def edit_event_post(event_id):
                 flash('Co-host not found.', 'error')
                 return redirect(url_for('edit_event', event_id=event_id))
         
+        # Handle event note
+        event_note_id = request.form.get('event_note_id')
+        event_note = None
+        if event_note_id:
+            try:
+                from cosypolyamory.models.event_note import EventNote
+                event_note = EventNote.get_by_id(event_note_id)
+            except EventNote.DoesNotExist:
+                flash('Selected event note not found.', 'error')
+                return redirect(url_for('edit_event', event_id=event_id))
+
         # Update event
         event.title = title
         event.description = description
@@ -1122,8 +1146,9 @@ def edit_event_post(event_id):
         event.exact_time = exact_time
         event.organizer = organizer
         event.co_host = co_host
-        event.tips_for_attendees = tips_for_attendees or None
+        event.tips_for_attendees = tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None
         event.max_attendees = int(max_attendees) if max_attendees else None
+        event.event_note = event_note
         event.save()
         
         flash(f'Event "{title}" has been updated successfully!', 'success')

@@ -139,10 +139,10 @@
                         
                         <div class="col-12 mb-3">
                             <label class="form-label">Event Notes</label>
-                            <select class="form-select mb-2" id="event_note_select">
-                                <option value="">-- Select a standard event note --</option>
+                            <select class="form-select mb-2" id="event_note_select" name="event_note_id">
+                                <option value="">Do not include an event note</option>
                                 {% for note in event_notes %}
-                                    <option value="{{ note.id }}" data-note="{{ note.note|tojson }}"{% if event and event.event_note_id == note.id %} selected{% endif %}>{{ note.name }}</option>
+                                    <option value="{{ note.id }}" data-note='{{ note.note|tojson }}'{% if event and event.event_note_id == note.id %} selected{% endif %}>{{ note.name }}</option>
                                 {% endfor %}
                             </select>
                             <div id="selected_event_note_box" class="border rounded bg-light p-2 mb-2" style="display:none; white-space:pre-line;"></div>
@@ -192,22 +192,74 @@
 // Organizers data from server
 const organizersData = {{ organizers|tojson if organizers else "[]" }};
 
-// Set minimum date to today
 document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today
     const dateInput = document.getElementById('date');
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.min = today;
-    dateInput.value = today;
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        // Set value only if it's a new event
+        if (!dateInput.value) {
+            dateInput.min = today;
+            dateInput.value = today;
+        }
+    }
     
-    // Set default time to next hour
+    // Set default time to next hour for new events
     const timeInput = document.getElementById('time');
-    const now = new Date();
-    now.setHours(now.getHours() + 1, 0, 0, 0);
-    timeInput.value = now.toTimeString().slice(0, 5);
+    if (timeInput && !timeInput.value) {
+        const now = new Date();
+        now.setHours(now.getHours() + 1, 0, 0, 0);
+        timeInput.value = now.toTimeString().slice(0, 5);
+    }
     
     // Load organizers from server data
     loadOrganizers();
+
+    // Setup event notes preview
+    setupEventNotes();
 });
+
+function setupEventNotes() {
+    const select = document.getElementById('event_note_select');
+    const noteBox = document.getElementById('selected_event_note_box');
+
+    function updateNotePreview() {
+        if (!select) return;
+        const selected = select.options[select.selectedIndex];
+        let note = selected.getAttribute('data-note');
+
+        if (note && select.value) {
+            try {
+                note = JSON.parse(note);
+            } catch (e) {
+                // fallback: use as-is
+            }
+            
+            const lines = note.split(/\r?\n/).slice(0, 5);
+            const preview = lines.join('\n');
+            const paragraphs = preview.split(/\n\s*\n/);
+            
+            noteBox.innerHTML = '';
+            paragraphs.forEach(paragraph => {
+                if (paragraph.trim()) {
+                    const p = document.createElement('p');
+                    p.textContent = paragraph;
+                    noteBox.appendChild(p);
+                }
+            });
+            noteBox.style.display = 'block';
+        } else {
+            noteBox.innerHTML = '';
+            noteBox.style.display = 'none';
+        }
+    }
+
+    if (select && noteBox) {
+        select.addEventListener('change', updateNotePreview);
+        // Initial call to show preview on page load if a note is already selected
+        updateNotePreview();
+    }
+}
 
 function loadOrganizers() {
     const organizerSelect = document.getElementById('organizer_id');
@@ -307,18 +359,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (e) {
                 // fallback: use as-is
             }
-            // Show only the first 5 lines, format as paragraphs (split on double newlines for paragraphs)
             let lines = note.split(/\r?\n/).slice(0, 5);
-            let preview = lines.join('\n');
-            let paragraphs = preview.split(/\n\s*\n/);
-            noteBox.innerHTML = '';
-            paragraphs.forEach(paragraph => {
-                if (paragraph.trim()) {
-                    const p = document.createElement('p');
-                    p.textContent = paragraph;
-                    noteBox.appendChild(p);
-                }
-            });
+            let html = lines.map(line => line.trim() ? `<p>${line.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : '').join('');
+            noteBox.innerHTML = html;
             noteBox.style.display = '';
         } else {
             noteBox.innerHTML = '';
@@ -327,7 +370,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (select && noteBox) {
         select.addEventListener('change', updateNotePreview);
-        // Show preview on page load if a note is already selected
         updateNotePreview();
     }
 });

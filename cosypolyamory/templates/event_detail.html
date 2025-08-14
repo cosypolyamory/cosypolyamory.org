@@ -378,7 +378,7 @@
                     {% endif %}
                     
                     <!-- Important notes about our events Section -->
-                    {% if event.tips_for_attendees %}
+                    {% if event.event_note or (event.tips_for_attendees and event.tips_for_attendees.strip()) %}
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div class="card border-warning bg-light">
@@ -388,7 +388,23 @@
                                             Important notes about our events
                                         </h5>
                                         <div class="card-text">
-                                            {{ event.tips_for_attendees | replace('\n', '<br>') | safe }}
+                                            {% if event.event_note %}
+                                                {% for paragraph in event.event_note.note.split('\n\n') %}
+                                                    {% if paragraph.strip() %}
+                                                        <p>{{ paragraph.strip() }}</p>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                            {% if event.event_note and event.tips_for_attendees and event.tips_for_attendees.strip() %}
+                                                <p></p>
+                                            {% endif %}
+                                            {% if event.tips_for_attendees and event.tips_for_attendees.strip() %}
+                                                {% for paragraph in event.tips_for_attendees.split('\n\n') %}
+                                                    {% if paragraph.strip() %}
+                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
