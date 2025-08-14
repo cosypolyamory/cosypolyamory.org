@@ -186,7 +186,7 @@ def admin_or_organizer_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for('login'))
-        if not (current_user.is_admin or current_user.is_organizer):
+        if not current_user.can_organize_events():
             flash('Admin or Organizer access required.', 'error')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
