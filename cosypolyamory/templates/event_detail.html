@@ -87,141 +87,137 @@
                     </div>
                     
                     <!-- Attendees Section -->
-                    {% if (rsvps or rsvps_no) and can_see_details %}
-                    <div class="row mb-4">
-                        <div class="col-md-6">
+                    <!-- Attendance Confirmation Section -->
+                    {% if can_see_details and event.exact_time > now %}
+                    <div class="row mt-4 mb-4">
+                        <div class="col-12">
                             <div class="card">
                                 <div class="card-header">
                                     <h6 class="mb-0">
-                                        <i class="fas fa-users me-2"></i>
-                                        Attendees ({{ rsvp_count }})
+                                        <i class="fas fa-calendar-check me-2"></i>
+                                        Attendance Confirmation
                                     </h6>
                                 </div>
-                                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
-                                    {% if rsvps %}
-                                        {% for rsvp in rsvps %}
-                                            <div class="d-flex align-items-center mb-2">
-                                                <div class="me-2">
-                                                    <i class="fas fa-user-circle fa-lg text-success"></i>
-                                                </div>
-                                                <div>
-                                                    <strong>{{ rsvp.user.name }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        Confirmed {{ rsvp.created_at.strftime('%b %d') }}
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        {% endfor %}
-                                    {% else %}
-                                        <div class="text-muted text-center py-3">
-                                            <i class="fas fa-users fa-2x mb-2"></i>
-                                            <p>No one has confirmed attendance yet.</p>
+                                <div class="card-body">
+                                    {% if user_rsvp %}
+                                        {% if user_rsvp.status == 'yes' %}
+                                        <div class="text-center">
+                                            <p><i class="fas fa-check-circle text-success me-2"></i>You've confirmed you're attending this event.</p>
+                                            <button id="not-attending-btn" class="btn btn-outline-danger" data-event-id="{{ event.id }}" data-status="no">
+                                                <i class="fas fa-times me-2"></i>I can't go
+                                            </button>
                                         </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">
-                                        <i class="fas fa-user-times me-2"></i>
-                                        Not Attending ({{ rsvp_no_count }})
-                                    </h6>
-                                </div>
-                                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
-                                    {% if rsvps_no %}
-                                        {% for rsvp in rsvps_no %}
-                                            <div class="d-flex align-items-center mb-2">
-                                                <div class="me-2">
-                                                    <i class="fas fa-user-circle fa-lg text-danger"></i>
-                                                </div>
-                                                <div>
-                                                    <strong>{{ rsvp.user.name }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        Confirmed {{ rsvp.created_at.strftime('%b %d') }}
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        {% endfor %}
-                                    {% else %}
-                                        <div class="text-muted text-center py-3">
-                                            <i class="fas fa-user-times fa-2x mb-2"></i>
-                                            <p>No one has said they can't attend.</p>
+                                        {% else %}
+                                        <div class="text-center">
+                                            <p><i class="fas fa-times-circle text-danger me-2"></i>You've said you can't attend this event.</p>
+                                            <button id="attending-btn" class="btn btn-success" data-event-id="{{ event.id }}" data-status="yes">
+                                                <i class="fas fa-check me-2"></i>I can now go!
+                                            </button>
                                         </div>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if event.max_attendees and rsvp_count >= event.max_attendees %}
+                                        <div class="text-center">
+                                            <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This event is full.</p>
+                                        </div>
+                                        {% else %}
+                                        <div class="text-center">
+                                            <p>Will you be attending this event?</p>
+                                            <div class="btn-group" role="group">
+                                                <button id="attending-btn" class="btn btn-success" data-event-id="{{ event.id }}" data-status="yes">
+                                                    <i class="fas fa-check me-2"></i>I want to go!
+                                                </button>
+                                                <button id="not-attending-btn" class="btn btn-outline-danger" data-event-id="{{ event.id }}" data-status="no">
+                                                    <i class="fas fa-times me-2"></i>I can't go
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
                     </div>
                     {% endif %}
-                    
-                    <!-- Attendance Confirmation Section - moved under description -->
-                    {% if can_see_details and event.exact_time > now %}
-                    <div class="row mt-4 mb-4">
+
+                    {% if (rsvps or rsvps_no) and can_see_details %}
+                    <div class="row mb-4">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-body text-center">
-                                    <div id="attendance-section">
-                                        {% if user_rsvp and user_rsvp.status == 'yes' %}
-                                            <h5 class="text-success">
-                                                <i class="fas fa-check-circle me-2"></i>
-                                                You're going to this event!
-                                            </h5>
-                                            <div class="mt-3">
-                                                <button type="button" class="btn btn-success btn-lg me-2" id="attending-btn" disabled>
-                                                    <i class="fas fa-check me-2"></i>I'm going
-                                                </button>
-                                                <button type="button" class="btn btn-outline-danger btn-lg" id="not-attending-btn" data-status="no">
-                                                    <i class="fas fa-times me-2"></i>I can't go
-                                                </button>
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-users me-2"></i>
+                                        Event Responses
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="text-success mb-3">
+                                                <i class="fas fa-check me-2"></i>
+                                                Attendees ({{ rsvp_count }})
+                                            </h6>
+                                            <div style="max-height: 250px; overflow-y: auto;">
+                                                {% if rsvps %}
+                                                    {% for rsvp in rsvps %}
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            <div class="me-2">
+                                                                <i class="fas fa-user-circle fa-lg text-success"></i>
+                                                            </div>
+                                                            <div>
+                                                                <strong>{{ rsvp.user.name }}</strong>
+                                                                <br>
+                                                                <small class="text-muted">
+                                                                    Confirmed {{ rsvp.created_at.strftime('%b %d') }}
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <div class="text-muted text-center py-3">
+                                                        <i class="fas fa-users fa-2x mb-2"></i>
+                                                        <p>No one has confirmed attendance yet.</p>
+                                                    </div>
+                                                {% endif %}
                                             </div>
-                                        {% elif user_rsvp and user_rsvp.status == 'no' %}
-                                            <h5 class="text-muted">
-                                                <i class="fas fa-times-circle me-2"></i>
-                                                You can't make this event
-                                            </h5>
-                                            <div class="mt-3">
-                                                <button type="button" class="btn btn-outline-success btn-lg me-2" id="attending-btn" data-status="yes">
-                                                    <i class="fas fa-check me-2"></i>I want to go!
-                                                </button>
-                                                <button type="button" class="btn btn-danger btn-lg" id="not-attending-btn" disabled>
-                                                    <i class="fas fa-times me-2"></i>I can't
-                                                </button>
+                                        </div>
+                                        
+                                        <div class="col-md-6 border-start">
+                                            <h6 class="text-danger mb-3">
+                                                <i class="fas fa-times me-2"></i>
+                                                Not Attending ({{ rsvp_no_count }})
+                                            </h6>
+                                            <div style="max-height: 250px; overflow-y: auto;">
+                                                {% if rsvps_no %}
+                                                    {% for rsvp in rsvps_no %}
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            <div class="me-2">
+                                                                <i class="fas fa-user-circle fa-lg text-danger"></i>
+                                                            </div>
+                                                            <div>
+                                                                <strong>{{ rsvp.user.name }}</strong>
+                                                                <br>
+                                                                <small class="text-muted">
+                                                                    Confirmed {{ rsvp.created_at.strftime('%b %d') }}
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <div class="text-muted text-center py-3">
+                                                        <i class="fas fa-user-times fa-2x mb-2"></i>
+                                                        <p>No one has said they can't attend.</p>
+                                                    </div>
+                                                {% endif %}
                                             </div>
-                                        {% else %}
-                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
-                                                <h5>Will you be attending?</h5>
-                                                <div class="mt-3">
-                                                    <button type="button" class="btn btn-outline-success btn-lg me-2" id="attending-btn" data-status="yes">
-                                                        <i class="fas fa-check me-2"></i>I want to go!
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-danger btn-lg" id="not-attending-btn" data-status="no">
-                                                        <i class="fas fa-times me-2"></i>I can't
-                                                    </button>
-                                                </div>
-                                            {% else %}
-                                                <h5 class="text-muted">
-                                                    <i class="fas fa-users me-2"></i>
-                                                    Event is Full
-                                                </h5>
-                                                <p>This event has reached its maximum capacity.</p>
-                                                <div class="mt-3">
-                                                    <button type="button" class="btn btn-outline-danger btn-lg" id="not-attending-btn" data-status="no">
-                                                        <i class="fas fa-times me-2"></i>I can't
-                                                    </button>
-                                                </div>
-                                            {% endif %}
-                                        {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {% elif not can_see_details %}
+                    {% endif %}
+                    {% if not can_see_details %}
                     <div class="row mt-4 mb-4">
                         <div class="col-12">
                             <div class="alert alert-info">
