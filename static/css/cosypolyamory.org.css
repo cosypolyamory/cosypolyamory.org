@@ -65,3 +65,8 @@ h4 {
   font-size: 50%;
   font-weight: 100;
 }
+
+/* Ensure navbar dropdown appears above quick actions */
+.navbar .dropdown-menu {
+  z-index: 1050 !important;
+}
