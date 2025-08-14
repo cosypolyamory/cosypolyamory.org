@@ -469,23 +469,23 @@
                         </div>
                         <div class="card-body">
                             <div class="row text-center">
-                                <div class="col-md-2">
+                                <div class="col-6 col-md-2 mb-3 mb-md-0">
                                     <h4 class="text-success">{{ rsvp_count }}</h4>
                                     <small class="text-muted">Going</small>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-6 col-md-2 mb-3 mb-md-0">
                                     <h4 class="text-danger">{{ rsvp_no_count or 0 }}</h4>
                                     <small class="text-muted">Can't Go</small>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-6 col-md-2 mb-3 mb-md-0">
                                     <h4 class="text-info">{{ views_count or 0 }}</h4>
                                     <small class="text-muted">Views</small>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-6 col-md-3 mb-3 mb-md-0">
                                     <h4 class="text-primary">{{ event.max_attendees or '∞' }}</h4>
                                     <small class="text-muted">Max Capacity</small>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-12 col-md-3">
                                     <h4 class="text-warning">{{ ((event.max_attendees - rsvp_count) if event.max_attendees else '∞') }}</h4>
                                     <small class="text-muted">Spots Left</small>
                                 </div>
@@ -540,13 +540,13 @@
                                 <i class="fas fa-copy me-2"></i>Copy
                             </button>
                         </div>
-                        <textarea id="plain-text" class="form-control" rows="8" readonly>{{ event.title }}
+                        <textarea id="plain-text" class="form-control share-text" rows="8" readonly>{{ event.title }}
 
 Date: {{ event.exact_time.strftime('%A, %B %d, %Y') }}
 Approximate time: Morning
 Location: {{ event.barrio }}
 
-{{ event.description | striptags }}
+{{ event.description }}
 
 Log in or join our community for more details: {{ request.url }}</textarea>
                     </div>
@@ -559,13 +559,13 @@ Log in or join our community for more details: {{ request.url }}</textarea>
                                 <i class="fas fa-copy me-2"></i>Copy
                             </button>
                         </div>
-                        <textarea id="html-text" class="form-control" rows="8" readonly><h2>{{ event.title | e }}</h2>
+                        <textarea id="html-text" class="form-control share-text" rows="8" readonly><h2>{{ event.title | e }}</h2>
 
 <p><strong>📅 Date:</strong> {{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
 <p><strong>🕐 Approximate time:</strong> Morning</p>
 <p><strong>📍 Location:</strong> {{ event.barrio | e }}</p>
 
-<p>{{ event.description | e | replace('\n', '<br>') | safe }}</p>
+<div>{{ event.description | safe }}</div>
 
 <p><a href="{{ request.url }}">Log in or join our community for more details</a></p></textarea>
                     </div>
@@ -578,13 +578,13 @@ Log in or join our community for more details: {{ request.url }}</textarea>
                                 <i class="fas fa-copy me-2"></i>Copy
                             </button>
                         </div>
-                        <textarea id="markdown-text" class="form-control" rows="8" readonly>## {{ event.title }}
+                        <textarea id="markdown-text" class="form-control share-text" rows="8" readonly>## {{ event.title }}
 
 **📅 Date:** {{ event.exact_time.strftime('%A, %B %d, %Y') }}
 **🕐 Approximate time:** Morning
 **📍 Location:** {{ event.barrio }}
 
-{{ event.description | striptags }}
+{{ event.description }}
 
 [Log in or join our community for more details]({{ request.url }})</textarea>
                     </div>
@@ -605,6 +605,21 @@ Log in or join our community for more details: {{ request.url }}</textarea>
 <style>
 .bg-orange { background-color: #fd7e14 !important; }
 .bg-purple { background-color: #6f42c1 !important; }
+/* Make the map responsive */
+#map {
+    height: 400px;
+    width: 100%;
+}
+.share-text {
+    white-space: pre-wrap;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: monospace;
+}
 </style>
 {% endblock %}
 
