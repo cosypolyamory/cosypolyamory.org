@@ -3,6 +3,47 @@
 {% block title %}Community Events{% endblock %}
 
 {% block content %}
+<style>
+.preview-btn {
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.preview-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #6c757d;
+}
+
+.popover {
+    max-width: 500px;
+}
+
+.popover-body {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    padding: 1rem;
+}
+
+.popover-description {
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+.btn-close {
+    font-size: 0.7rem;
+    padding: 0.25rem;
+}
+</style>
+
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Community Events</h1>
@@ -63,8 +104,24 @@
                             </div>
                             
                             <div class="card-body">
-                                <h5 class="card-title">{{ event.title }}</h5>
-                                <p class="card-text event-description">{{ event.description[:180] }}{% if event.description|length > 180 %}...{% endif %}</p>
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title flex-grow-1 me-2">{{ event.title }}</h5>
+                                    {% if event.description|length > 180 %}
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-secondary preview-btn" 
+                                                data-bs-toggle="popover" 
+                                                data-bs-placement="bottom" 
+                                                data-bs-trigger="click"
+                                                data-bs-title="Event Description"
+                                                data-bs-content="{{ event.description|e }}"
+                                                data-bs-html="true">
+                                            <i class="fas fa-eye" style="font-size: 0.75rem;"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                <p class="card-text event-description mb-3">
+                                    {{ event.description[:180] }}{% if event.description|length > 180 %}...{% endif %}
+                                </p>
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-calendar me-2 text-muted"></i>
@@ -317,6 +374,35 @@ document.querySelectorAll('input[name="filter"]').forEach(radio => {
 
 // Initialize filter on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap popovers for preview buttons with custom content
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('.preview-btn'));
+    const popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        const description = popoverTriggerEl.getAttribute('data-bs-content');
+        const customContent = `
+            <div class="popover-description">${description}</div>
+            <div class="text-end mt-3">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="this.closest('.popover').previousElementSibling.click()">Close</button>
+            </div>
+        `;
+        
+        return new bootstrap.Popover(popoverTriggerEl, {
+            container: 'body',
+            html: true,
+            sanitize: false,
+            content: customContent,
+            title: ''
+        });
+    });
+    
+    // Close popover when clicking elsewhere
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.preview-btn') && !e.target.closest('.popover')) {
+            popoverList.forEach(function(popover) {
+                popover.hide();
+            });
+        }
+    });
+    
     // Trigger the upcoming filter to show only upcoming events by default
     const upcomingRadio = document.getElementById('upcoming');
     if (upcomingRadio) {
