@@ -135,6 +135,13 @@ def extract_google_maps_info(maps_url):
             place_name = urllib.parse.unquote(place_match.group(1)).replace('+', ' ')
             return {'place_name': place_name}
             
+        # Format 5: Query parameter format ?q=location
+        query_pattern = r'[?&]q=([^&]+)'
+        query_match = re.search(query_pattern, maps_url)
+        if query_match:
+            place_name = urllib.parse.unquote(query_match.group(1)).replace('+', ' ')
+            return {'place_name': place_name}
+            
     except Exception as e:
         print(f"Error parsing Google Maps URL: {e}")
     
