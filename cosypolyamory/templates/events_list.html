@@ -112,8 +112,8 @@
                             
                             <div class="card-footer">
                                 <div class="d-grid gap-2">
-                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-primary">
-                                        <i class="fas fa-info-circle me-2"></i>View Details
+                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-primary btn-primary-outline">
+                                        <i class="fas fa-info-circle me-2"></i>View details
                                     </a>
                                     
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] and event.exact_time > now %}

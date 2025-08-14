@@ -72,6 +72,17 @@ github = oauth.register(
     client_kwargs={'scope': 'user:email'},
 )
 
+reddit = oauth.register(
+    name='reddit',
+    client_id=os.getenv('REDDIT_CLIENT_ID'),
+    client_secret=os.getenv('REDDIT_CLIENT_SECRET'),
+    access_token_url='https://www.reddit.com/api/v1/access_token',
+    authorize_url='https://www.reddit.com/api/v1/authorize',
+    api_base_url='https://oauth.reddit.com/',
+    client_kwargs={'scope': 'identity'},
+    token_endpoint_auth_method='client_secret_basic',  # Reddit requires basic auth
+)
+
 # In-memory user storage replaced with database
 # users = {} - removed
 
@@ -245,6 +256,11 @@ def oauth_login(provider):
         print(f"GitHub redirect URI: {redirect_uri}")
         print(f"GitHub client ID: {os.getenv('GITHUB_CLIENT_ID')}")
         return github.authorize_redirect(redirect_uri)
+    elif provider == 'reddit':
+        redirect_uri = url_for('oauth_callback', provider='reddit', _external=True)
+        print(f"Reddit redirect URI: {redirect_uri}")
+        # Reddit requires a unique state parameter for security
+        return reddit.authorize_redirect(redirect_uri, duration='permanent')
     else:
         flash('Unknown OAuth provider', 'error')
         return redirect(url_for('login'))
@@ -306,6 +322,30 @@ def oauth_callback(provider):
                 avatar_url=user_info.get('avatar_url'),
                 provider='github'
             )
+        elif provider == 'reddit':
+            token = reddit.authorize_access_token()
+            print(f"Reddit token received: {type(token)}")
+            
+            # Get user info from Reddit API
+            resp = reddit.get('api/v1/me', token=token)
+            user_info = resp.json()
+            print(f"Reddit user_info: {user_info}")
+            
+            # Check if user_info is valid
+            if not isinstance(user_info, dict) or 'id' not in user_info:
+                raise Exception(f"Invalid user info received from Reddit: {user_info}")
+            
+            user_id = f"reddit_{user_info['id']}"
+            # Reddit doesn't provide email by default, use constructed email
+            constructed_email = f"{user_info['name']}@reddit.local"
+            
+            user = User(
+                user_id=user_id,
+                email=constructed_email,
+                name=user_info['name'],
+                avatar_url=user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None,  # Clean up Reddit avatar URL
+                provider='reddit'
+            )
         else:
             flash('Unknown OAuth provider', 'error')
             return redirect(url_for('login'))
@@ -316,8 +356,15 @@ def oauth_callback(provider):
             try:
                 user = User.get(User.id == user_id)
                 # Update existing user info
-                user.name = user.name if provider == 'google' else (user_info.get('name') or user_info.get('login'))
-                user.avatar_url = user.avatar_url if provider == 'google' else user_info.get('avatar_url')
+                if provider == 'google':
+                    user.name = user_info['name']
+                    user.avatar_url = user_info.get('picture')
+                elif provider == 'github':
+                    user.name = user_info.get('name') or user_info.get('login')
+                    user.avatar_url = user_info.get('avatar_url')
+                elif provider == 'reddit':
+                    user.name = user_info['name']
+                    user.avatar_url = user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None
                 user.last_login = datetime.now()
                 user.save()
             except User.DoesNotExist:
@@ -331,13 +378,22 @@ def oauth_callback(provider):
                         provider='google',
                         last_login=datetime.now()
                     )
-                else:  # github
+                elif provider == 'github':
                     user = User.create(
                         id=user_id,
                         email=primary_email,
                         name=user_info.get('name') or user_info.get('login'),
                         avatar_url=user_info.get('avatar_url'),
                         provider='github',
+                        last_login=datetime.now()
+                    )
+                elif provider == 'reddit':
+                    user = User.create(
+                        id=user_id,
+                        email=constructed_email,
+                        name=user_info['name'],
+                        avatar_url=user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None,
+                        provider='reddit',
                         last_login=datetime.now()
                     )
             

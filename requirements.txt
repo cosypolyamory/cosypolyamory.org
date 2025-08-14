@@ -6,3 +6,4 @@ peewee
 authlib
 requests
 python-dotenv
+faker
