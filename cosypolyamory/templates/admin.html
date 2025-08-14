@@ -186,6 +186,24 @@
         </div>
     </div>
 </div>
+
+<!-- Hosted Events Error Modal -->
+<div class="modal fade" id="hostedEventsModal" tabindex="-1" aria-labelledby="hostedEventsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="hostedEventsModalLabel">Cannot Delete User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="hostedEventsModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block styles %}
@@ -436,6 +454,9 @@ function openApplicationReviewModal(applicationId) {
                     answersHtml += `<div class='mb-3'><strong>Q${idx+1}:</strong> <div class='border rounded p-2 bg-light'>${ans.replace(/\n/g, '<br>')}</div></div>`;
                 }
             });
+                        // Only show approve/reject buttons for pending applications
+                        const showApprovalButtons = app.status === 'pending' || app.status === 'new';
+                        
                         body.innerHTML = `
                                 <div>
                                     <h5>User: ${app.user_name} <span class='text-muted small'>(${app.user_email})</span></h5>
@@ -444,10 +465,12 @@ function openApplicationReviewModal(applicationId) {
                                     ${app.reviewed_at ? `<p><strong>Reviewed:</strong> ${new Date(app.reviewed_at).toLocaleString()}</p>` : ''}
                                     ${answersHtml}
                                     ${app.review_notes ? `<div class='mt-3'><strong>Review Notes:</strong><div class='border rounded p-2 bg-light'>${app.review_notes.replace(/\n/g, '<br>')}</div></div>` : ''}
+                                    ${showApprovalButtons ? `
                                     <div class='mt-4 d-flex justify-content-end gap-2'>
                                         <button class='btn btn-success' onclick='reviewApplication(${app.id}, "accept")'>Accept</button>
                                         <button class='btn btn-danger' onclick='reviewApplication(${app.id}, "reject")'>Reject</button>
                                     </div>
+                                    ` : ''}
                                 </div>
                         `;
         })
@@ -664,7 +687,12 @@ function deleteUser(userId, userName) {
                                   activeTab === 'admins' ? 'admin' : activeTab;
                 loadUsers(activeRole, currentPages[activeRole]);
             } else {
-                showToast(data.error || 'Failed to delete user', 'error');
+                if (data.hosted_events && data.hosted_events.length > 0) {
+                    // Show detailed error modal with hosted events
+                    showHostedEventsError(userName, data.error, data.hosted_events);
+                } else {
+                    showToast(data.error || 'Failed to delete user', 'error');
+                }
             }
         })
         .catch(error => {
@@ -673,6 +701,37 @@ function deleteUser(userId, userName) {
             showToast('Error deleting user', 'error');
         });
     };
+}
+
+function showHostedEventsError(userName, errorMessage, hostedEvents) {
+    const modalBody = document.getElementById('hostedEventsModalBody');
+    
+    let eventsHtml = '<div class="alert alert-warning">' + errorMessage + '</div>';
+    eventsHtml += '<h6>Events that need reassignment:</h6>';
+    eventsHtml += '<div class="list-group">';
+    
+    hostedEvents.forEach(event => {
+        eventsHtml += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${event.title}</strong>
+                    <br>
+                    <small class="text-muted">${event.date} • ${event.role}</small>
+                </div>
+                <a href="/events/${event.id}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>View Event
+                </a>
+            </div>
+        `;
+    });
+    
+    eventsHtml += '</div>';
+    eventsHtml += '<div class="mt-3"><small class="text-muted">To delete this user, first reassign these events to another organizer using the "Change role" dropdown in each event, or edit the events directly.</small></div>';
+    
+    modalBody.innerHTML = eventsHtml;
+    
+    const modal = new bootstrap.Modal(document.getElementById('hostedEventsModal'));
+    modal.show();
 }
 
 function showToast(message, type) {

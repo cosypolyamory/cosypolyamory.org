@@ -612,10 +612,46 @@ def api_delete_user():
         if user.id == current_user.id:
             return jsonify({'success': False, 'error': 'Cannot delete your own account'})
         
-        # Prevent deletion of admin users
+        # Prevent deletion of admin users and system accounts
         if user.role == 'admin':
             return jsonify({'success': False, 'error': 'Admin users cannot be deleted'})
         
+        # Prevent deletion of the system "Deleted User" placeholder
+        if user.role == 'deleted' or user.id == 'system_deleted_user':
+            return jsonify({'success': False, 'error': 'System accounts cannot be deleted'})
+        
+        # Check if user is hosting/co-hosting any events
+        from cosypolyamory.models.event import Event
+        organized_events = list(Event.select().where(Event.organizer == user))
+        co_hosted_events = list(Event.select().where(Event.co_host == user))
+        
+        if organized_events or co_hosted_events:
+            # Build detailed error message with event links
+            error_message = f"Cannot delete {user.name} because they are still hosting events. Please reassign these events first:"
+            event_details = []
+            
+            for event in organized_events:
+                event_details.append({
+                    'id': event.id,
+                    'title': event.title,
+                    'date': event.date.strftime('%Y-%m-%d'),
+                    'role': 'Organizer'
+                })
+            
+            for event in co_hosted_events:
+                event_details.append({
+                    'id': event.id,
+                    'title': event.title,
+                    'date': event.date.strftime('%Y-%m-%d'),
+                    'role': 'Co-host'
+                })
+            
+            return jsonify({
+                'success': False, 
+                'error': error_message,
+                'hosted_events': event_details
+            })
+
         # Delete related records first (UserApplication, RSVP, etc.)
         from cosypolyamory.models.user_application import UserApplication
         from cosypolyamory.models.rsvp import RSVP
@@ -706,17 +742,24 @@ def application_status():
 @app.route('/moderate')
 @organizer_required
 def moderate_applications():
-    """Application moderation queue"""
-    # Get all applications by status
-    pending_applications = list(UserApplication.select().where(UserApplication.status == 'pending').order_by(UserApplication.submitted_at))
-    approved_applications = list(UserApplication.select().where(UserApplication.status == 'approved').order_by(UserApplication.reviewed_at.desc()))
-    rejected_applications = list(UserApplication.select().where(UserApplication.status == 'rejected').order_by(UserApplication.reviewed_at.desc()))
+    """Application review queue - only show pending applications with pagination"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
     
-    # Calculate counts
-    pending_count = len(pending_applications)
-    approved_count = len(approved_applications)
-    rejected_count = len(rejected_applications)
-    total_count = pending_count + approved_count + rejected_count
+    # Get paginated pending applications
+    pending_applications_query = UserApplication.select().where(UserApplication.status == 'pending').order_by(UserApplication.submitted_at)
+    total_applications = pending_applications_query.count()
+    
+    # Calculate pagination
+    offset = (page - 1) * per_page
+    pending_applications = list(pending_applications_query.offset(offset).limit(per_page))
+    
+    # Calculate pagination info
+    total_pages = (total_applications + per_page - 1) // per_page
+    has_prev = page > 1
+    has_next = page < total_pages
+    prev_num = page - 1 if has_prev else None
+    next_num = page + 1 if has_next else None
     
     # Get questions from environment for display
     questions = {
@@ -731,13 +774,18 @@ def moderate_applications():
     
     return render_template('moderate.html',
                          pending_applications=pending_applications,
-                         approved_applications=approved_applications,
-                         rejected_applications=rejected_applications,
-                         pending_count=pending_count,
-                         approved_count=approved_count,
-                         rejected_count=rejected_count,
-                         total_count=total_count,
-                         questions=questions)
+                         pending_count=total_applications,
+                         questions=questions,
+                         pagination={
+                             'page': page,
+                             'per_page': per_page,
+                             'total': total_applications,
+                             'pages': total_pages,
+                             'has_prev': has_prev,
+                             'has_next': has_next,
+                             'prev_num': prev_num,
+                             'next_num': next_num
+                         })
 
 @app.route('/moderate/<int:application_id>/approve', methods=['POST'])
 @organizer_required
@@ -911,11 +959,11 @@ def create_event_post():
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
         
         # Validate Google Maps link if provided
-        valid_maps_domains = ['maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps']
+        valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']
         if google_maps_link:
             is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
             if not is_valid_maps_link:
-                flash('If provided, Google Maps link must be from maps.google.com or maps.app.goo.gl.', 'error')
+                flash('If provided, Google Maps link must be from Google Maps (maps.google.com, www.google.com/maps, or maps.app.goo.gl).', 'error')
                 return redirect(url_for('create_event'))
         
         # Handle co-host
@@ -1039,11 +1087,11 @@ def edit_event_post(event_id):
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
         
         # Validate Google Maps link if provided
-        valid_maps_domains = ['maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps']
+        valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']
         if google_maps_link:
             is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
             if not is_valid_maps_link:
-                flash('If provided, Google Maps link must be from maps.google.com or maps.app.goo.gl.', 'error')
+                flash('If provided, Google Maps link must be from Google Maps (maps.google.com, www.google.com/maps, or maps.app.goo.gl).', 'error')
                 return redirect(url_for('edit_event', event_id=event_id))
         
         # Handle co-host

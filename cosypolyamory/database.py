@@ -22,6 +22,22 @@ def init_database():
     
     database.connect()
     database.create_tables([User, UserApplication, Event, RSVP], safe=True)
+    
+    # Create a "Deleted User" placeholder if it doesn't exist
+    deleted_user, created = User.get_or_create(
+        email='deleted@system.local',
+        defaults={
+            'id': 'system_deleted_user',
+            'name': 'Deleted User',
+            'avatar_url': '',
+            'provider': 'system',
+            'role': 'deleted'
+        }
+    )
+    
+    if created:
+        print("✅ Created 'Deleted User' system placeholder")
+    
     print(f"✅ Database initialized: {DATABASE_PATH}")
     database.close()
 

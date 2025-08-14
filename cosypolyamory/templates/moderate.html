@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Moderate Applications{% endblock %}
+{% block title %}Review Applications{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <h1>Moderate Applications</h1>
+    <h1 class="mb-2">Review Applications</h1>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -19,88 +19,52 @@
         {% endif %}
     {% endwith %}
     
-    <!-- Summary Cards -->
-    <div class="row mt-4">
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3>{{ pending_count }}</h3>
-                            <span>Pending</span>
-                        </div>
-                        <i class="fas fa-clock fa-2x opacity-75"></i>
-                    </div>
-                </div>
+    <!-- Application Review Section -->
+    <div class="mt-3">
+        <!-- Pagination Info and Controls -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="mb-0">Pending Applications</h5>
+                {% if pending_count > 0 %}
+                    <small class="text-muted">
+                        Showing {{ ((pagination.page - 1) * pagination.per_page + 1) }} - 
+                        {{ (pagination.page * pagination.per_page) if (pagination.page * pagination.per_page) < pagination.total else pagination.total }} 
+                        of {{ pagination.total }} applications
+                    </small>
+                {% endif %}
             </div>
+            {% if pagination.pages > 1 %}
+                <nav aria-label="Application pagination">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                            <a class="page-link" href="{{ url_for('moderate_applications', page=pagination.prev_num) if pagination.has_prev else '#' }}">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                        {% for page_num in range(1, pagination.pages + 1) %}
+                            {% if page_num == pagination.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% elif page_num == 1 or page_num == pagination.pages or (page_num >= pagination.page - 2 and page_num <= pagination.page + 2) %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('moderate_applications', page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                            {% elif page_num == pagination.page - 3 or page_num == pagination.page + 3 %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                            <a class="page-link" href="{{ url_for('moderate_applications', page=pagination.next_num) if pagination.has_next else '#' }}">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            {% endif %}
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3>{{ approved_count }}</h3>
-                            <span>Approved</span>
-                        </div>
-                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3>{{ rejected_count }}</h3>
-                            <span>Rejected</span>
-                        </div>
-                        <i class="fas fa-times-circle fa-2x opacity-75"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3>{{ total_count }}</h3>
-                            <span>Total</span>
-                        </div>
-                        <i class="fas fa-users fa-2x opacity-75"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Filter Tabs -->
-    <ul class="nav nav-tabs mt-4" id="applicationTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" 
-                    type="button" role="tab" aria-controls="pending" aria-selected="true">
-                Pending Review <span class="badge bg-warning ms-1">{{ pending_count }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" 
-                    type="button" role="tab" aria-controls="approved" aria-selected="false">
-                Approved <span class="badge bg-success ms-1">{{ approved_count }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" 
-                    type="button" role="tab" aria-controls="rejected" aria-selected="false">
-                Rejected <span class="badge bg-danger ms-1">{{ rejected_count }}</span>
-            </button>
-        </li>
-    </ul>
-    
-    <!-- Tab Content -->
-    <div class="tab-content mt-3" id="applicationTabContent">
-        <!-- Pending Applications -->
-        <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
             {% if pending_applications %}
                 {% for application in pending_applications %}
                     <div class="card mb-3">
@@ -116,16 +80,48 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-8">
-                                    {% for i in range(1, 6) %}
-                                        {% set question = 'question_' + i|string %}
-                                        {% set answer = application[question] %}
-                                        {% if answer %}
-                                            <div class="mb-3">
-                                                <h6 class="text-primary">{{ questions['question_' + i|string] }}</h6>
-                                                <p>{{ answer | replace('\n', '<br>') | safe }}</p>
-                                            </div>
-                                        {% endif %}
-                                    {% endfor %}
+                                    {% if application.question_1_answer %}
+                                        <div class="mb-3">
+                                            <h6 class="text-primary">{{ questions['question_1'] }}</h6>
+                                            <p>{{ application.question_1_answer | replace('\n', '<br>') | safe }}</p>
+                                        </div>
+                                    {% endif %}
+                                    {% if application.question_2_answer %}
+                                        <div class="mb-3">
+                                            <h6 class="text-primary">{{ questions['question_2'] }}</h6>
+                                            <p>{{ application.question_2_answer | replace('\n', '<br>') | safe }}</p>
+                                        </div>
+                                    {% endif %}
+                                    {% if application.question_3_answer %}
+                                        <div class="mb-3">
+                                            <h6 class="text-primary">{{ questions['question_3'] }}</h6>
+                                            <p>{{ application.question_3_answer | replace('\n', '<br>') | safe }}</p>
+                                        </div>
+                                    {% endif %}
+                                    {% if application.question_4_answer %}
+                                        <div class="mb-3">
+                                            <h6 class="text-primary">{{ questions['question_4'] }}</h6>
+                                            <p>{{ application.question_4_answer | replace('\n', '<br>') | safe }}</p>
+                                        </div>
+                                    {% endif %}
+                                    {% if application.question_5_answer %}
+                                        <div class="mb-3">
+                                            <h6 class="text-primary">{{ questions['question_5'] }}</h6>
+                                            <p>{{ application.question_5_answer | replace('\n', '<br>') | safe }}</p>
+                                        </div>
+                                    {% endif %}
+                                    {% if application.question_6_answer %}
+                                        <div class="mb-3">
+                                            <h6 class="text-primary">{{ questions['question_6'] }}</h6>
+                                            <p>{{ application.question_6_answer | replace('\n', '<br>') | safe }}</p>
+                                        </div>
+                                    {% endif %}
+                                    {% if application.question_7_answer %}
+                                        <div class="mb-3">
+                                            <h6 class="text-primary">{{ questions['question_7'] }}</h6>
+                                            <p>{{ application.question_7_answer | replace('\n', '<br>') | safe }}</p>
+                                        </div>
+                                    {% endif %}
                                 </div>
                                 <div class="col-md-4">
                                     <div class="card bg-light">
@@ -185,107 +181,41 @@
                     No pending applications to review.
                 </div>
             {% endif %}
-        </div>
-        
-        <!-- Approved Applications -->
-        <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
-            {% if approved_applications %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Submitted</th>
-                                <th>Approved</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for application in approved_applications %}
-                                <tr>
-                                    <td>{{ application.user.name }}</td>
-                                    <td>{{ application.user.email }}</td>
-                                    <td>{{ application.submitted_at.strftime('%b %d, %Y') }}</td>
-                                    <td>{{ application.reviewed_at.strftime('%b %d, %Y') if application.reviewed_at }}</td>
-                                    <td>
-                                        <a href="{{ url_for('profile') }}?user_id={{ application.user.id }}" 
-                                           class="btn btn-sm btn-outline-primary">View Profile</a>
-                                    </td>
-                                </tr>
+            
+            <!-- Bottom Pagination -->
+            {% if pagination.pages > 1 %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav aria-label="Application pagination">
+                        <ul class="pagination">
+                            <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                                <a class="page-link" href="{{ url_for('moderate_applications', page=pagination.prev_num) if pagination.has_prev else '#' }}">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                            {% for page_num in range(1, pagination.pages + 1) %}
+                                {% if page_num == pagination.page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% elif page_num == 1 or page_num == pagination.pages or (page_num >= pagination.page - 2 and page_num <= pagination.page + 2) %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('moderate_applications', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% elif page_num == pagination.page - 3 or page_num == pagination.page + 3 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
                             {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    No approved applications.
+                            <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                                <a class="page-link" href="{{ url_for('moderate_applications', page=pagination.next_num) if pagination.has_next else '#' }}">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
             {% endif %}
-        </div>
-        
-        <!-- Rejected Applications -->
-        <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
-            {% if rejected_applications %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Submitted</th>
-                                <th>Rejected</th>
-                                <th>Feedback</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for application in rejected_applications %}
-                                <tr>
-                                    <td>{{ application.user.name }}</td>
-                                    <td>{{ application.user.email }}</td>
-                                    <td>{{ application.submitted_at.strftime('%b %d, %Y') }}</td>
-                                    <td>{{ application.reviewed_at.strftime('%b %d, %Y') if application.reviewed_at }}</td>
-                                    <td>
-                                        {% if application.admin_notes %}
-                                            <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" 
-                                                    data-bs-target="#feedbackModal{{ application.id }}">
-                                                View Feedback
-                                            </button>
-                                            
-                                            <!-- Feedback Modal -->
-                                            <div class="modal fade" id="feedbackModal{{ application.id }}" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Rejection Feedback</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            {{ application.admin_notes | replace('\n', '<br>') | safe }}
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        {% else %}
-                                            <span class="text-muted">None</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    No rejected applications.
-                </div>
-            {% endif %}
-        </div>
     </div>
 </div>
 {% endblock %}
