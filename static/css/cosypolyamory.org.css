@@ -84,3 +84,16 @@ h4 {
 .hidden {
   display: none !important;
 }
+
+/* Event card styling for consistent layout */
+.event-card .card {
+  height: 100%;
+}
+
+.event-card .event-description {
+  height: 6rem; /* Increased from 4.5rem to 6rem for more text */
+  overflow: hidden;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+  font-size: 0.9rem; /* Slightly smaller font size for better fit */
+}

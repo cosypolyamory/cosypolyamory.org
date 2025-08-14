@@ -48,7 +48,7 @@
         {% if events %}
             <div class="row">
                 {% for event in events %}
-                    <div class="col-md-6 col-lg-4 mb-4 event-card" 
+                    <div class="col-md-6 col-lg-6 mb-4 event-card" 
                          data-event-date="{{ event.exact_time.isoformat() }}"
                          data-event-status="{{ 'past' if event.exact_time < now else 'upcoming' }}">
                         <div class="card h-100 {% if event.exact_time < now %}opacity-75{% endif %}">
@@ -64,7 +64,7 @@
                             
                             <div class="card-body">
                                 <h5 class="card-title">{{ event.title }}</h5>
-                                <p class="card-text">{{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}</p>
+                                <p class="card-text event-description">{{ event.description[:180] }}{% if event.description|length > 180 %}...{% endif %}</p>
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-calendar me-2 text-muted"></i>
