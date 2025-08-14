@@ -1,17 +1,18 @@
-version: "3.3"
+volumes:
+  cosypolyamory:
 
 services:
 
   web:
     build: .
-    image: cosypolyamory.org
+    image: new.cosypolyamory.org
     expose:
       - "3031"
     volumes:
-      - .:/code/cosypolyamory.org:z
+      - cosypolyamory:/data:z
     environment:
-      - VIRTUAL_HOST=cosypolyamory.org
-      - LETSENCRYPT_HOST=cosypolyamory.org
+      - VIRTUAL_HOST=new.cosypolyamory.org
+      - LETSENCRYPT_HOST=new.cosypolyamory.org
       - LETSENCRYPT_EMAIL=mayhem@gmail.com
 
 networks:
