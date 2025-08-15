@@ -4,11 +4,26 @@ API routes for cosypolyamory.org
 Handles JSON API endpoints for AJAX requests.
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, current_user
+
 from cosypolyamory.models.user import User
+from cosypolyamory.models.user_application import UserApplication
+from cosypolyamory.models.event import Event
+from cosypolyamory.models.rsvp import RSVP
 
 bp = Blueprint('api', __name__, url_prefix='/api')
+
+
+def admin_required(f):
+    """Decorator to require admin role"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            return jsonify({'error': 'Admin access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @bp.route('/user')
@@ -27,6 +42,296 @@ def api_user():
         'is_admin': current_user.is_admin,
         'role': current_user.get_role_display()
     })
+
+
+@bp.route('/users/search')
+@login_required
+def search_users():
+    """Search for users by name or email (for autocomplete)"""
+    try:
+        query = request.args.get('q', '').strip()
+        limit = min(int(request.args.get('limit', 10)), 50)  # Max 50 results
+        
+        if not query or len(query) < 2:
+            return jsonify([])
+        
+        # Search in name and email fields using Peewee ORM
+        search_pattern = f"%{query}%"
+        
+        # Get users matching the search query
+        users = (User.select()
+                    .where((User.name.ilike(search_pattern) | User.email.ilike(search_pattern))
+                           & (User.role != 'new'))
+                    .order_by(User.name.asc())
+                    .limit(limit))
+        
+        result = []
+        for user in users:
+            # Map role to display name
+            role_display = {
+                'pending': 'Pending',
+                'approved': 'Member', 
+                'organizer': 'Organizer',
+                'admin': 'Admin',
+                'rejected': 'Rejected'
+            }.get(user.role, user.role.title())
+            
+            result.append({
+                'id': str(user.id),
+                'name': user.name,
+                'email': user.email,
+                'role': user.role,
+                'role_display': role_display,
+                'avatar_url': getattr(user, 'avatar_url', None)
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/admin/users/<role>')
+@admin_required
+def api_admin_users_by_role(role):
+    """Return paginated list of users by role"""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+        
+        # Validate role
+        valid_roles = ['pending', 'approved', 'organizer', 'rejected', 'admin', 'new']
+        if role == 'pending':
+            # Show both 'pending' and 'new' users under the pending tab
+            # Fetch all users with role 'pending' or 'new'
+            all_pending_new = list(User.select().where(User.role.in_(['pending', 'new'])))
+            # Split into those with a pending application and those without
+            with_pending_app = []
+            without_pending_app = []
+            for user in all_pending_new:
+                application = UserApplication.select().where((UserApplication.user == user) & (UserApplication.status == 'pending')).first()
+                if application:
+                    with_pending_app.append((user, application))
+                else:
+                    without_pending_app.append((user, None))
+            # Sort with_pending_app by application.submitted_at ascending (oldest first)
+            with_pending_app.sort(key=lambda tup: tup[1].submitted_at if tup[1] else user.created_at)
+            # Sort without_pending_app by user.created_at descending (most recent first)
+            without_pending_app.sort(key=lambda tup: tup[0].created_at, reverse=True)
+            # Merge
+            sorted_users = with_pending_app + without_pending_app
+            # For pagination
+            total = len(sorted_users)
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 50))
+            paged = sorted_users[(page-1)*per_page:page*per_page]
+            user_list = []
+            for user, application in paged:
+                user_list.append({
+                    'id': user.id,
+                    'name': user.name,
+                    'email': user.email,
+                    'avatar_url': user.avatar_url,
+                    'provider': user.provider,
+                    'role': user.role,
+                    'created_at': user.created_at.isoformat(),
+                    'last_login': user.last_login.isoformat() if user.last_login else None,
+                    'has_application': bool(application),
+                    'application_id': application.id if application else None,
+                    'application_status': application.status if application else None
+                })
+            return jsonify({
+                'users': user_list,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': total,
+                    'pages': (total + per_page - 1) // per_page
+                }
+            })
+        elif role in valid_roles:
+            query = User.select().where(User.role == role).order_by(User.created_at.desc())
+        else:
+            return jsonify({'error': 'Invalid role'}), 400
+        
+        # Calculate pagination
+        total = query.count()
+        users = query.paginate(page, per_page)
+        
+        user_list = []
+        for user in users:
+            # Always get the most recent application for this user
+            application = UserApplication.select().where(UserApplication.user == user).order_by(UserApplication.submitted_at.desc()).first()
+            user_list.append({
+                'id': user.id,
+                'name': user.name,
+                'email': user.email,
+                'avatar_url': user.avatar_url,
+                'provider': user.provider,
+                'role': user.role,
+                'created_at': user.created_at.isoformat(),
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+                'has_application': bool(application),
+                'application_id': application.id if application else None,
+                'application_status': application.status if application else None
+            })
+        
+        return jsonify({
+            'users': user_list,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'pages': (total + per_page - 1) // per_page
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/user/<user_id>')
+@admin_required
+def api_user_details(user_id):
+    """Return detailed user information"""
+    try:
+        user = User.get_by_id(user_id)
+        return jsonify({
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'avatar_url': user.avatar_url,
+            'provider': user.provider,
+            'role': user.role,
+            'created_at': user.created_at.isoformat(),
+            'last_login': user.last_login.isoformat() if user.last_login else None
+        })
+    except User.DoesNotExist:
+        return jsonify({'error': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/admin/change-role', methods=['POST'])
+@admin_required
+def api_change_user_role():
+    """Change a user's role (admin only)"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        new_role = data.get('role')
+        
+        if not user_id or not new_role:
+            return jsonify({'success': False, 'error': 'Missing user_id or role'})
+        
+        if new_role not in ['admin', 'organizer', 'approved', 'pending', 'rejected']:
+            return jsonify({'success': False, 'error': 'Invalid role'})
+        
+        # Check if trying to make admin and current user is not admin
+        if new_role == 'admin' and not current_user.is_admin:
+            return jsonify({'success': False, 'error': 'Only admins can make other users admin'})
+        
+        # Find the user
+        try:
+            user = User.get(User.id == user_id)
+        except User.DoesNotExist:
+            return jsonify({'success': False, 'error': 'User not found'})
+        
+        # Update user role and corresponding boolean flags
+        user.role = new_role
+        user.is_admin = (new_role == 'admin')
+        user.is_organizer = (new_role == 'organizer')
+        user.is_approved = (new_role in ['admin', 'organizer', 'approved'])
+        
+        user.save()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'User role changed to {new_role}',
+            'user_id': user_id,
+            'new_role': new_role
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@bp.route('/admin/delete-user', methods=['POST'])
+@admin_required
+def api_delete_user():
+    """Delete a user (admin only)"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Missing user_id'})
+        
+        # Find the user
+        try:
+            user = User.get(User.id == user_id)
+        except User.DoesNotExist:
+            return jsonify({'success': False, 'error': 'User not found'})
+        
+        # Prevent self-deletion
+        if user.id == current_user.id:
+            return jsonify({'success': False, 'error': 'Cannot delete your own account'})
+        
+        # Prevent deletion of admin users and system accounts
+        if user.role == 'admin':
+            return jsonify({'success': False, 'error': 'Admin users cannot be deleted'})
+        
+        # Prevent deletion of the system "Deleted User" placeholder
+        if user.role == 'deleted' or user.id == 'system_deleted_user':
+            return jsonify({'success': False, 'error': 'System accounts cannot be deleted'})
+        
+        # Check if user is hosting/co-hosting any events
+        organized_events = list(Event.select().where(Event.organizer == user))
+        co_hosted_events = list(Event.select().where(Event.co_host == user))
+        
+        if organized_events or co_hosted_events:
+            # Build detailed error message with event links
+            error_message = f"Cannot delete {user.name} because they are still hosting events. Please reassign these events first:"
+            event_details = []
+            
+            for event in organized_events:
+                event_details.append({
+                    'id': event.id,
+                    'title': event.title,
+                    'date': event.date.strftime('%Y-%m-%d'),
+                    'role': 'Organizer'
+                })
+            
+            for event in co_hosted_events:
+                event_details.append({
+                    'id': event.id,
+                    'title': event.title,
+                    'date': event.date.strftime('%Y-%m-%d'),
+                    'role': 'Co-host'
+                })
+            
+            return jsonify({
+                'success': False, 
+                'error': error_message,
+                'hosted_events': event_details
+            })
+
+        # Delete related records first (UserApplication, RSVP, etc.)
+        # Delete user applications
+        UserApplication.delete().where(UserApplication.user == user).execute()
+        
+        # Delete RSVPs
+        RSVP.delete().where(RSVP.user == user).execute()
+        
+        # Delete the user
+        user_name = user.name
+        user.delete_instance()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'User {user_name} deleted successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @bp.route('/organizers')
