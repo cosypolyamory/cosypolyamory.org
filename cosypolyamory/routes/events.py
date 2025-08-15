@@ -182,7 +182,18 @@ def create_event_post():
         barrio = request.form.get('barrio')
         time_period = request.form.get('time_period')
         date_str = request.form.get('date')
+        
+        # Handle time from either new dropdowns or old time input
         time_str = request.form.get('time')
+        time_hour = request.form.get('time_hour')
+        time_minute = request.form.get('time_minute')
+        
+        if time_hour and time_minute:
+            time_str = f"{time_hour}:{time_minute}"
+        elif not time_str:
+            flash('Please select a time for the event.', 'error')
+            return redirect(url_for('events.create_event'))
+            
         establishment_name = request.form.get('establishment_name')
         google_maps_link = request.form.get('google_maps_link')
         location_notes = request.form.get('location_notes')
@@ -325,7 +336,18 @@ def edit_event_post(event_id):
         barrio = request.form.get('barrio')
         time_period = request.form.get('time_period')
         date_str = request.form.get('date')
+        
+        # Handle time from either new dropdowns or old time input
         time_str = request.form.get('time')
+        time_hour = request.form.get('time_hour')
+        time_minute = request.form.get('time_minute')
+        
+        if time_hour and time_minute:
+            time_str = f"{time_hour}:{time_minute}"
+        elif not time_str:
+            flash('Please select a time for the event.', 'error')
+            return redirect(url_for('events.edit_event', event_id=event_id))
+            
         establishment_name = request.form.get('establishment_name')
         google_maps_link = request.form.get('google_maps_link')
         location_notes = request.form.get('location_notes')

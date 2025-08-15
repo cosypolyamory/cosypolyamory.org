@@ -55,8 +55,31 @@
                         
                         <div class="col-md-6 mb-3">
                             <label for="time" class="form-label">Time *</label>
-                            <input type="time" class="form-control" id="time" name="time" required
-                                   value="{% if event %}{{ event.exact_time.strftime('%H:%M') }}{% endif %}">
+                            <div class="row">
+                                <div class="col-6">
+                                    <select class="form-select" id="time_hour" name="time_hour" required>
+                                        <option value="">Hour</option>
+                                        {% for hour in range(24) %}
+                                            <option value="{{ '%02d'|format(hour) }}" 
+                                                    {% if event and event.exact_time.hour == hour %}selected{% endif %}>
+                                                {{ '%02d'|format(hour) }}:00
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">24-hour format</div>
+                                </div>
+                                <div class="col-6">
+                                    <select class="form-select" id="time_minute" name="time_minute" required>
+                                        <option value="">Minutes</option>
+                                        <option value="00" {% if event and event.exact_time.minute == 0 %}selected{% endif %}>:00</option>
+                                        <option value="15" {% if event and event.exact_time.minute == 15 %}selected{% endif %}>:15</option>
+                                        <option value="30" {% if event and event.exact_time.minute == 30 %}selected{% endif %}>:30</option>
+                                        <option value="45" {% if event and event.exact_time.minute == 45 %}selected{% endif %}>:45</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- Hidden input to combine time for form submission -->
+                            <input type="hidden" id="time" name="time" value="{% if event %}{{ event.exact_time.strftime('%H:%M') }}{% endif %}">
                         </div>
                         
                         <div class="col-12 mb-3">
@@ -204,10 +227,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set default time to next hour for new events
     const timeInput = document.getElementById('time');
+    const timeHourSelect = document.getElementById('time_hour');
+    const timeMinuteSelect = document.getElementById('time_minute');
+    
+    // Function to update the hidden time input when dropdowns change
+    function updateTimeInput() {
+        const hour = timeHourSelect.value;
+        const minute = timeMinuteSelect.value;
+        if (hour && minute) {
+            timeInput.value = hour + ':' + minute;
+        }
+    }
+    
+    // Add event listeners to time dropdowns
+    if (timeHourSelect) {
+        timeHourSelect.addEventListener('change', updateTimeInput);
+    }
+    if (timeMinuteSelect) {
+        timeMinuteSelect.addEventListener('change', updateTimeInput);
+    }
+    
+    // Set default time for new events
     if (timeInput && !timeInput.value) {
         const now = new Date();
         now.setHours(now.getHours() + 1, 0, 0, 0);
-        timeInput.value = now.toTimeString().slice(0, 5);
+        const defaultHour = String(now.getHours()).padStart(2, '0');
+        const defaultMinute = '00';
+        
+        if (timeHourSelect) timeHourSelect.value = defaultHour;
+        if (timeMinuteSelect) timeMinuteSelect.value = defaultMinute;
+        updateTimeInput();
     }
     
     // Load organizers from server data

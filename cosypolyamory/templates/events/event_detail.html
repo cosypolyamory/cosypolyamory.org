@@ -59,7 +59,15 @@
                             <h6><i class="fas fa-calendar me-2 text-primary"></i>Date</h6>
                             <p>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
+                            <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
+                            {% if can_see_details %}
+                                <p>{{ event.exact_time.strftime('%H:%M') }}</p>
+                            {% else %}
+                                <p>{{ event.time_period }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
                             <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
                             {% if can_see_details %}
                                 <p>{{ event.establishment_name }}</p>
@@ -543,8 +551,9 @@
                         <textarea id="plain-text" class="form-control share-text" rows="8" readonly>{{ event.title }}
 
 Date: {{ event.exact_time.strftime('%A, %B %d, %Y') }}
-Approximate time: Morning
-Location: {{ event.barrio }}
+{% if can_see_details %}Time: {{ event.exact_time.strftime('%H:%M') }}
+Location: {{ event.establishment_name }}{% else %}Approximate time: {{ event.time_period }}
+Location: {{ event.barrio }}{% endif %}
 
 {{ event.description }}
 
@@ -581,8 +590,9 @@ Log in or join our community for more details: {{ request.url }}</textarea>
                         <textarea id="markdown-text" class="form-control share-text" rows="8" readonly>## {{ event.title }}
 
 **📅 Date:** {{ event.exact_time.strftime('%A, %B %d, %Y') }}
-**🕐 Approximate time:** Morning
-**📍 Location:** {{ event.barrio }}
+{% if can_see_details %}**🕐 Time:** {{ event.exact_time.strftime('%H:%M') }}
+**📍 Location:** {{ event.establishment_name }}{% else %}**🕐 Approximate time:** {{ event.time_period }}
+**📍 Location:** {{ event.barrio }}{% endif %}
 
 {{ event.description }}
 

@@ -178,7 +178,7 @@
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-clock me-2 text-muted"></i>
-                                    {% if current_user.role == 'approved' %}
+                                    {% if current_user.role in ['approved', 'admin', 'organizer'] %}
                                         {{ event.exact_time.strftime('%H:%M') }}
                                     {% else %}
                                         {{ event.time_period }}
@@ -187,7 +187,7 @@
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-map-marker-alt me-2 text-muted"></i>
-                                    {% if current_user.role == 'approved' %}
+                                    {% if current_user.role in ['approved', 'admin', 'organizer'] %}
                                         {{ event.establishment_name }}
                                     {% else %}
                                         {{ event.barrio }}
