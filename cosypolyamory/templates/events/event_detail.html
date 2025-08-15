@@ -105,7 +105,7 @@
                                         Attendance Confirmation
                                     </h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body" id="attendance-section">
                                     {% if user_rsvp %}
                                         {% if user_rsvp.status == 'yes' %}
                                         <div class="text-center">
@@ -160,7 +160,7 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <h6 class="text-success mb-3">
+                                            <h6 class="text-success mb-3" id="attendee-count-header">
                                                 <i class="fas fa-check me-2"></i>
                                                 Attendees ({{ rsvp_count }})
                                             </h6>
@@ -190,7 +190,7 @@
                                         </div>
                                         
                                         <div class="col-md-6 border-start">
-                                            <h6 class="text-danger mb-3">
+                                            <h6 class="text-danger mb-3" id="not-attending-count-header">
                                                 <i class="fas fa-times me-2"></i>
                                                 Not Attending ({{ rsvp_no_count }})
                                             </h6>
@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const originalText = button.innerHTML;
         button.disabled = true;
         button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
-        
+
         // Make AJAX request
         fetch(`/events/${eventId}/rsvp`, {
             method: 'POST',
@@ -659,31 +659,103 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                updateButtonStates(data.status);
-                showMessage(data.message, 'success');
-                
-                // Update page title message
-                const attendanceSection = document.getElementById('attendance-section');
-                const titleElement = attendanceSection.querySelector('h5');
-                if (status === 'yes') {
-                    titleElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>You\'re going to this event!';
-                    titleElement.className = 'text-success';
-                } else if (status === 'no') {
-                    titleElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>You can\'t make this event';
-                    titleElement.className = 'text-muted';
-                }
+                // DOM is replaced, so no need to restore button state
+                updateAttendanceUI(data);
             } else {
                 showMessage(data.message, 'error');
-                button.innerHTML = originalText;
-                button.disabled = false;
+                // Only restore if button is still in DOM
+                if (document.body.contains(button)) {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
             }
         })
         .catch(error => {
             console.error('Error:', error);
             showMessage('An error occurred while updating your attendance.', 'error');
-            button.innerHTML = originalText;
-            button.disabled = false;
+            if (document.body.contains(button)) {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
         });
+    }
+
+    function updateAttendanceUI(data) {
+        // Update the attendance confirmation section
+    // Only update the attendance confirmation section, not all card-bodies
+    const section = document.getElementById('attendance-section');
+        if (!section) return;
+        let html = '';
+        if (data.user_rsvp && data.user_rsvp.status === 'yes') {
+            html += `<div class="text-center">
+                <p><i class="fas fa-check-circle text-success me-2"></i>You've confirmed you're attending this event.</p>
+                <button id="not-attending-btn" class="btn btn-outline-danger" data-event-id="${eventId}" data-status="no">
+                    <i class="fas fa-times me-2"></i>I can't go
+                </button>
+            </div>`;
+        } else if (data.user_rsvp && data.user_rsvp.status === 'no') {
+            html += `<div class="text-center">
+                <p><i class="fas fa-times-circle text-danger me-2"></i>You've said you can't attend this event.</p>
+                <button id="attending-btn" class="btn btn-success" data-event-id="${eventId}" data-status="yes">
+                    <i class="fas fa-check me-2"></i>I can now go!
+                </button>
+            </div>`;
+        } else if (data.event_full) {
+            html += `<div class="text-center">
+                <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This event is full.</p>
+            </div>`;
+        } else {
+            html += `<div class="text-center">
+                <p>Will you be attending this event?</p>
+                <div class="btn-group" role="group">
+                    <button id="attending-btn" class="btn btn-success" data-event-id="${eventId}" data-status="yes">
+                        <i class="fas fa-check me-2"></i>I want to go!
+                    </button>
+                    <button id="not-attending-btn" class="btn btn-outline-danger" data-event-id="${eventId}" data-status="no">
+                        <i class="fas fa-times me-2"></i>I can't go
+                    </button>
+                </div>
+            </div>`;
+        }
+        section.innerHTML = html;
+
+        // Re-attach event listeners
+        const newAttendingBtn = document.getElementById('attending-btn');
+        const newNotAttendingBtn = document.getElementById('not-attending-btn');
+        if (newAttendingBtn) {
+            newAttendingBtn.addEventListener('click', function() {
+                const status = this.getAttribute('data-status');
+                if (status) {
+                    updateAttendanceStatus(status, this);
+                }
+            });
+        }
+        if (newNotAttendingBtn) {
+            newNotAttendingBtn.addEventListener('click', function() {
+                const status = this.getAttribute('data-status');
+                if (status) {
+                    updateAttendanceStatus(status, this);
+                }
+            });
+        }
+
+        // Update attendee and not attending lists and counts
+        if (data.rsvps_html) {
+            const attendeesCol = document.querySelector('.col-md-6 .text-success + div');
+            if (attendeesCol) attendeesCol.innerHTML = data.rsvps_html;
+        }
+        if (data.rsvps_no_html) {
+            const notAttendingCol = document.querySelector('.col-md-6.border-start .text-danger + div');
+            if (notAttendingCol) notAttendingCol.innerHTML = data.rsvps_no_html;
+        }
+        if (data.rsvp_count !== undefined) {
+            const attendeesHeader = document.getElementById('attendee-count-header');
+            if (attendeesHeader) attendeesHeader.innerHTML = `<i class="fas fa-check me-2"></i><span>Attendees (${data.rsvp_count})</span>`;
+        }
+        if (data.rsvp_no_count !== undefined) {
+            const notAttendingHeader = document.getElementById('not-attending-count-header');
+            if (notAttendingHeader) notAttendingHeader.innerHTML = `<i class="fas fa-times me-2"></i><span>Not Attending (${data.rsvp_no_count})</span>`;
+        }
     }
     
     function updateButtonStates(status) {

@@ -458,7 +458,24 @@ def rsvp_event(event_id):
                 rsvp.delete_instance()
                 message = 'Attendance cancelled'
                 if request.headers.get('Accept') == 'application/json':
-                    return jsonify({'success': True, 'message': message, 'status': None})
+                    # Recalculate lists and counts
+                    rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+                    rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
+                    rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
+                    rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+                    from flask import render_template_string
+                    attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps)
+                    not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
+                    return jsonify({
+                        'success': True,
+                        'message': message,
+                        'status': None,
+                        'user_rsvp': None,
+                        'rsvp_count': rsvp_count,
+                        'rsvp_no_count': rsvp_no_count,
+                        'rsvps_html': attendees_html,
+                        'rsvps_no_html': not_attending_html
+                    })
                 flash(message, 'success')
             except RSVP.DoesNotExist:
                 message = 'No attendance record found to cancel.'
@@ -481,24 +498,39 @@ def rsvp_event(event_id):
             rsvp.notes = notes
             rsvp.updated_at = datetime.now()
             rsvp.save()
-            status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
-            message = f'Attendance confirmed: {status_text}'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': True, 'message': message, 'status': status})
-            flash(message, 'success')
         except RSVP.DoesNotExist:
-            RSVP.create(
+            rsvp = RSVP.create(
                 event=event,
                 user=current_user,
                 status=status,
                 notes=notes
             )
-            status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
-            message = f'Attendance confirmed: {status_text}'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': True, 'message': message, 'status': status})
-            flash(message, 'success')
-        
+        status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
+        message = f'Attendance confirmed: {status_text}'
+        if request.headers.get('Accept') == 'application/json':
+            # Recalculate lists and counts
+            rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+            rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
+            rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
+            rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+            from flask import render_template
+            attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps)
+            not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
+            # User RSVP info
+            user_rsvp = {
+                'status': rsvp.status
+            } if rsvp else None
+            return jsonify({
+                'success': True,
+                'message': message,
+                'status': status,
+                'user_rsvp': user_rsvp,
+                'rsvp_count': rsvp_count,
+                'rsvp_no_count': rsvp_no_count,
+                'rsvps_html': attendees_html,
+                'rsvps_no_html': not_attending_html
+            })
+        flash(message, 'success')
         return redirect(url_for('events.event_detail', event_id=event_id))
         
     except Event.DoesNotExist:
