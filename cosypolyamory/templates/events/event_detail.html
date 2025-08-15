@@ -46,11 +46,19 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-4">
                         <h1 class="card-title mb-0">{{ event.title }}</h1>
+                        <div class="d-flex align-items-center gap-2">
                         {% if event.exact_time < now %}
                             <span class="badge bg-secondary fs-6">Past Event</span>
                         {% else %}
                             <span class="badge bg-primary fs-6">Upcoming</span>
+                            {% if event.max_attendees and rsvp_count >= event.max_attendees %}
+                                <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
+                            {% endif %}
+                            {% if event.max_attendees and rsvp_count >= event.max_attendees and rsvps_waitlist|length > 0 %}
+                                <span class="badge bg-secondary ms-1 align-middle">Waitlist</span>
+                            {% endif %}
                         {% endif %}
+                        </div>
                     </div>
                     
                     <!-- Date and Location Row - moved under title -->
@@ -114,6 +122,13 @@
                                                 <i class="fas fa-times me-2"></i>I can't go
                                             </button>
                                         </div>
+                                        {% elif user_rsvp.status == 'waitlist' %}
+                                        <div class="text-center">
+                                            <p><i class="fas fa-user-clock text-warning me-2"></i>You are on the waitlist for this event.</p>
+                                            <button id="not-attending-btn" class="btn btn-warning" data-event-id="{{ event.id }}" data-status="no">
+                                                <i class="fas fa-times me-2"></i>Remove me from waitlist
+                                            </button>
+                                        </div>
                                         {% else %}
                                         <div class="text-center">
                                             <p><i class="fas fa-times-circle text-danger me-2"></i>You've said you can't attend this event.</p>
@@ -125,7 +140,10 @@
                                     {% else %}
                                         {% if event.max_attendees and rsvp_count >= event.max_attendees %}
                                         <div class="text-center">
-                                            <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This event is full.</p>
+                                            <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This event is full. You can join the waitlist.</p>
+                                            <button id="attending-btn" class="btn btn-warning" data-event-id="{{ event.id }}" data-status="yes">
+                                                <i class="fas fa-user-clock me-2"></i>Join Waitlist
+                                            </button>
                                         </div>
                                         {% else %}
                                         <div class="text-center">
@@ -147,7 +165,7 @@
                     </div>
                     {% endif %}
 
-                    {% if (rsvps or rsvps_no) and can_see_details %}
+                    {% if (rsvps or rsvps_no or rsvps_waitlist) and can_see_details %}
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card">
@@ -159,63 +177,31 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <h6 class="text-success mb-3" id="attendee-count-header">
                                                 <i class="fas fa-check me-2"></i>
                                                 Attendees ({{ rsvp_count }})
                                             </h6>
                                             <div style="max-height: 250px; overflow-y: auto;">
-                                                {% if rsvps %}
-                                                    {% for rsvp in rsvps %}
-                                                        <div class="d-flex align-items-center mb-2">
-                                                            <div class="me-2">
-                                                                <i class="fas fa-user-circle fa-lg text-success"></i>
-                                                            </div>
-                                                            <div>
-                                                                <strong>{{ rsvp.user.name }}</strong>
-                                                                <br>
-                                                                <small class="text-muted">
-                                                                    Confirmed {{ rsvp.created_at.strftime('%b %d') }}
-                                                                </small>
-                                                            </div>
-                                                        </div>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <div class="text-muted text-center py-3">
-                                                        <i class="fas fa-users fa-2x mb-2"></i>
-                                                        <p>No one has confirmed attendance yet.</p>
-                                                    </div>
-                                                {% endif %}
+                                                {% include 'events/event_detail_attendees.html' %}
                                             </div>
                                         </div>
-                                        
-                                        <div class="col-md-6 border-start">
+                                        <div class="col-md-4 border-start">
+                                            <h6 class="text-warning mb-3">
+                                                <i class="fas fa-user-clock me-2"></i>
+                                                Waitlist ({{ rsvps_waitlist|length }})
+                                            </h6>
+                                            <div style="max-height: 250px; overflow-y: auto;">
+                                                {% include 'events/event_detail_waitlist.html' %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 border-start">
                                             <h6 class="text-danger mb-3" id="not-attending-count-header">
                                                 <i class="fas fa-times me-2"></i>
                                                 Not Attending ({{ rsvp_no_count }})
                                             </h6>
                                             <div style="max-height: 250px; overflow-y: auto;">
-                                                {% if rsvps_no %}
-                                                    {% for rsvp in rsvps_no %}
-                                                        <div class="d-flex align-items-center mb-2">
-                                                            <div class="me-2">
-                                                                <i class="fas fa-user-circle fa-lg text-danger"></i>
-                                                            </div>
-                                                            <div>
-                                                                <strong>{{ rsvp.user.name }}</strong>
-                                                                <br>
-                                                                <small class="text-muted">
-                                                                    Confirmed {{ rsvp.created_at.strftime('%b %d') }}
-                                                                </small>
-                                                            </div>
-                                                        </div>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <div class="text-muted text-center py-3">
-                                                        <i class="fas fa-user-times fa-2x mb-2"></i>
-                                                        <p>No one has said they can't attend.</p>
-                                                    </div>
-                                                {% endif %}
+                                                {% include 'events/event_detail_not_attending.html' %}
                                             </div>
                                         </div>
                                     </div>
@@ -248,7 +234,12 @@
                         {% if event.max_attendees %}
                         <div class="col-12 mt-3">
                             <h6><i class="fas fa-users me-2 text-primary"></i>Capacity</h6>
-                            <p>{{ rsvp_count }}/{{ event.max_attendees }} attendees</p>
+                            <p>
+                                {{ rsvp_count }}/{{ event.max_attendees }} attendees
+                                {% if rsvp_count >= event.max_attendees %}
+                                    <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
+                                {% endif %}
+                            </p>
                             <div class="progress mb-2" style="height: 8px;">
                                 <div class="progress-bar" role="progressbar" 
                                      style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
@@ -693,6 +684,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <i class="fas fa-times me-2"></i>I can't go
                 </button>
             </div>`;
+        } else if (data.user_rsvp && data.user_rsvp.status === 'waitlist') {
+            html += `<div class="text-center">
+                <p><i class="fas fa-user-clock text-warning me-2"></i>You are on the waitlist for this event.</p>
+                    <button id="not-attending-btn" class="btn btn-warning" data-event-id="${eventId}" data-status="no">
+                    <i class="fas fa-times me-2"></i>Remove me from waitlist
+                </button>
+            </div>`;
         } else if (data.user_rsvp && data.user_rsvp.status === 'no') {
             html += `<div class="text-center">
                 <p><i class="fas fa-times-circle text-danger me-2"></i>You've said you can't attend this event.</p>
@@ -702,7 +700,10 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>`;
         } else if (data.event_full) {
             html += `<div class="text-center">
-                <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This event is full.</p>
+                <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This event is full. You can join the waitlist.</p>
+                <button id="attending-btn" class="btn btn-warning" data-event-id="${eventId}" data-status="yes">
+                    <i class="fas fa-user-clock me-2"></i>Join Waitlist
+                </button>
             </div>`;
         } else {
             html += `<div class="text-center">

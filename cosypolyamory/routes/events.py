@@ -109,43 +109,40 @@ def event_detail(event_id):
     """Show event details"""
     try:
         event = Event.get_by_id(event_id)
-        can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
-        
-        # Get user's RSVP if exists and user is authenticated
-        user_rsvp = None
-        if current_user.is_authenticated:
-            try:
-                user_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
-            except RSVP.DoesNotExist:
-                pass
-        
-        # Get RSVP counts  
-        rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-        rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
-        
-        # Get RSVPs for attendees list (only "yes" RSVPs)
-        rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
-        
-        # Get RSVPs for non-attendees list (only "no" RSVPs)
-        rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
-        
-        # Extract Google Maps information
-        google_maps_info = extract_google_maps_info(event.google_maps_link) if event.google_maps_link else None
-        
-        return render_template('events/event_detail.html', 
-                             event=event, 
-                             can_see_details=can_see_details,
-                             user_rsvp=user_rsvp,
-                             rsvp_count=rsvp_count,
-                             rsvp_no_count=rsvp_no_count,
-                             rsvps=rsvps,
-                             rsvps_no=rsvps_no,
-                             google_maps_api_key=os.getenv('GOOGLE_MAPS_API_KEY'),
-                             google_maps_info=google_maps_info,
-                             now=datetime.now())
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
+
+    can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
+    # Get user's RSVP if exists and user is authenticated
+    user_rsvp = None
+    if current_user.is_authenticated:
+        try:
+            user_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
+        except RSVP.DoesNotExist:
+            pass
+    # Get RSVP counts  
+    rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+    rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
+    rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
+    rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+    rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
+    # Extract Google Maps information
+    google_maps_info = extract_google_maps_info(event.google_maps_link) if event.google_maps_link else None
+    is_user_waitlisted = user_rsvp and user_rsvp.status == 'waitlist'
+    return render_template('events/event_detail.html', 
+        event=event, 
+        can_see_details=can_see_details,
+        user_rsvp=user_rsvp,
+        rsvp_count=rsvp_count,
+        rsvp_no_count=rsvp_no_count,
+        rsvps=rsvps,
+        rsvps_no=rsvps_no,
+        rsvps_waitlist=rsvps_waitlist,
+        is_user_waitlisted=is_user_waitlisted,
+        google_maps_api_key=os.getenv('GOOGLE_MAPS_API_KEY'),
+        google_maps_info=google_maps_info,
+        now=datetime.now())
 
 
 @bp.route('/create')
@@ -491,44 +488,80 @@ def rsvp_event(event_id):
             flash(message, 'error')
             return redirect(url_for('events.event_detail', event_id=event_id))
         
-        # Update or create RSVP
+        # Enforce event capacity and waitlist
+        from peewee import fn
+        rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+        # If user is already RSVP'd, update their status
         try:
             rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
-            rsvp.status = status
+            prev_status = rsvp.status
+            if status == 'yes':
+                if event.max_attendees and rsvp_count >= event.max_attendees and prev_status != 'yes':
+                    rsvp.status = 'waitlist'
+                    message = 'Event is full. You have been added to the waitlist.'
+                else:
+                    rsvp.status = 'yes'
+                    message = 'Attendance confirmed: Going'
+            elif status == 'no':
+                rsvp.status = 'no'
+                message = 'Attendance confirmed: Not Going'
+            elif status == 'maybe':
+                rsvp.status = 'maybe'
+                message = 'Attendance confirmed: Maybe'
             rsvp.notes = notes
             rsvp.updated_at = datetime.now()
             rsvp.save()
+            # If user was 'yes' and now is not, promote first waitlisted
+            if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
+                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+                if yes_count < event.max_attendees:
+                    next_waitlisted = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at).first()
+                    if next_waitlisted:
+                        next_waitlisted.status = 'yes'
+                        next_waitlisted.updated_at = datetime.now()
+                        next_waitlisted.save()
         except RSVP.DoesNotExist:
-            rsvp = RSVP.create(
-                event=event,
-                user=current_user,
-                status=status,
-                notes=notes
-            )
-        status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
-        message = f'Attendance confirmed: {status_text}'
+            # New RSVP
+            if status == 'yes' and event.max_attendees and rsvp_count >= event.max_attendees:
+                rsvp = RSVP.create(
+                    event=event,
+                    user=current_user,
+                    status='waitlist',
+                    notes=notes
+                )
+                message = 'Event is full. You have been added to the waitlist.'
+            else:
+                rsvp = RSVP.create(
+                    event=event,
+                    user=current_user,
+                    status=status,
+                    notes=notes
+                )
+                status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
+                message = f'Attendance confirmed: {status_text}'
+
+        # Prepare response
+        rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+        rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
+        rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
+        rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+        rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
+        from flask import render_template
+        attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps)
+        not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
+        waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist)
+        user_rsvp = {'status': rsvp.status} if rsvp else None
         if request.headers.get('Accept') == 'application/json':
-            # Recalculate lists and counts
-            rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-            rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
-            rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
-            rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
-            from flask import render_template
-            attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps)
-            not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
-            # User RSVP info
-            user_rsvp = {
-                'status': rsvp.status
-            } if rsvp else None
             return jsonify({
                 'success': True,
                 'message': message,
-                'status': status,
+                'status': rsvp.status,
                 'user_rsvp': user_rsvp,
                 'rsvp_count': rsvp_count,
                 'rsvp_no_count': rsvp_no_count,
                 'rsvps_html': attendees_html,
-                'rsvps_no_html': not_attending_html
+                'rsvps_no_html': not_attending_html,
+                'waitlist_html': waitlist_html
             })
         flash(message, 'success')
         return redirect(url_for('events.event_detail', event_id=event_id))
