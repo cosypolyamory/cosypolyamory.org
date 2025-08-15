@@ -203,9 +203,9 @@
                                         <div class="ms-auto d-flex align-items-center flex-wrap">
                                             {% if event.exact_time > now and event.max_attendees and (rsvp_counts[event.id] or 0) >= event.max_attendees %}
                                                 <span class="badge bg-warning text-dark align-middle ms-2">Full</span>
-                                                {% if rsvps_waitlist and rsvps_waitlist.get(event.id) %}
-                                                    <span class="badge bg-secondary align-middle ms-1">Waitlist</span>
-                                                {% endif %}
+                                            {% endif %}
+                                            {% if event.exact_time > now and rsvps_waitlist and rsvps_waitlist.get(event.id) %}
+                                                <span class="badge bg-secondary align-middle ms-2">Waitlist</span>
                                             {% endif %}
                                         </div>
                                         <div class="progress mt-1 w-100" style="height: 4px;">
@@ -257,7 +257,7 @@
                                                 {% if user_rsvp.status == 'yes' %}
                                                     <div class="text-center">
                                                         <div class="btn-group w-100" role="group">
-                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="yes" data-current="yes" disabled>
+                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes" data-current="yes" disabled>
                                                                 <i class="fas fa-check me-1"></i>I'm going
                                                             </button>
                                                             <button type="button" class="btn btn-outline-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no" data-current="yes">
@@ -274,7 +274,7 @@
                                                 {% elif user_rsvp.status == 'no' %}
                                                     <div class="text-center">
                                                         <div class="btn-group w-100" role="group">
-                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="yes" data-current="no">
+                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes" data-current="no">
                                                                 <i class="fas fa-check me-1"></i>I can now go!
                                                             </button>
                                                             <button type="button" class="btn btn-outline-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no" data-current="no" disabled>
@@ -285,7 +285,7 @@
                                                 {% else %}
                                                     <div class="text-center">
                                                         <div class="btn-group w-100" role="group">
-                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="yes" data-current="maybe">
+                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes" data-current="maybe">
                                                                 <i class="fas fa-check me-1"></i>I want to go!
                                                             </button>
                                                             <button type="button" class="btn btn-outline-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no" data-current="maybe">
@@ -305,7 +305,7 @@
                                                 {% else %}
                                                     <div class="text-center">
                                                         <div class="btn-group w-100" role="group">
-                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="yes" data-current="none">
+                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes" data-current="none">
                                                                 <i class="fas fa-check me-1"></i>I want to go!
                                                             </button>
                                                             <button type="button" class="btn btn-outline-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no" data-current="none">

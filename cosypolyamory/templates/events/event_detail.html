@@ -46,17 +46,17 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-4">
                         <h1 class="card-title mb-0">{{ event.title }}</h1>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 justify-content-end w-100">
                         {% if event.exact_time < now %}
                             <span class="badge bg-secondary fs-6">Past Event</span>
                         {% else %}
-                            <span class="badge bg-primary fs-6">Upcoming</span>
                             {% if event.max_attendees and rsvp_count >= event.max_attendees %}
-                                <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
+                                <span class="badge bg-warning text-dark align-middle">Full</span>
                             {% endif %}
-                            {% if event.max_attendees and rsvp_count >= event.max_attendees and rsvps_waitlist|length > 0 %}
-                                <span class="badge bg-secondary ms-1 align-middle">Waitlist</span>
+                            {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
+                                <span class="badge bg-secondary align-middle ms-2">Waitlist</span>
                             {% endif %}
+                            <span class="badge bg-primary fs-6 ms-2">Upcoming</span>
                         {% endif %}
                         </div>
                     </div>
@@ -238,6 +238,9 @@
                                 {{ rsvp_count }}/{{ event.max_attendees }} attendees
                                 {% if rsvp_count >= event.max_attendees %}
                                     <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
+                                {% endif %}
+                                {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
+                                    <span class="badge bg-secondary ms-2 align-middle">Waitlist</span>
                                 {% endif %}
                             </p>
                             <div class="progress mb-2" style="height: 8px;">
