@@ -209,10 +209,6 @@ def approved_user_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@app.route('/robots.txt')
-def robots_txt():
-    return send_file("static/robots.txt")
-
 @app.route('/sitemap.xml')
 def sitemap_xml():
     return send_file("static/sitemap.xml")
@@ -1413,6 +1409,7 @@ import cosypolyamory.api_admin_application
 import cosypolyamory.api_admin_application_by_user
 import cosypolyamory.api_admin_application_review
 
-# Register additional API routes
-import cosypolyamory.api_admin_application
+# Register route blueprints
+from cosypolyamory.routes import register_routes
+register_routes(app)
 
