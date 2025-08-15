@@ -219,23 +219,23 @@ def sitemap_xml():
 
 @app.route('/')
 def index():
-    return render_template("index.html", page="home")
+    return render_template("pages/index.html", page="home")
 
 @app.route('/contact')
 def contact():
-    return render_template("contact.html", page="contact")
+    return render_template("pages/contact.html", page="contact")
 
 @app.route('/values')
 def values():
-    return render_template("values.html", page="values")
+    return render_template("pages/values.html", page="values")
 
 @app.route('/structure')
 def rules():
-    return render_template("structure.html", page="docs")
+    return render_template("pages/structure.html", page="docs")
 
 @app.route('/governance')
 def governance():
-    return render_template("governance.html", page="docs")
+    return render_template("pages/governance.html", page="docs")
 
 @app.route('/conflict-resolution')
 def conflict():
@@ -243,17 +243,17 @@ def conflict():
 
 @app.route('/code-of-conduct')
 def coc():
-    return render_template("code-of-conduct.html", page="docs")
+    return render_template("pages/code-of-conduct.html", page="docs")
 
 @app.route('/events-guide')
 def eventsGuide():
-    return render_template("events-guide.html", page="docs")
+    return render_template("events/events-guide.html", page="docs")
 
 # OAuth Routes
 @app.route('/login')
 def login():
     """Display login page with OAuth providers"""
-    return render_template('login.html')
+    return render_template('user/login.html')
 
 @app.route('/login/<provider>')
 def oauth_login(provider):
@@ -451,7 +451,7 @@ def profile():
     if user_role not in ['approved', 'pending', 'organizer', 'admin']:
         flash('Welcome! Ready to join our community? Complete the application below to get started.', 'info')
     
-    return render_template('profile.html', user=current_user)
+    return render_template('user/profile.html', user=current_user)
 
 # API Routes for AJAX requests
 @app.route('/api/user')
@@ -810,7 +810,7 @@ def apply():
         'question_7': os.getenv('APPLICATION_QUESTION_7', 'Question 7'),
     }
     
-    return render_template('apply.html', questions=questions)
+    return render_template('user/apply.html', questions=questions)
 
 @app.route('/apply', methods=['POST'])
 @login_required
@@ -847,7 +847,7 @@ def application_status():
     """Show user's application status"""
     try:
         application = UserApplication.get(UserApplication.user == current_user)
-        return render_template('application_status.html', application=application)
+        return render_template('user/application_status.html', application=application)
     except UserApplication.DoesNotExist:
         return redirect(url_for('apply'))
 
@@ -885,7 +885,7 @@ def moderate_applications():
         'question_7': os.getenv('APPLICATION_QUESTION_7', 'Question 7'),
     }
     
-    return render_template('moderate.html',
+    return render_template('admin/moderate.html',
                          pending_applications=pending_applications,
                          pending_count=total_applications,
                          questions=questions,
@@ -961,7 +961,7 @@ def events_list():
         count = RSVP.select().where(RSVP.event == event, RSVP.status == 'yes').count()
         rsvp_counts[event.id] = count
     
-    return render_template('events_list.html', 
+    return render_template('events/events_list.html', 
                          events=events, 
                          can_see_details=can_see_details,
                          user_rsvps=user_rsvps,
@@ -998,7 +998,7 @@ def event_detail(event_id):
         google_maps_info = extract_google_maps_info(event.google_maps_link) if event.google_maps_link else None
         
         from datetime import datetime
-        return render_template('event_detail.html', 
+        return render_template('events/event_detail.html', 
                              event=event, 
                              can_see_details=can_see_details,
                              user_rsvp=user_rsvp,
@@ -1032,7 +1032,7 @@ def create_event():
     # Get event notes for dropdown
     from cosypolyamory.models.event_note import EventNote
     event_notes = list(EventNote.select().order_by(EventNote.name))
-    return render_template('create_event.html', organizers=organizer_list, event_notes=event_notes)
+    return render_template('events/create_event.html', organizers=organizer_list, event_notes=event_notes)
 
 @app.route('/events/create', methods=['POST'])
 @organizer_required
@@ -1164,7 +1164,7 @@ def edit_event(event_id):
         # Get event notes for dropdown
         from cosypolyamory.models.event_note import EventNote
         event_notes = list(EventNote.select().order_by(EventNote.name))
-        return render_template('create_event.html', event=event, is_edit=True, organizers=organizer_list, event_notes=event_notes)
+        return render_template('events/create_event.html', event=event, is_edit=True, organizers=organizer_list, event_notes=event_notes)
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
         return redirect(url_for('events_list'))
@@ -1353,7 +1353,7 @@ def rsvp_event(event_id):
 def admin():
     """Admin dashboard"""
     users = list(User.select())
-    return render_template('admin.html', users=users)
+    return render_template('admin/admin.html', users=users)
 
 
 # Event Notes Admin Routes (admins and organizers only)
@@ -1363,7 +1363,7 @@ from cosypolyamory.models.event_note import EventNote
 @admin_or_organizer_required
 def event_notes():
     notes = EventNote.select().order_by(EventNote.name)
-    return render_template('event_notes.html', event_notes=notes)
+    return render_template('events/event_notes.html', event_notes=notes)
 
 @app.route('/admin/event-notes/add', methods=['GET', 'POST'])
 @admin_or_organizer_required
@@ -1373,15 +1373,15 @@ def add_event_note():
         note = request.form.get('note', '').strip()
         if not name or not note:
             flash('Both name and note are required.', 'error')
-            return render_template('add_event_note.html')
+            return render_template('events/add_event_note.html')
         # Check for duplicate name
         if EventNote.select().where(EventNote.name == name).exists():
             flash('A note with this name already exists.', 'error')
-            return render_template('add_event_note.html')
+            return render_template('events/add_event_note.html')
         EventNote.create(name=name, note=note)
         flash('Event note added successfully.', 'success')
         return redirect(url_for('event_notes'))
-    return render_template('add_event_note.html')
+    return render_template('events/add_event_note.html')
 
 @app.route('/admin/event-notes/<int:note_id>/edit', methods=['GET', 'POST'])
 @admin_or_organizer_required
@@ -1396,17 +1396,17 @@ def edit_event_note(note_id):
         note_text = request.form.get('note', '').strip()
         if not name or not note_text:
             flash('Both name and note are required.', 'error')
-            return render_template('edit_event_note.html', note=note)
+            return render_template('events/edit_event_note.html', note=note)
         # Check for duplicate name (excluding self)
         if EventNote.select().where((EventNote.name == name) & (EventNote.id != note.id)).exists():
             flash('A note with this name already exists.', 'error')
-            return render_template('edit_event_note.html', note=note)
+            return render_template('events/edit_event_note.html', note=note)
         note.name = name
         note.note = note_text
         note.save()
         flash('Event note updated successfully.', 'success')
         return redirect(url_for('event_notes'))
-    return render_template('edit_event_note.html', note=note)
+    return render_template('events/edit_event_note.html', note=note)
 
 # Register additional API routes
 import cosypolyamory.api_admin_application
