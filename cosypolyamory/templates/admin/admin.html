@@ -5,7 +5,7 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="mb-0">Manage members</h1>
             <button class="btn btn-outline-secondary" id="search-icon-button" type="button" title="Search members">
                 <i class="fas fa-search"></i>
@@ -274,12 +274,34 @@
     .user-list {
         overflow-x: visible;
     }
+    .user-card.dropdown-open {
+        z-index: 100;
+    }
 </style>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const adminTabsContent = document.querySelector('.card.mt-2');
+    if (adminTabsContent) {
+        adminTabsContent.addEventListener('show.bs.dropdown', function(event) {
+            const userCard = event.target.closest('.user-card');
+            if (userCard) {
+                userCard.classList.add('dropdown-open');
+            }
+        });
+
+        adminTabsContent.addEventListener('hide.bs.dropdown', function(event) {
+            const userCard = event.target.closest('.user-card');
+            if (userCard) {
+                userCard.classList.remove('dropdown-open');
+            }
+        });
+    }
+});
+
 let currentPages = {
     pending: 1,
     approved: 1,
@@ -872,14 +894,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.users && data.users.length > 0) {
-                        let resultsHtml = '<div class="user-list">';
+                        let resultsHtml = `
+                            <div class="card">
+                                <div class="card-header">
+                                    Search results
+                                </div>
+                                <div class="card-body user-list">`;
                         data.users.forEach(user => {
                             resultsHtml += createUserCard(user);
                         });
-                        resultsHtml += '</div>';
+                        resultsHtml += '</div></div>';
                         searchResultsContainer.innerHTML = resultsHtml;
                     } else {
-                        searchResultsContainer.innerHTML = '<p class="text-muted">No users found.</p>';
+                        searchResultsContainer.innerHTML = `
+                            <div class="card">
+                                <div class="card-header">
+                                    Search results
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">No users found.</p>
+                                </div>
+                            </div>`;
                     }
                 })
                 .catch(error => {
