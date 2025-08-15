@@ -496,6 +496,51 @@ def api_organizers():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/users/search')
+@login_required
+def search_users():
+    """Search for users by name or email (for autocomplete)"""
+    try:
+        query = request.args.get('q', '').strip()
+        limit = min(int(request.args.get('limit', 10)), 50)  # Max 50 results
+        
+        if not query or len(query) < 2:
+            return jsonify([])
+        
+        # Search in name and email fields using Peewee ORM
+        search_pattern = f"%{query}%"
+        
+        # Get users matching the search query
+        users = (User.select()
+                    .where((User.name.ilike(search_pattern) | User.email.ilike(search_pattern))
+                           & (User.role != 'new'))
+                    .order_by(User.name.asc())
+                    .limit(limit))
+        
+        result = []
+        for user in users:
+            # Map role to display name
+            role_display = {
+                'pending': 'Pending',
+                'approved': 'Member', 
+                'organizer': 'Organizer',
+                'admin': 'Admin',
+                'rejected': 'Rejected'
+            }.get(user.role, user.role.title())
+            
+            result.append({
+                'id': str(user.id),
+                'name': user.name,
+                'email': user.email,
+                'role': user.role,
+                'role_display': role_display,
+                'avatar_url': getattr(user, 'avatar_url', None)
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/admin/users/<role>')
 @admin_required
 def api_admin_users_by_role(role):

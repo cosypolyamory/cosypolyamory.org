@@ -5,7 +5,41 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        <h1 class="mb-2">Manage members</h1>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h1 class="mb-0">Manage members</h1>
+            <button type="button" class="btn btn-outline-secondary" id="search-toggle-btn" title="Search users" 
+                    data-bs-toggle="collapse" data-bs-target="#user-search-dialog" aria-expanded="false" aria-controls="user-search-dialog">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+        
+        <!-- Search Dialog -->
+        <div class="collapse mb-3" id="user-search-dialog">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="card-title mb-0">Search Users</h6>
+                        <button type="button" class="btn-close" id="search-close-btn" aria-label="Close search"></button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="user-search-input" class="form-label">Search for users</label>
+                            <input type="text" class="form-control" id="user-search-input" 
+                                   placeholder="Type to search users..." 
+                                   data-user-search="all"
+                                   data-user-search-min-chars="2">
+                            <div class="form-text">Search by name, email, or other user details</div>
+                        </div>
+                    </div>
+                    <div id="search-results-container" class="mt-3" style="display: none;">
+                        <h6>Search Results:</h6>
+                        <div id="search-results" class="user-list" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Search results will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -208,6 +242,7 @@
 
 {% block styles %}
 {{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
     .user-card {
         border: 1px solid #dee2e6;
@@ -647,9 +682,90 @@ function viewUser(userId) {
                 });
         })
         .catch(error => {
-            console.error('Error:', error);
-            showToast('Error loading user details', 'error');
+            console.error('Error in viewUser:', error);
+            console.error('Error details:', error.message);
+            showToast(`Error loading user details: ${error.message}`, 'error');
+            
+            // Still try to show a basic modal with error information
+            const modalBody = document.getElementById('userModalBody');
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Error Loading User Details</h6>
+                        <p>Failed to load user information: ${error.message}</p>
+                        <p>User ID: ${userId}</p>
+                        <small>Check console for more details</small>
+                    </div>
+                `;
+                const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                modal.show();
+            }
         });
+}
+
+// Show user modal with data directly (without API call)
+function showUserModal(userData) {
+    console.log('Showing user modal with data:', userData);
+    
+    const modalBody = document.getElementById('userModalBody');
+    if (!modalBody) {
+        console.error('Could not find userModalBody element');
+        return;
+    }
+    
+    // Get role badge color
+    const roleColors = {
+        'admin': 'bg-warning',
+        'organizer': 'bg-info',
+        'approved': 'bg-success',
+        'pending': 'bg-warning',
+        'rejected': 'bg-danger',
+        'new': 'bg-secondary'
+    };
+    
+    const roleColor = roleColors[userData.role] || 'bg-secondary';
+    const roleName = userData.role_display || userData.role;
+    
+    // Create avatar or placeholder
+    const avatarHtml = userData.avatar_url ? 
+        `<img src="${userData.avatar_url}" alt="${userData.name}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">` :
+        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="fas fa-user text-white"></i>
+        </div>`;
+    
+    modalBody.innerHTML = `
+        <div class="d-flex align-items-center mb-3">
+            <div class="me-3">
+                ${avatarHtml}
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="mb-1">${userData.name}</h5>
+                <p class="mb-1 text-muted">${userData.email}</p>
+                <span class="badge ${roleColor}">${roleName}</span>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <strong>User ID:</strong> ${userData.id}
+            </div>
+            <div class="col-md-6">
+                <strong>Role:</strong> ${roleName}
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i> 
+                Basic user information from search results. Click on the user in the table for detailed information including application details.
+            </small>
+        </div>
+    `;
+    
+    console.log('About to show modal...');
+    const modal = new bootstrap.Modal(document.getElementById('userModal'));
+    modal.show();
+    console.log('Modal show() called');
 }
 
 function deleteUser(userId, userName) {
@@ -741,5 +857,117 @@ function showToast(message, type) {
         }
     }, 5000);
 }
+
+// User Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('user-search-input');
+    if (searchInput) {
+        const userSearch = new UserSearch(searchInput, {
+            onSelect: function(user) {
+                console.log('User selected from search:', user);
+                console.log('About to show user modal with data:', user);
+                
+                // Show the modal directly with the user data we already have
+                showUserModal(user);
+                
+                // Also highlight the user in the table if possible
+                if (typeof highlightUser === 'function') {
+                    highlightUser(user.id);
+                }
+                
+                // Close the search dialog
+                const searchDialog = document.getElementById('user-search-dialog');
+                if (searchDialog && searchDialog.classList.contains('show')) {
+                    const collapse = new bootstrap.Collapse(searchDialog);
+                    collapse.hide();
+                }
+            },
+            onError: function(error) {
+                console.error('User search error:', error);
+                showToast('Search error: ' + error.message, 'error');
+            }
+        });
+        
+        // Handle search dialog events
+        const searchDialog = document.getElementById('user-search-dialog');
+        
+        if (searchDialog) {
+            // Focus input when dialog opens
+            searchDialog.addEventListener('shown.bs.collapse', function() {
+                const searchInput = document.getElementById('user-search-input');
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            });
+            
+            // Clear search when dialog closes
+            searchDialog.addEventListener('hidden.bs.collapse', function() {
+                const searchInput = document.getElementById('user-search-input');
+                if (searchInput) {
+                    searchInput.value = '';
+                    clearHighlight();
+                }
+            });
+            
+            // Handle close button
+            const closeBtn = document.getElementById('search-close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    const collapse = new bootstrap.Collapse(searchDialog, {
+                        hide: true
+                    });
+                });
+            }
+        }
+    }
+});
+
+// Helper function to highlight a user in the table
+function highlightUser(userId) {
+    console.log('highlightUser called with userId:', userId);
+    
+    // Clear previous highlights
+    clearHighlight();
+    
+    // Find and highlight the user row
+    const userRows = document.querySelectorAll('tbody tr');
+    let userFound = false;
+    
+    userRows.forEach(row => {
+        const userIdCell = row.querySelector('td:first-child');
+        if (userIdCell && userIdCell.textContent.trim() === userId) {
+            row.classList.add('table-warning');
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            userFound = true;
+            
+            // Show which tab the user is in
+            const activeTab = document.querySelector('.tab-pane.active');
+            if (activeTab) {
+                const tabName = activeTab.id;
+                showToast(`Found user in ${tabName} tab`, 'success');
+            }
+        }
+    });
+    
+    // Show the user detail modal immediately
+    console.log('Calling viewUser with userId:', userId);
+    viewUser(userId);
+    
+    if (!userFound) {
+        showToast('Opening user details...', 'info');
+    }
+}
+
+// Helper function to clear highlights
+function clearHighlight() {
+    const highlightedRows = document.querySelectorAll('.table-warning');
+    highlightedRows.forEach(row => {
+        row.classList.remove('table-warning');
+    });
+}
+</script>
+
+<!-- Include User Search Component -->
+<script src="{{ url_for('static', filename='js/user-search.js') }}"></script>
 </script>
 {% endblock %}

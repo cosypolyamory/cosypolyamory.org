@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}User Search Demo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>User Search Demo</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Basic User Search</h3>
+            <div class="mb-3">
+                <label for="basic-search" class="form-label">Search All Users</label>
+                <input type="text" class="form-control" id="basic-search" data-user-search data-user-search-placeholder="Type to search users...">
+            </div>
+            
+            <div id="basic-result" class="alert alert-info" style="display: none;">
+                <h6>Selected User:</h6>
+                <div id="basic-user-info"></div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <h3>Approved Users Only</h3>
+            <div class="mb-3">
+                <label for="approved-search" class="form-label">Search Approved Users</label>
+                <input type="text" class="form-control" id="approved-search" data-user-search data-user-search-approved="true" data-user-search-placeholder="Search approved members...">
+            </div>
+            
+            <div id="approved-result" class="alert alert-success" style="display: none;">
+                <h6>Selected Approved User:</h6>
+                <div id="approved-user-info"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <h3>Programmatic Example</h3>
+            <div class="mb-3">
+                <label for="programmatic-search" class="form-label">Custom User Search</label>
+                <input type="text" class="form-control" id="programmatic-search">
+                <button type="button" class="btn btn-secondary mt-2" id="clear-btn">Clear Selection</button>
+            </div>
+            
+            <div id="programmatic-result" class="alert alert-warning" style="display: none;">
+                <h6>Programmatically Selected User:</h6>
+                <div id="programmatic-user-info"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/user-search.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-initialized searches (via data attributes) - add event handlers
+    const basicSearch = document.querySelector('#basic-search');
+    const approvedSearch = document.querySelector('#approved-search');
+    
+    // Listen for user selection events (we need to do this manually since auto-init doesn't set callbacks)
+    basicSearch.addEventListener('userSelected', function(e) {
+        showUserResult('basic', e.detail.user);
+    });
+    
+    // Programmatic example
+    const programmaticSearch = new UserSearch('#programmatic-search', {
+        placeholder: 'Search with custom options...',
+        minLength: 1,
+        onSelect: function(user) {
+            showUserResult('programmatic', user);
+        },
+        onClear: function() {
+            hideUserResult('programmatic');
+        }
+    });
+    
+    // Clear button
+    document.getElementById('clear-btn').addEventListener('click', function() {
+        programmaticSearch.clear();
+    });
+    
+    // Helper function to show user results
+    function showUserResult(type, user) {
+        const resultDiv = document.getElementById(`${type}-result`);
+        const infoDiv = document.getElementById(`${type}-user-info`);
+        
+        infoDiv.innerHTML = `
+            <div class="d-flex align-items-center gap-3">
+                ${user.avatar_url ? 
+                    `<img src="${user.avatar_url}" alt="${user.name}" class="rounded-circle" style="width: 50px; height: 50px;">` :
+                    '<div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;"><span class="text-muted">👤</span></div>'
+                }
+                <div>
+                    <strong>${user.name}</strong><br>
+                    <small class="text-muted">${user.email}</small><br>
+                    <span class="badge bg-primary">${user.role_display}</span>
+                </div>
+            </div>
+        `;
+        
+        resultDiv.style.display = 'block';
+    }
+    
+    function hideUserResult(type) {
+        const resultDiv = document.getElementById(`${type}-result`);
+        resultDiv.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
