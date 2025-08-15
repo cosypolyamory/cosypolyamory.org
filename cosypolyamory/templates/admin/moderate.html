@@ -3,7 +3,33 @@
 {% block title %}Review Applications{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<style>
+/* Mobile optimization - reduce margins and padding */
+@media (max-width: 768px) {
+    /* Override base template's container constraints on mobile */
+    body > .container-md {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    /* Override the col-md-8 mx-auto wrapper from base template */
+    #content {
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+    
+    .container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: 100% !important;
+    }
+}
+</style>
+<div class="container">
     <h1 class="mb-2">Review Applications</h1>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -79,7 +105,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-8">
+                                <div class="col-12 col-xl-8">
                                     {% if application.question_1_answer %}
                                         <div class="mb-3">
                                             <h6 class="text-primary">{{ questions['question_1'] }}</h6>
@@ -123,22 +149,22 @@
                                         </div>
                                     {% endif %}
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-12 col-xl-4">
                                     <div class="card bg-light">
                                         <div class="card-body">
                                             <h6>Review Actions</h6>
-                                            <form method="POST" action="{{ url_for('admin.approve_application', application_id=application.id) }}" class="mb-2">
-                                                <div class="d-grid">
-                                                    <button type="submit" class="btn btn-success">
+                                            <div class="d-flex flex-column flex-xl-row gap-2">
+                                                <form method="POST" action="{{ url_for('admin.approve_application', application_id=application.id) }}" class="flex-fill">
+                                                    <button type="submit" class="btn btn-success w-100">
                                                         <i class="fas fa-check me-1"></i>Approve
                                                     </button>
-                                                </div>
-                                            </form>
-                                            
-                                            <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" 
-                                                    data-bs-target="#rejectModal{{ application.id }}">
-                                                <i class="fas fa-times me-1"></i>Reject
-                                            </button>
+                                                </form>
+                                                
+                                                <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" 
+                                                        data-bs-target="#rejectModal{{ application.id }}">
+                                                    <i class="fas fa-times me-1"></i>Reject
+                                                </button>
+                                            </div>
                                             
                                             <!-- Reject Modal -->
                                             <div class="modal fade" id="rejectModal{{ application.id }}" tabindex="-1">
