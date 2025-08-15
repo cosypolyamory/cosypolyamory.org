@@ -45,13 +45,13 @@
                 {% endif %}
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
                   <i class="fas fa-user me-2"></i>My Profile
                 </a></li>
                 
                 <!-- Application status for pending users -->
                 {% if current_user.role == 'pending' %}
-                  <li><a class="dropdown-item" href="{{ url_for('application_status') }}">
+                  <li><a class="dropdown-item" href="{{ url_for('user.application_status') }}">
                     <i class="fas fa-clock me-2"></i>Application Status
                   </a></li>
                 {% endif %}
@@ -76,19 +76,19 @@
                 {% endif %}
                 
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
                   <i class="fas fa-sign-out-alt me-2"></i>Logout
                 </a></li>
               </ul>
             </li>
           {% else %}
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('login') }}">
+              <a class="nav-link" href="{{ url_for('auth.login') }}">
                 <i class="fas fa-sign-in-alt me-1"></i>Login
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('apply') }}">
+              <a class="nav-link" href="{{ url_for('user.apply') }}">
                 <i class="fas fa-user-plus me-1"></i>Join Community
               </a>
             </li>

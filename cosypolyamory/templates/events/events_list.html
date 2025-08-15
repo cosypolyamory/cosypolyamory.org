@@ -229,7 +229,7 @@
                                             <div class="text-center py-2">
                                                 <small class="text-muted">
                                                     <i class="fas fa-lock me-1"></i>
-                                                    <a href="{{ url_for('login') }}" class="text-decoration-none">Login</a> to see event details
+                                                    <a href="{{ url_for('auth.login') }}" class="text-decoration-none">Login</a> to see event details
                                                 </small>
                                             </div>
                                         {% elif current_user.role in ['new', 'pending'] %}

@@ -435,17 +435,17 @@
                                 <h6><i class="fas fa-info-circle me-2"></i>Want to attend events?</h6>
                                 <p class="mb-2">You need to be an approved community member to confirm your attendance at events.</p>
                                 {% if not current_user.is_authenticated %}
-                                    <a href="{{ url_for('login') }}" class="btn btn-primary">
+                                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
                                         <i class="fas fa-sign-in-alt me-2"></i>Login to Apply
                                     </a>
                                 {% elif current_user.role == 'rejected' %}
                                     <p class="text-muted">Your application was not approved.</p>
                                 {% elif not current_user.application %}
-                                    <a href="{{ url_for('apply') }}" class="btn btn-primary">
+                                    <a href="{{ url_for('user.apply') }}" class="btn btn-primary">
                                         <i class="fas fa-edit me-2"></i>Apply to Join Community
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('application_status') }}" class="btn btn-outline-primary">
+                                    <a href="{{ url_for('user.application_status') }}" class="btn btn-outline-primary">
                                         <i class="fas fa-clock me-2"></i>Check Application Status
                                     </a>
                                 {% endif %}

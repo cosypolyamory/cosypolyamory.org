@@ -84,7 +84,7 @@
                                     <td>
                                         Submitted {{ user.application.submitted_at.strftime('%B %d, %Y') }}
                                         <br>
-                                        <a href="{{ url_for('application_status') }}" class="btn btn-sm btn-outline-primary mt-1">
+                                        <a href="{{ url_for('user.application_status') }}" class="btn btn-sm btn-outline-primary mt-1">
                                             <i class="fas fa-eye me-1"></i>View Status
                                         </a>
                                     </td>
@@ -97,7 +97,7 @@
                         </table>
                         
                         <div class="mt-3">
-                            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
+                            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
                                 <i class="fas fa-sign-out-alt me-2"></i>
                                 Logout
                             </a>
@@ -136,7 +136,7 @@
                             <div class="text-center">
                                 <i class="fas fa-heart fa-4x text-primary mb-3"></i>
                                 <div class="d-grid">
-                                    <a href="{{ url_for('apply') }}" class="btn btn-primary btn-lg">
+                                    <a href="{{ url_for('user.apply') }}" class="btn btn-primary btn-lg">
                                         <i class="fas fa-user-plus me-2"></i>
                                         Apply Now
                                     </a>
@@ -186,7 +186,7 @@
                         <li><i class="fas fa-envelope me-2 text-info"></i>Contact organizers with questions</li>
                     </ul>
                     <div class="mt-3">
-                        <a href="{{ url_for('application_status') }}" class="btn btn-warning">
+                        <a href="{{ url_for('user.application_status') }}" class="btn btn-warning">
                             <i class="fas fa-clock me-2"></i>Check Application Status
                         </a>
                         <a href="{{ url_for('events_list') }}" class="btn btn-outline-primary">

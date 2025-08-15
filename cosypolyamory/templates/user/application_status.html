@@ -66,7 +66,7 @@
                                     <i class="fas fa-calendar-alt me-2"></i>
                                     View Events
                                 </a>
-                                <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">
+                                <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-primary">
                                     <i class="fas fa-user me-2"></i>
                                     My Profile
                                 </a>
@@ -86,7 +86,7 @@
             <div class="alert alert-warning" role="alert">
                 <h5 class="alert-heading">No Application Found</h5>
                 <p>You haven't submitted an application yet. Would you like to apply to join our community?</p>
-                <a href="{{ url_for('apply') }}" class="btn btn-primary">
+                <a href="{{ url_for('user.apply') }}" class="btn btn-primary">
                     <i class="fas fa-edit me-2"></i>
                     Submit Application
                 </a>
