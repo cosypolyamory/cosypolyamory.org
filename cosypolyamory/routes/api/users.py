@@ -71,6 +71,6 @@ def search_users():
                 'avatar_url': getattr(user, 'avatar_url', None)
             })
         
-        return jsonify(result)
+        return jsonify({'users': result})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

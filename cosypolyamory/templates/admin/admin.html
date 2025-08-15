@@ -7,6 +7,19 @@
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h1 class="mb-0">Manage members</h1>
+            <button class="btn btn-outline-secondary" id="search-icon-button" type="button" title="Search members">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+
+        <div id="search-form-container" class="mb-3" style="display: none;">
+            <div class="input-group">
+                <input type="text" id="user-search-input" class="form-control" placeholder="Type to search for members...">
+                <button class="btn btn-outline-secondary" type="button" id="close-search-button">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="search-results-container" class="mt-2"></div>
         </div>
         
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -825,6 +838,57 @@ function showToast(message, type) {
         }
     }, 5000);
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchIconButton = document.getElementById('search-icon-button');
+    const searchFormContainer = document.getElementById('search-form-container');
+    const closeSearchButton = document.getElementById('close-search-button');
+    const searchInput = document.getElementById('user-search-input');
+    const searchResultsContainer = document.getElementById('search-results-container');
+
+    searchIconButton.addEventListener('click', () => {
+        searchFormContainer.style.display = 'block';
+        searchInput.focus();
+    });
+
+    closeSearchButton.addEventListener('click', () => {
+        searchFormContainer.style.display = 'none';
+        searchInput.value = '';
+        searchResultsContainer.innerHTML = '';
+    });
+
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        const query = searchInput.value.trim();
+
+        if (query.length < 2) {
+            searchResultsContainer.innerHTML = '';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            fetch(`/api/users/search?q=${encodeURIComponent(query)}&limit=10&approved_only=false`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.users && data.users.length > 0) {
+                        let resultsHtml = '<div class="user-list">';
+                        data.users.forEach(user => {
+                            resultsHtml += createUserCard(user);
+                        });
+                        resultsHtml += '</div>';
+                        searchResultsContainer.innerHTML = resultsHtml;
+                    } else {
+                        searchResultsContainer.innerHTML = '<p class="text-muted">No users found.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during search:', error);
+                    searchResultsContainer.innerHTML = '<p class="text-danger">An error occurred during search.</p>';
+                });
+        }, 300);
+    });
+});
 
 function highlightUser(userId) {
     console.log('highlightUser called with userId:', userId);
