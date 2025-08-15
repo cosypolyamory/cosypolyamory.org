@@ -338,9 +338,9 @@ def edit_event_post(event_id):
             flash('Selected organizer not found.', 'error')
             return redirect(url_for('events.edit_event', event_id=event_id))
         
-        # Check permission: only admins or the original/new organizer can edit
-        if not (current_user.role == 'admin' or current_user.id == event.organizer_id or current_user.id == organizer_id):
-            flash('You can only edit events you organize unless you are an admin.', 'error')
+        # Check permission: only admins, organizers, or the original/new organizer can edit
+        if not (current_user.role in ['admin', 'organizer'] or current_user.id == event.organizer_id or current_user.id == organizer_id):
+            flash('You can only edit events you organize unless you are an admin or organizer.', 'error')
             return redirect(url_for('events.edit_event', event_id=event_id))
         
         # Parse dates and times

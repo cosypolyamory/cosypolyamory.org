@@ -24,25 +24,28 @@ def login():
 def oauth_login(provider):
     """Initiate OAuth login with specified provider"""
     from flask import current_app
-    google = current_app.extensions['authlib.integrations.flask_client']['google']
-    github = current_app.extensions['authlib.integrations.flask_client']['github'] 
-    reddit = current_app.extensions['authlib.integrations.flask_client']['reddit']
+    
+    # Get OAuth instance from app extensions
+    oauth = current_app.extensions.get('authlib.integrations.flask_client')
+    if not oauth:
+        flash('OAuth not configured properly', 'error')
+        return redirect(url_for('auth.login'))
     
     print(f"Attempting to login with {provider}")
     if provider == 'google':
         redirect_uri = url_for('auth.oauth_callback', provider='google', _external=True)
         print(f"Google redirect URI: {redirect_uri}")
-        return google.authorize_redirect(redirect_uri)
+        return oauth.google.authorize_redirect(redirect_uri)
     elif provider == 'github':
         redirect_uri = url_for('auth.oauth_callback', provider='github', _external=True)
         print(f"GitHub redirect URI: {redirect_uri}")
         print(f"GitHub client ID: {os.getenv('GITHUB_CLIENT_ID')}")
-        return github.authorize_redirect(redirect_uri)
+        return oauth.github.authorize_redirect(redirect_uri)
     elif provider == 'reddit':
         redirect_uri = url_for('auth.oauth_callback', provider='reddit', _external=True)
         print(f"Reddit redirect URI: {redirect_uri}")
         # Reddit requires a unique state parameter for security
-        return reddit.authorize_redirect(redirect_uri, duration='permanent')
+        return oauth.reddit.authorize_redirect(redirect_uri, duration='permanent')
     else:
         flash('Unknown OAuth provider', 'error')
         return redirect(url_for('auth.login'))
@@ -54,17 +57,19 @@ def oauth_callback(provider):
     from flask import current_app
     from cosypolyamory.models.user import User
     
-    google = current_app.extensions['authlib.integrations.flask_client']['google']
-    github = current_app.extensions['authlib.integrations.flask_client']['github']
-    reddit = current_app.extensions['authlib.integrations.flask_client']['reddit']
+    # Get OAuth instance from app extensions
+    oauth = current_app.extensions.get('authlib.integrations.flask_client')
+    if not oauth:
+        flash('OAuth not configured properly', 'error')
+        return redirect(url_for('auth.login'))
     
     try:
         print(f"Processing callback for {provider}")
         if provider == 'google':
-            token = google.authorize_access_token()
+            token = oauth.google.authorize_access_token()
             print(f"Google token received: {type(token)}")
             # Get user info from Google API
-            resp = google.get('userinfo', token=token)
+            resp = oauth.google.get('userinfo', token=token)
             user_info = resp.json()
             print(f"Google user_info: {user_info}")
             if user_info and isinstance(user_info, dict):
@@ -79,9 +84,9 @@ def oauth_callback(provider):
             else:
                 raise Exception("Invalid user info received from Google")
         elif provider == 'github':
-            token = github.authorize_access_token()
+            token = oauth.github.authorize_access_token()
             print(f"GitHub token received: {type(token)}")
-            resp = github.get('user', token=token)
+            resp = oauth.github.get('user', token=token)
             user_info = resp.json()
             print(f"GitHub user_info: {user_info}")
             
@@ -93,7 +98,7 @@ def oauth_callback(provider):
             primary_email = user_info.get('email')  # Try to get email from user info first
             if not primary_email:
                 try:
-                    email_resp = github.get('user/emails', token=token)
+                    email_resp = oauth.github.get('user/emails', token=token)
                     emails = email_resp.json()
                     print(f"GitHub emails: {emails}")
                     if isinstance(emails, list) and len(emails) > 0:
@@ -113,11 +118,11 @@ def oauth_callback(provider):
                 provider='github'
             )
         elif provider == 'reddit':
-            token = reddit.authorize_access_token()
+            token = oauth.reddit.authorize_access_token()
             print(f"Reddit token received: {type(token)}")
             
             # Get user info from Reddit API
-            resp = reddit.get('api/v1/me', token=token)
+            resp = oauth.reddit.get('api/v1/me', token=token)
             user_info = resp.json()
             print(f"Reddit user_info: {user_info}")
             

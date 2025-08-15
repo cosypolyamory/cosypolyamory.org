@@ -35,7 +35,7 @@
                     <small>Understanding our community guidelines will help you provide better answers and show that you're aligned with our values.</small>
                 </div>
                 
-                <form method="POST" action="{{ url_for('submit_application') }}">
+                <form method="POST" action="{{ url_for('user.submit_application') }}">
                     <div class="mb-4">
                         <label for="question_1" class="form-label">
                             <strong>{{ questions.question_1 }}</strong>
@@ -96,7 +96,7 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="agree_terms" required>
                             <label class="form-check-label" for="agree_terms">
-                                I agree to follow the community <a href="{{ url_for('coc') }}" target="_blank">Code of Conduct</a> 
+                                I agree to follow the community <a href="{{ url_for('pages.coc') }}" target="_blank">Code of Conduct</a> 
                                 and understand that my application will be reviewed by community organizers.
                             </label>
                         </div>
@@ -107,7 +107,7 @@
                             <i class="fas fa-paper-plane me-2"></i>
                             Submit Application
                         </button>
-                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('pages.index') }}" class="btn btn-outline-secondary">
                             Cancel
                         </a>
                     </div>

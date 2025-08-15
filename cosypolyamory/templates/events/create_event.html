@@ -21,7 +21,7 @@
     
     <div class="card mt-4">
         <div class="card-body">
-                <form method="POST" action="{% if is_edit %}{{ url_for('edit_event_post', event_id=event.id) }}{% else %}{{ url_for('events.create_event') }}{% endif %}"{% if event %} data-current-organizer="{{ event.organizer.id }}"{% if event.co_host %} data-current-cohost="{{ event.co_host.id }}"{% endif %}{% endif %}>
+                <form method="POST" action="{% if is_edit %}{{ url_for('events.edit_event_post', event_id=event.id) }}{% else %}{{ url_for('events.create_event') }}{% endif %}"{% if event %} data-current-organizer="{{ event.organizer.id }}"{% if event.co_host %} data-current-cohost="{{ event.co_host.id }}"{% endif %}{% endif %}>
                     <!-- Basic Info -->
                     <div class="row mb-4">
                         <div class="col-12">

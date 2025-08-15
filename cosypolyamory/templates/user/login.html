@@ -26,19 +26,16 @@
                 <p class="card-text">Sign in with one of the following providers to access exclusive community features.</p>
                 
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('oauth_login', provider='google') }}" class="btn btn-danger btn-lg">
-                        <i class="fab fa-google me-2"></i>
-                        Sign in with Google
+                    <a href="{{ url_for('auth.oauth_login', provider='google') }}" class="btn btn-danger btn-lg">
+                        <i class="fab fa-google me-2"></i>Continue with Google
                     </a>
                     
-                    <a href="{{ url_for('oauth_login', provider='github') }}" class="btn btn-dark btn-lg">
-                        <i class="fab fa-github me-2"></i>
-                        Sign in with GitHub
+                    <a href="{{ url_for('auth.oauth_login', provider='github') }}" class="btn btn-dark btn-lg">
+                        <i class="fab fa-github me-2"></i>Continue with GitHub
                     </a>
                     
-                    <a href="{{ url_for('oauth_login', provider='reddit') }}" class="btn btn-warning btn-lg">
-                        <i class="fab fa-reddit-alien me-2"></i>
-                        Sign in with Reddit
+                    <a href="{{ url_for('auth.oauth_login', provider='reddit') }}" class="btn btn-warning btn-lg">
+                        <i class="fab fa-reddit me-2"></i>Continue with Reddit
                     </a>
                 </div>
                 
