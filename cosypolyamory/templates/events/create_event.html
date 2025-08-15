@@ -21,7 +21,7 @@
     
     <div class="card mt-4">
         <div class="card-body">
-                <form method="POST" action="{% if is_edit %}{{ url_for('edit_event_post', event_id=event.id) }}{% else %}{{ url_for('create_event') }}{% endif %}"{% if event %} data-current-organizer="{{ event.organizer.id }}"{% if event.co_host %} data-current-cohost="{{ event.co_host.id }}"{% endif %}{% endif %}>
+                <form method="POST" action="{% if is_edit %}{{ url_for('edit_event_post', event_id=event.id) }}{% else %}{{ url_for('events.create_event') }}{% endif %}"{% if event %} data-current-organizer="{{ event.organizer.id }}"{% if event.co_host %} data-current-cohost="{{ event.co_host.id }}"{% endif %}{% endif %}>
                     <!-- Basic Info -->
                     <div class="row mb-4">
                         <div class="col-12">
@@ -165,7 +165,7 @@
                     
                     <!-- Submit -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{% if event %}{{ url_for('event_detail', event_id=event.id) }}{% else %}{{ url_for('events_list') }}{% endif %}" class="btn btn-outline-secondary btn-lg me-md-2">
+                        <a href="{% if event %}{{ url_for('events.event_detail', event_id=event.id) }}{% else %}{{ url_for('events.events_list') }}{% endif %}" class="btn btn-outline-secondary btn-lg me-md-2">
                             Cancel
                         </a>
                         <button type="submit" class="btn btn-primary btn-lg">

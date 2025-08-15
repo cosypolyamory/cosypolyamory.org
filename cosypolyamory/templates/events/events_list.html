@@ -98,7 +98,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Community Events</h1>
         {% if current_user.role in ['admin', 'organizer'] %}
-            <a href="{{ url_for('create_event') }}" class="btn btn-primary">
+            <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>Create Event
             </a>
         {% endif %}
@@ -220,7 +220,7 @@
                             <div class="card-footer">
                                 <div class="d-grid gap-2">
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] %}
-                                        <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline-primary">
+                                        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-outline-primary">
                                             <i class="fas fa-info-circle me-2"></i>View details
                                         </a>
                                     {% else %}
@@ -342,7 +342,7 @@
                 <h5>No Events Yet</h5>
                 <p>There are no events scheduled at this time. Check back soon!</p>
                 {% if current_user.role in ['admin', 'organizer'] %}
-                    <a href="{{ url_for('create_event') }}" class="btn btn-primary">
+                    <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>Create First Event
                     </a>
                 {% endif %}
@@ -355,7 +355,7 @@
             <h5>No Upcoming Events</h5>
             <p>There are no upcoming events scheduled at this time. Check back soon for new events!</p>
             {% if current_user.role in ['admin', 'organizer'] %}
-                <a href="{{ url_for('create_event') }}" class="btn btn-primary">
+                <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>Create Event
                 </a>
             {% endif %}

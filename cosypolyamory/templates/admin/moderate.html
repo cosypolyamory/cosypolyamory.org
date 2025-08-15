@@ -37,7 +37,7 @@
                 <nav aria-label="Application pagination">
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
-                            <a class="page-link" href="{{ url_for('moderate_applications', page=pagination.prev_num) if pagination.has_prev else '#' }}">
+                            <a class="page-link" href="{{ url_for('admin.moderate_applications', page=pagination.prev_num) if pagination.has_prev else '#' }}">
                                 <i class="fas fa-chevron-left"></i> Previous
                             </a>
                         </li>
@@ -48,7 +48,7 @@
                                 </li>
                             {% elif page_num == 1 or page_num == pagination.pages or (page_num >= pagination.page - 2 and page_num <= pagination.page + 2) %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('moderate_applications', page=page_num) }}">{{ page_num }}</a>
+                                    <a class="page-link" href="{{ url_for('admin.moderate_applications', page=page_num) }}">{{ page_num }}</a>
                                 </li>
                             {% elif page_num == pagination.page - 3 or page_num == pagination.page + 3 %}
                                 <li class="page-item disabled">
@@ -57,7 +57,7 @@
                             {% endif %}
                         {% endfor %}
                         <li class="page-item {{ 'disabled' if not pagination.has_next }}">
-                            <a class="page-link" href="{{ url_for('moderate_applications', page=pagination.next_num) if pagination.has_next else '#' }}">
+                            <a class="page-link" href="{{ url_for('admin.moderate_applications', page=pagination.next_num) if pagination.has_next else '#' }}">
                                 Next <i class="fas fa-chevron-right"></i>
                             </a>
                         </li>
@@ -127,7 +127,7 @@
                                     <div class="card bg-light">
                                         <div class="card-body">
                                             <h6>Review Actions</h6>
-                                            <form method="POST" action="{{ url_for('approve_application', application_id=application.id) }}" class="mb-2">
+                                            <form method="POST" action="{{ url_for('admin.approve_application', application_id=application.id) }}" class="mb-2">
                                                 <div class="d-grid">
                                                     <button type="submit" class="btn btn-success">
                                                         <i class="fas fa-check me-1"></i>Approve
@@ -148,7 +148,7 @@
                                                             <h5 class="modal-title">Reject Application</h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
-                                                        <form method="POST" action="{{ url_for('reject_application', application_id=application.id) }}">
+                                                        <form method="POST" action="{{ url_for('admin.reject_application', application_id=application.id) }}">
                                                             <div class="modal-body">
                                                                 <p>Reject application from <strong>{{ application.user.name }}</strong>?</p>
                                                                 <div class="mb-3">
@@ -188,7 +188,7 @@
                     <nav aria-label="Application pagination">
                         <ul class="pagination">
                             <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
-                                <a class="page-link" href="{{ url_for('moderate_applications', page=pagination.prev_num) if pagination.has_prev else '#' }}">
+                                <a class="page-link" href="{{ url_for('admin.moderate_applications', page=pagination.prev_num) if pagination.has_prev else '#' }}">
                                     <i class="fas fa-chevron-left"></i> Previous
                                 </a>
                             </li>
@@ -199,7 +199,7 @@
                                     </li>
                                 {% elif page_num == 1 or page_num == pagination.pages or (page_num >= pagination.page - 2 and page_num <= pagination.page + 2) %}
                                     <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('moderate_applications', page=page_num) }}">{{ page_num }}</a>
+                                        <a class="page-link" href="{{ url_for('admin.moderate_applications', page=page_num) }}">{{ page_num }}</a>
                                     </li>
                                 {% elif page_num == pagination.page - 3 or page_num == pagination.page + 3 %}
                                     <li class="page-item disabled">
@@ -208,7 +208,7 @@
                                 {% endif %}
                             {% endfor %}
                             <li class="page-item {{ 'disabled' if not pagination.has_next }}">
-                                <a class="page-link" href="{{ url_for('moderate_applications', page=pagination.next_num) if pagination.has_next else '#' }}">
+                                <a class="page-link" href="{{ url_for('admin.moderate_applications', page=pagination.next_num) if pagination.has_next else '#' }}">
                                     Next <i class="fas fa-chevron-right"></i>
                                 </a>
                             </li>
