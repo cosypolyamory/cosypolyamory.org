@@ -23,7 +23,10 @@ def login():
 @bp.route('/login/<provider>')
 def oauth_login(provider):
     """Initiate OAuth login with specified provider"""
-    from cosypolyamory.app import google, github, reddit
+    from flask import current_app
+    google = current_app.extensions['authlib.integrations.flask_client']['google']
+    github = current_app.extensions['authlib.integrations.flask_client']['github'] 
+    reddit = current_app.extensions['authlib.integrations.flask_client']['reddit']
     
     print(f"Attempting to login with {provider}")
     if provider == 'google':
@@ -48,8 +51,12 @@ def oauth_login(provider):
 @bp.route('/callback/<provider>')
 def oauth_callback(provider):
     """Handle OAuth callback and create user session"""
-    from cosypolyamory.app import google, github, reddit
+    from flask import current_app
     from cosypolyamory.models.user import User
+    
+    google = current_app.extensions['authlib.integrations.flask_client']['google']
+    github = current_app.extensions['authlib.integrations.flask_client']['github']
+    reddit = current_app.extensions['authlib.integrations.flask_client']['reddit']
     
     try:
         print(f"Processing callback for {provider}")

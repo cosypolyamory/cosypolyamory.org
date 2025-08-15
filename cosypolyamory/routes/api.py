@@ -6,11 +6,10 @@ Handles JSON API endpoints for AJAX requests.
 
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
+from cosypolyamory.models.user import User
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
-# The actual route implementations will be moved here from app.py
-# during the refactoring process
 
 @bp.route('/user')
 @login_required
@@ -28,3 +27,29 @@ def api_user():
         'is_admin': current_user.is_admin,
         'role': current_user.get_role_display()
     })
+
+
+@bp.route('/organizers')
+@login_required
+def api_organizers():
+    """Return list of users who can organize events"""
+    try:
+        # Get all users who can organize events (admins and organizers)
+        organizers = User.select().where(User.role.in_(['admin', 'organizer']))
+        
+        organizer_list = []
+        for organizer in organizers:
+            organizer_list.append({
+                'id': organizer.id,
+                'name': organizer.name,
+                'email': organizer.email,
+                'role': organizer.role,
+                'is_current_user': organizer.id == current_user.id
+            })
+        
+        # Sort by name
+        organizer_list.sort(key=lambda x: x['name'])
+        
+        return jsonify(organizer_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
