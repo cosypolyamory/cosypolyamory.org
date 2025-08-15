@@ -36,7 +36,7 @@
                         
                         <div class="col-12 mb-3">
                             <label for="description" class="form-label">Description *</label>
-                            <textarea class="form-control" id="description" name="description" rows="8" required 
+                            <textarea class="form-control" id="description" name="description" rows="16" required 
                                       placeholder="Describe your event...">{% if event %}{{ event.description }}{% endif %}</textarea>
                         </div>
                     </div>
@@ -56,32 +56,53 @@
                         <div class="col-md-6 mb-3">
                             <label for="time" class="form-label">Time *</label>
                             <div class="row">
-                                <div class="col-6">
-                                    <select class="form-select" id="time_hour" name="time_hour" required>
-                                        <option value="">Hour</option>
+                                <!-- Modern Bootstrap time picker -->
+                                <div class="input-group mb-2">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-clock me-1"></i><span id="selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}--{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="hourDropdown">
                                         {% for hour in range(24) %}
-                                            <option value="{{ '%02d'|format(hour) }}" 
-                                                    {% if event and event.exact_time.hour == hour %}selected{% endif %}>
-                                                {{ '%02d'|format(hour) }}:00
-                                            </option>
+                                        <li><a class="dropdown-item hour-option" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                         {% endfor %}
-                                    </select>
-                                    <div class="form-text">24-hour format</div>
+                                    </ul>
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span id="selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}--{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="minuteDropdown">
+                                        {% for minute in [0, 15, 30, 45] %}
+                                        <li><a class="dropdown-item minute-option" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
                                 </div>
-                                <div class="col-6">
-                                    <select class="form-select" id="time_minute" name="time_minute" required>
-                                        <option value="">Minutes</option>
-                                        <option value="00" {% if event and event.exact_time.minute == 0 %}selected{% endif %}>:00</option>
-                                        <option value="15" {% if event and event.exact_time.minute == 15 %}selected{% endif %}>:15</option>
-                                        <option value="30" {% if event and event.exact_time.minute == 30 %}selected{% endif %}>:30</option>
-                                        <option value="45" {% if event and event.exact_time.minute == 45 %}selected{% endif %}>:45</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <!-- Hidden input to combine time for form submission -->
-                            <input type="hidden" id="time" name="time" value="{% if event %}{{ event.exact_time.strftime('%H:%M') }}{% endif %}">
+                                <input type="hidden" id="modern_time_hour" name="time_hour" value="{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% endif %}">
+                                <input type="hidden" id="modern_time_minute" name="time_minute" value="{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% endif %}">
+
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    document.querySelectorAll('.hour-option').forEach(function(item) {
+                                        item.addEventListener('click', function(e) {
+                                            e.preventDefault();
+                                            document.getElementById('selectedHour').textContent = this.dataset.value;
+                                            document.getElementById('modern_time_hour').value = this.dataset.value;
+                                        });
+                                    });
+                                    document.querySelectorAll('.minute-option').forEach(function(item) {
+                                        item.addEventListener('click', function(e) {
+                                            e.preventDefault();
+                                            document.getElementById('selectedMinute').textContent = this.dataset.value;
+                                            document.getElementById('modern_time_minute').value = this.dataset.value;
+                                        });
+                                    });
+                                });
+                                </script
+                                >
+
+                                <!-- ...existing code... -->
                         </div>
                         
+                    </div> <!-- close previous row -->
+                    <div class="row mb-4">
                         <div class="col-12 mb-3">
                             <label for="time_period" class="form-label">Time Period (Public) *</label>
                             <input type="text" class="form-control" id="time_period" name="time_period" required 
@@ -170,7 +191,7 @@
                             <div id="selected_event_note_box" class="border rounded bg-light p-2 mb-2" style="display:none; white-space:pre-line;"></div>
                             <label for="tips_for_attendees" class="form-label">Additional notes for this event</label>
                             <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3"
-                                      placeholder="Add any event-specific notes here">{% if event %}{{ event.tips_for_attendees }}{% endif %}</textarea>
+                                      placeholder="Add any event-specific notes here">{% if event and event.tips_for_attendees %}{{ event.tips_for_attendees }}{% endif %}</textarea>
                             <div class="form-text">You can add extra notes for this event. The selected standard note will be shown above.</div>
                         </div>
                     </div>
