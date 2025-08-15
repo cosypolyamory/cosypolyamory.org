@@ -169,9 +169,7 @@
                                         </button>
                                     {% endif %}
                                 </div>
-                                <div class="card-text event-description" style="white-space: pre-line; margin-top: 0;">
-                                    {{ event.description[:900]|e }}{% if event.description|length > 900 %}...{% endif %}
-                                </div>
+                                <div class="card-text event-description" style="white-space: pre-line; margin-top: 0;">{{ event.description[:900]|e|trim }}{% if event.description|length > 900 %}...{% endif %}</div>
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-calendar me-2 text-muted"></i>

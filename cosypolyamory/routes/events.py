@@ -85,8 +85,21 @@ def events_list():
         count = RSVP.select().where(RSVP.event == event, RSVP.status == 'yes').count()
         rsvp_counts[event.id] = count
     
+    # Strip leading/trailing whitespace from descriptions and print to logs
+    class EventWithStrippedDesc:
+        def __init__(self, event):
+            self._event = event
+            for attr in dir(event):
+                if not attr.startswith('__') and not hasattr(self, attr):
+                    setattr(self, attr, getattr(event, attr))
+            # Strip and print description
+            desc = (event.description or "").strip()
+            print(f"EVENT DESC DEBUG: '{desc}'")
+            self.description = desc
+
+    events_stripped = [EventWithStrippedDesc(e) for e in events]
     return render_template('events/events_list.html', 
-                         events=events, 
+                         events=events_stripped, 
                          can_see_details=can_see_details,
                          user_rsvps=user_rsvps,
                          rsvp_counts=rsvp_counts,
