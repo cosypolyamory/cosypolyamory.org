@@ -407,7 +407,7 @@ function changeRole(userId, newRole) {
 }
 
 function viewUser(userId) {
-    fetch(`/api/user/${userId}`)
+    fetch(`/api/admin/user/${userId}`)
         .then(response => response.json())
         .then(data => {
             const modalBody = document.getElementById('userModalBody');

@@ -603,7 +603,7 @@ function changeRole(userId, newRole) {
 
 function viewUser(userId) {
     console.log('Opening user profile for:', userId);
-    fetch(`/api/user/${userId}`)
+    fetch(`/api/admin/user/${userId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
