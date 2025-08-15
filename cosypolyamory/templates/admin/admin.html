@@ -7,38 +7,6 @@
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h1 class="mb-0">Manage members</h1>
-            <button type="button" class="btn btn-outline-secondary" id="search-toggle-btn" title="Search users" 
-                    data-bs-toggle="collapse" data-bs-target="#user-search-dialog" aria-expanded="false" aria-controls="user-search-dialog">
-                <i class="fas fa-search"></i>
-            </button>
-        </div>
-        
-        <!-- Search Dialog -->
-        <div class="collapse mb-3" id="user-search-dialog">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="card-title mb-0">Search Users</h6>
-                        <button type="button" class="btn-close" id="search-close-btn" aria-label="Close search"></button>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label for="user-search-input" class="form-label">Search for users</label>
-                            <input type="text" class="form-control" id="user-search-input" 
-                                   placeholder="Type to search users..." 
-                                   data-user-search="all"
-                                   data-user-search-min-chars="2">
-                            <div class="form-text">Search by name, email, or other user details</div>
-                        </div>
-                    </div>
-                    <div id="search-results-container" class="mt-3" style="display: none;">
-                        <h6>Search Results:</h6>
-                        <div id="search-results" class="user-list" style="max-height: 400px; overflow-y: auto;">
-                            <!-- Search results will appear here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
         
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -858,71 +826,6 @@ function showToast(message, type) {
     }, 5000);
 }
 
-// User Search functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('user-search-input');
-    if (searchInput) {
-        const userSearch = new UserSearch(searchInput, {
-            onSelect: function(user) {
-                console.log('User selected from search:', user);
-                console.log('About to show user modal with data:', user);
-                
-                // Show the modal directly with the user data we already have
-                showUserModal(user);
-                
-                // Also highlight the user in the table if possible
-                if (typeof highlightUser === 'function') {
-                    highlightUser(user.id);
-                }
-                
-                // Close the search dialog
-                const searchDialog = document.getElementById('user-search-dialog');
-                if (searchDialog && searchDialog.classList.contains('show')) {
-                    const collapse = new bootstrap.Collapse(searchDialog);
-                    collapse.hide();
-                }
-            },
-            onError: function(error) {
-                console.error('User search error:', error);
-                showToast('Search error: ' + error.message, 'error');
-            }
-        });
-        
-        // Handle search dialog events
-        const searchDialog = document.getElementById('user-search-dialog');
-        
-        if (searchDialog) {
-            // Focus input when dialog opens
-            searchDialog.addEventListener('shown.bs.collapse', function() {
-                const searchInput = document.getElementById('user-search-input');
-                if (searchInput) {
-                    searchInput.focus();
-                }
-            });
-            
-            // Clear search when dialog closes
-            searchDialog.addEventListener('hidden.bs.collapse', function() {
-                const searchInput = document.getElementById('user-search-input');
-                if (searchInput) {
-                    searchInput.value = '';
-                    clearHighlight();
-                }
-            });
-            
-            // Handle close button
-            const closeBtn = document.getElementById('search-close-btn');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function() {
-                    const collapse = new bootstrap.Collapse(searchDialog, {
-                        hide: true
-                    });
-                });
-            }
-        }
-    }
-});
-
-// Helper function to highlight a user in the table
 function highlightUser(userId) {
     console.log('highlightUser called with userId:', userId);
     
@@ -965,9 +868,5 @@ function clearHighlight() {
         row.classList.remove('table-warning');
     });
 }
-</script>
-
-<!-- Include User Search Component -->
-<script src="{{ url_for('static', filename='js/user-search.js') }}"></script>
 </script>
 {% endblock %}
