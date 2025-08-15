@@ -1,10 +1,10 @@
 """
-API routes for cosypolyamory.org
+Admin API endpoints
 
-Handles JSON API endpoints for AJAX requests.
+Handles admin-specific API operations like user management, role changes, etc.
 """
 
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 
 from cosypolyamory.models.user import User
@@ -12,7 +12,7 @@ from cosypolyamory.models.user_application import UserApplication
 from cosypolyamory.models.event import Event
 from cosypolyamory.models.rsvp import RSVP
 
-bp = Blueprint('api', __name__, url_prefix='/api')
+bp = Blueprint('admin', __name__)
 
 
 def admin_required(f):
@@ -24,70 +24,6 @@ def admin_required(f):
             return jsonify({'error': 'Admin access required'}), 403
         return f(*args, **kwargs)
     return decorated_function
-
-
-@bp.route('/user')
-@login_required
-def api_user():
-    """Return current user information as JSON"""
-    return jsonify({
-        'id': current_user.id,
-        'email': current_user.email,
-        'name': current_user.name,
-        'avatar_url': current_user.avatar_url,
-        'provider': current_user.provider,
-        'created_at': current_user.created_at.isoformat(),
-        'is_approved': current_user.is_approved,
-        'is_organizer': current_user.is_organizer,
-        'is_admin': current_user.is_admin,
-        'role': current_user.get_role_display()
-    })
-
-
-@bp.route('/users/search')
-@login_required
-def search_users():
-    """Search for users by name or email (for autocomplete)"""
-    try:
-        query = request.args.get('q', '').strip()
-        limit = min(int(request.args.get('limit', 10)), 50)  # Max 50 results
-        
-        if not query or len(query) < 2:
-            return jsonify([])
-        
-        # Search in name and email fields using Peewee ORM
-        search_pattern = f"%{query}%"
-        
-        # Get users matching the search query
-        users = (User.select()
-                    .where((User.name.ilike(search_pattern) | User.email.ilike(search_pattern))
-                           & (User.role != 'new'))
-                    .order_by(User.name.asc())
-                    .limit(limit))
-        
-        result = []
-        for user in users:
-            # Map role to display name
-            role_display = {
-                'pending': 'Pending',
-                'approved': 'Member', 
-                'organizer': 'Organizer',
-                'admin': 'Admin',
-                'rejected': 'Rejected'
-            }.get(user.role, user.role.title())
-            
-            result.append({
-                'id': str(user.id),
-                'name': user.name,
-                'email': user.email,
-                'role': user.role,
-                'role_display': role_display,
-                'avatar_url': getattr(user, 'avatar_url', None)
-            })
-        
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
 @bp.route('/admin/users/<role>')
@@ -188,7 +124,7 @@ def api_admin_users_by_role(role):
         return jsonify({'error': str(e)}), 500
 
 
-@bp.route('/user/<user_id>')
+@bp.route('/admin/user/<user_id>')
 @admin_required
 def api_user_details(user_id):
     """Return detailed user information"""
@@ -332,29 +268,3 @@ def api_delete_user():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
-
-
-@bp.route('/organizers')
-@login_required
-def api_organizers():
-    """Return list of users who can organize events"""
-    try:
-        # Get all users who can organize events (admins and organizers)
-        organizers = User.select().where(User.role.in_(['admin', 'organizer']))
-        
-        organizer_list = []
-        for organizer in organizers:
-            organizer_list.append({
-                'id': organizer.id,
-                'name': organizer.name,
-                'email': organizer.email,
-                'role': organizer.role,
-                'is_current_user': organizer.id == current_user.id
-            })
-        
-        # Sort by name
-        organizer_list.sort(key=lambda x: x['name'])
-        
-        return jsonify(organizer_list)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500

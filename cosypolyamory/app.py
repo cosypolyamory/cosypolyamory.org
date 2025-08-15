@@ -766,11 +766,6 @@ def edit_event_note(note_id):
         return redirect(url_for('event_notes'))
     return render_template('events/edit_event_note.html', note=note)
 
-# Register additional API routes
-import cosypolyamory.api_admin_application
-import cosypolyamory.api_admin_application_by_user
-import cosypolyamory.api_admin_application_review
-
 # Register route blueprints
 from cosypolyamory.routes import register_routes
 register_routes(app)
