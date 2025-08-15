@@ -154,7 +154,7 @@
                             </div>
                             
                             <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex justify-content-between align-items-start mb-0">
                                     <h5 class="card-title flex-grow-1 me-2">{{ event.title }}</h5>
                                     {% if event.description|length > 180 %}
                                         <button type="button" 
@@ -169,9 +169,9 @@
                                         </button>
                                     {% endif %}
                                 </div>
-                                <p class="card-text event-description mb-3">
-                                    {{ event.description[:180] }}{% if event.description|length > 180 %}...{% endif %}
-                                </p>
+                                <div class="card-text event-description" style="white-space: pre-line; margin-top: 0;">
+                                    {{ event.description[:900]|e }}{% if event.description|length > 900 %}...{% endif %}
+                                </div>
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-calendar me-2 text-muted"></i>

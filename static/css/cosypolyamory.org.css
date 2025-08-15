@@ -172,7 +172,7 @@ h4 {
 }
 
 .event-card .event-description {
-  height: 10rem; /* Increased from 6rem to 10rem for more text visibility */
+  height: 14rem; /* Increased from 10rem to 14rem for more text visibility */
   overflow: hidden;
   line-height: 1.4;
   margin-bottom: 1rem;
