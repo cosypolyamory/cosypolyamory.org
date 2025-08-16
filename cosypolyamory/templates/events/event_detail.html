@@ -634,19 +634,17 @@ console.log('RSVP script loaded');
 document.addEventListener('DOMContentLoaded', function() {
     let eventId = "{{ event.id }}";
 
-    function attachAttendanceListeners() {
-        document.querySelectorAll('.attendance-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                console.log('RSVP button clicked', this, this.getAttribute('data-status'));
-                const status = this.getAttribute('data-status');
-                if (status && !this.disabled) {
-                    updateAttendanceStatus(status, this);
-                }
-            });
-        });
-    }
-
-    attachAttendanceListeners();
+    // Use event delegation instead of direct attachment
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('attendance-btn') || e.target.closest('.attendance-btn')) {
+            const button = e.target.classList.contains('attendance-btn') ? e.target : e.target.closest('.attendance-btn');
+            console.log('RSVP button clicked', button, button.getAttribute('data-status'));
+            const status = button.getAttribute('data-status');
+            if (status && !button.disabled) {
+                updateAttendanceStatus(status, button);
+            }
+        }
+    });
 
     function updateAttendanceStatus(status, button) {
         // Show loading state
@@ -716,8 +714,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         section.innerHTML = html;
 
-        // Re-attach event listeners
-        attachAttendanceListeners();
+        // No need to re-attach event listeners since we're using event delegation
 
         // Update attendee, not attending, and waitlist lists and counts
         if (data.rsvps_html) {
@@ -822,6 +819,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
 
 // Copy to clipboard function for share modal
 function copyToClipboard(elementId) {
