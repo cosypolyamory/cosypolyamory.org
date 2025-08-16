@@ -1,0 +1,22 @@
+{# Render the waitlist for the event ("waitlist" RSVPs) #}
+{% if rsvps_waitlist %}
+    {% for rsvp in rsvps_waitlist %}
+        <div class="d-flex align-items-center mb-2">
+            <div class="me-2">
+                <i class="fas fa-user-clock fa-lg text-warning"></i>
+            </div>
+            <div>
+                <strong>{{ rsvp.user.name }}</strong>
+                <br>
+                <small class="text-muted">
+                    Waitlisted {{ rsvp.created_at.strftime('%b %d') }}
+                </small>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="text-muted text-center py-3">
+        <i class="fas fa-user-clock fa-2x mb-2"></i>
+        <p>No one is on the waitlist.</p>
+    </div>
+{% endif %}
