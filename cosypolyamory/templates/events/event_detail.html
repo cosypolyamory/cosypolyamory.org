@@ -136,12 +136,21 @@
                                             {% endif %}
                                         </div>
                                         <div class="btn-group" role="group">
-                                            <button id="attending-btn" class="btn btn-success" data-event-id="{{ event.id }}" data-status="yes" disabled>
-                                                <i class="fas fa-check me-2"></i>I want to go!
-                                            </button>
-                                            <button id="not-attending-btn" class="btn btn-danger" data-event-id="{{ event.id }}" data-status="no" disabled>
-                                                <i class="fas fa-times me-2"></i>I can't go
-                                            </button>
+                                            {% if not user_rsvp %}
+                                                <button class="btn btn-success attendance-btn" data-event-id="{{ event.id }}" data-status="yes">
+                                                    <i class="fas fa-check me-2"></i>I want to go!
+                                                </button>
+                                                <button class="btn btn-danger attendance-btn" data-event-id="{{ event.id }}" data-status="no">
+                                                    <i class="fas fa-times me-2"></i>I can't go
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-success attendance-btn" data-event-id="{{ event.id }}" data-status="yes" {% if user_rsvp.status == 'yes' or user_rsvp.status == 'waitlist' %}disabled{% endif %}>
+                                                    <i class="fas fa-check me-2"></i>I want to go!
+                                                </button>
+                                                <button class="btn btn-danger attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if user_rsvp.status == 'no' %}disabled{% endif %}>
+                                                    <i class="fas fa-times me-2"></i>I can't go
+                                                </button>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -621,28 +630,20 @@ Log in or join our community for more details: {{ request.url }}</textarea>
 {% block scripts %}
 {{ super() }}
 <script>
+console.log('RSVP script loaded');
 document.addEventListener('DOMContentLoaded', function() {
-    let eventId = {{ event.id }};
+    let eventId = "{{ event.id }}";
 
     function attachAttendanceListeners() {
-        const attendingBtn = document.getElementById('attending-btn');
-        const notAttendingBtn = document.getElementById('not-attending-btn');
-        if (attendingBtn) {
-            attendingBtn.addEventListener('click', function() {
+        document.querySelectorAll('.attendance-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                console.log('RSVP button clicked', this, this.getAttribute('data-status'));
                 const status = this.getAttribute('data-status');
                 if (status && !this.disabled) {
                     updateAttendanceStatus(status, this);
                 }
             });
-        }
-        if (notAttendingBtn) {
-            notAttendingBtn.addEventListener('click', function() {
-                const status = this.getAttribute('data-status');
-                if (status && !this.disabled) {
-                    updateAttendanceStatus(status, this);
-                }
-            });
-        }
+        });
     }
 
     attachAttendanceListeners();
@@ -687,6 +688,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateAttendanceUI(data) {
+
         // Update the attendance confirmation section
         const section = document.getElementById('attendance-section');
         if (!section) return;
@@ -701,40 +703,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusLine = `<i class=\"fas fa-hourglass-half text-secondary me-2\" title=\"RSVP Status\"></i><span class=\"fw-bold text-warning\">I am waitlisted</span>`;
             }
             html += `<div class=\"text-center\"><div class=\"rsvp-status-line mt-2 mb-2\">${statusLine}</div><div class=\"btn-group\" role=\"group\">` +
-                `<button id=\"attending-btn\" class=\"btn btn-success\" data-event-id=\"${eventId}\" data-status=\"yes\" ${(data.user_rsvp.status === 'yes') ? 'disabled' : ''}>` +
+                `<button class=\"btn btn-success attendance-btn\" data-event-id=\"${eventId}\" data-status=\"yes\" ${(data.user_rsvp.status === 'yes' || data.user_rsvp.status === 'waitlist') ? 'disabled' : ''}>` +
                 `<i class=\"fas fa-check me-2\"></i>I want to go!</button>` +
-                `<button id=\"not-attending-btn\" class=\"btn btn-danger\" data-event-id=\"${eventId}\" data-status=\"no\" ${(data.user_rsvp.status === 'no') ? 'disabled' : ''}>` +
+                `<button class=\"btn btn-danger attendance-btn\" data-event-id=\"${eventId}\" data-status=\"no\" ${(data.user_rsvp.status === 'no') ? 'disabled' : ''}>` +
                 `<i class=\"fas fa-times me-2\"></i>I can't go</button></div></div>`;
         } else {
             html += `<div class=\"text-center\"><div class=\"btn-group\" role=\"group\">` +
-                `<button id=\"attending-btn\" class=\"btn btn-success\" data-event-id=\"${eventId}\" data-status=\"yes\">` +
+                `<button class=\"btn btn-success attendance-btn\" data-event-id=\"${eventId}\" data-status=\"yes\">` +
                 `<i class=\"fas fa-check me-2\"></i>I want to go!</button>` +
-                `<button id=\"not-attending-btn\" class=\"btn btn-danger\" data-event-id=\"${eventId}\" data-status=\"no\">` +
+                `<button class=\"btn btn-danger attendance-btn\" data-event-id=\"${eventId}\" data-status=\"no\">` +
                 `<i class=\"fas fa-times me-2\"></i>I can't go</button></div></div>`;
-        } else if (data.event_full) {
-            html += `<div class="text-center">
-                <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This event is full. You can join the waitlist.</p>
-                <button id="attending-btn" class="btn btn-warning" data-event-id="${eventId}" data-status="yes">
-                    <i class="fas fa-user-clock me-2"></i>Join Waitlist
-                </button>
-            </div>`;
-        } else {
-            html += `<div class="text-center">
-                <p>Will you be attending this event?</p>
-                <div class="btn-group" role="group">
-                    <button id="attending-btn" class="btn btn-success" data-event-id="${eventId}" data-status="yes">
-                        <i class="fas fa-check me-2"></i>I want to go!
-                    </button>
-                    <button id="not-attending-btn" class="btn btn-danger" data-event-id="${eventId}" data-status="no">
-                        <i class="fas fa-times me-2"></i>I can't go
-                    </button>
-                </div>
-            </div>`;
         }
         section.innerHTML = html;
 
-    // Re-attach event listeners
-    attachAttendanceListeners();
+        // Re-attach event listeners
+        attachAttendanceListeners();
 
         // Update attendee, not attending, and waitlist lists and counts
         if (data.rsvps_html) {
@@ -839,7 +822,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
 
 // Copy to clipboard function for share modal
 function copyToClipboard(elementId) {

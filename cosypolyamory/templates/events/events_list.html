@@ -268,16 +268,27 @@
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] and event.exact_time > now %}
                                         <div class="attendance-buttons-container">
                                             {% set user_rsvp = user_rsvps.get(event.id) %}
-                                            <div class="text-center">
-                                                <div class="btn-group w-100" role="group">
-                                                    <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes" disabled>
-                                                        <i class="fas fa-check me-1"></i>I want to go!
-                                                    </button>
-                                                    <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no" disabled>
-                                                        <i class="fas fa-times me-1"></i>I can't go
-                                                    </button>
-                                                </div>
+                                            <div class="attendance-container">
+                                                <div class="text-center">
+                                                    <div class="btn-group w-100" role="group">
+                                                        {% if not user_rsvp %}
+                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes">
+                                                                <i class="fas fa-check me-1"></i>I want to go!
+                                                            </button>
+                                                            <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no">
+                                                                <i class="fas fa-times me-1"></i>I can't go
+                                                            </button>
+                                                        {% else %}
+                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes" {% if user_rsvp.status == 'yes' or user_rsvp.status == 'waitlist' %}disabled{% endif %}>
+                                                                <i class="fas fa-check me-1"></i>I want to go!
+                                                            </button>
+                                                            <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if user_rsvp.status == 'no' %}disabled{% endif %}>
+                                                                <i class="fas fa-times me-1"></i>I can't go
+                                                            </button>
+                                                        {% endif %}
                                                     </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -497,8 +508,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateButtonState(button, newStatus, eventId) {
-        // Update RSVP status line
-        const statusLine = document.querySelector(`.rsvp-status-line[data-event-id='${eventId}']`);
+    // Update RSVP status line
+    const attendanceContainer = button.closest('.attendance-container');
+    const statusLine = document.querySelector(`.rsvp-status-line[data-event-id='${eventId}']`);
+    if (statusLine) {
+        let statusHtml = '';
+        if (newStatus === 'yes') {
+            statusHtml = '<i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-success">I\'m going</span>';
+        } else if (newStatus === 'no') {
+            statusHtml = '<i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-danger">I\'m not going</span>';
+        } else if (newStatus === 'waitlist') {
+            statusHtml = '<i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-warning">I am waitlisted</span>';
+        }
+        statusLine.innerHTML = statusHtml;
+    }
         if (newStatus === 'yes') {
             attendanceContainer.innerHTML = `
                 <div class="text-center">
@@ -530,37 +553,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="text-center">
                     <div class="btn-group w-100" role="group">
                         <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="waitlist" disabled>
-                            <i class="fas fa-check me-1"></i>I want to go!
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="waitlist">
-                            <i class="fas fa-times me-1"></i>I can't go
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-                        </button>
-                    </div>
-                </div>
-            `;
-        } else if (newStatus === 'no') {
-            attendanceContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="no">
-                            <i class="fas fa-check me-1"></i>I want to go!
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="no" disabled>
-                            <i class="fas fa-times me-1"></i>I can't go
-                        </button>
-                    </div>
-                </div>
-            `;
-        } else if (newStatus === 'waitlist') {
-            attendanceContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="waitlist">
                             <i class="fas fa-check me-1"></i>I want to go!
                         </button>
                         <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="waitlist">
