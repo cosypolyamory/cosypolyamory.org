@@ -236,12 +236,14 @@
                             <h6><i class="fas fa-users me-2 text-primary"></i>Capacity</h6>
                             <p>
                                 {{ rsvp_count }}/{{ event.max_attendees }} attendees
-                                {% if rsvp_count >= event.max_attendees %}
-                                    <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
-                                {% endif %}
-                                {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
-                                    <span class="badge bg-secondary ms-2 align-middle">Waitlist</span>
-                                {% endif %}
+                                <span id="capacity-pills">
+                                    {% if rsvp_count >= event.max_attendees %}
+                                        <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
+                                    {% endif %}
+                                    {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
+                                        <span class="badge bg-secondary ms-2 align-middle">Waitlist</span>
+                                    {% endif %}
+                                </span>
                             </p>
                             <div class="progress mb-2" style="height: 8px;">
                                 <div class="progress-bar" role="progressbar" 
@@ -766,6 +768,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.rsvp_no_count !== undefined) {
             const notAttendingHeader = document.getElementById('not-attending-count-header');
             if (notAttendingHeader) notAttendingHeader.innerHTML = `<i class="fas fa-times me-2"></i><span>Not Attending (${data.rsvp_no_count})</span>`;
+        }
+        // Update capacity pills if provided
+        if (data.capacity_pills_html) {
+            const pillsContainer = document.getElementById('capacity-pills');
+            if (pillsContainer) pillsContainer.innerHTML = data.capacity_pills_html;
         }
     }
     
