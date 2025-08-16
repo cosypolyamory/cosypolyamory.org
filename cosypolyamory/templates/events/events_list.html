@@ -523,8 +523,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 fullPill.textContent = 'Full';
                 pillsContainer.appendChild(fullPill);
             }
-            // Add Waitlist pill if waitlist exists (matches event detail logic)
-            if (data.waitlist_html && /waitlist/i.test(data.waitlist_html)) {
+            // Add Waitlist pill only if waitlist_count > 0
+            if (data.waitlist_count && data.waitlist_count > 0) {
                 const waitlistPill = document.createElement('span');
                 waitlistPill.className = 'badge bg-secondary align-middle ms-2';
                 waitlistPill.textContent = 'Waitlist';

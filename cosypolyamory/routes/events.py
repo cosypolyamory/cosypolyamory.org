@@ -561,6 +561,7 @@ def rsvp_event(event_id):
                 'user_rsvp': user_rsvp,
                 'rsvp_count': rsvp_count,
                 'rsvp_no_count': rsvp_no_count,
+                'waitlist_count': rsvps_waitlist.count() if hasattr(rsvps_waitlist, 'count') else len(rsvps_waitlist),
                 'rsvps_html': attendees_html,
                 'rsvps_no_html': not_attending_html,
                 'waitlist_html': waitlist_html,

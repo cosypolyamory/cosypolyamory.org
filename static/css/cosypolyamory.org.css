@@ -1,3 +1,9 @@
+/* Make all input/textarea placeholders a lighter gray for field hints */
+input::placeholder,
+textarea::placeholder {
+  color: #adb5bd !important;
+  opacity: 1;
+}
 body {
   font-family: 'Montserrat', sans-serif !important;
   background: #FCFBFB;
