@@ -551,6 +551,7 @@ def rsvp_event(event_id):
         not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
         waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist)
         capacity_pills_html = render_template('events/_capacity_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist)
+        header_pills_html = render_template('events/_header_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist, now=datetime.now())
         user_rsvp = {'status': rsvp.status} if rsvp else None
         if request.headers.get('Accept') == 'application/json':
             return jsonify({
@@ -563,7 +564,8 @@ def rsvp_event(event_id):
                 'rsvps_html': attendees_html,
                 'rsvps_no_html': not_attending_html,
                 'waitlist_html': waitlist_html,
-                'capacity_pills_html': capacity_pills_html
+                'capacity_pills_html': capacity_pills_html,
+                'header_pills_html': header_pills_html
             })
         flash(message, 'success')
         return redirect(url_for('events.event_detail', event_id=event_id))

@@ -47,6 +47,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-4">
                         <h1 class="card-title mb-0">{{ event.title }}</h1>
                         <div class="d-flex align-items-center gap-2 justify-content-end w-100">
+                        <span id="header-pills">
                         {% if event.exact_time < now %}
                             <span class="badge bg-secondary fs-6">Past Event</span>
                         {% else %}
@@ -58,6 +59,7 @@
                             {% endif %}
                             <span class="badge bg-primary fs-6 ms-2">Upcoming</span>
                         {% endif %}
+                        </span>
                         </div>
                     </div>
                     
@@ -773,6 +775,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.capacity_pills_html) {
             const pillsContainer = document.getElementById('capacity-pills');
             if (pillsContainer) pillsContainer.innerHTML = data.capacity_pills_html;
+        }
+        // Update header pills if provided
+        if (data.header_pills_html) {
+            const headerPills = document.getElementById('header-pills');
+            if (headerPills) headerPills.innerHTML = data.header_pills_html;
         }
     }
     
