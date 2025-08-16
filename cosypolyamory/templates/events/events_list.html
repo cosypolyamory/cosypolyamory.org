@@ -226,13 +226,13 @@
                                                 {% if user_rsvp %}
                                                     {% if user_rsvp.status == 'yes' %}
                                                         <i class="fas fa-check-circle text-success me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-success">I want to go!</span>
+                                                        <span class="fw-bold text-success">I'm going</span>
                                                     {% elif user_rsvp.status == 'no' %}
                                                         <i class="fas fa-times-circle text-danger me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-danger">I can't go</span>
+                                                        <span class="fw-bold text-danger">I'm not going</span>
                                                     {% elif user_rsvp.status == 'waitlist' %}
                                                         <i class="fas fa-hourglass-half text-warning me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-warning">I am waitlisted.</span>
+                                                        <span class="fw-bold text-warning">I am waitlisted</span>
                                                     {% endif %}
                                                 {% endif %}
                                             </div>
@@ -531,11 +531,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const statusLine = document.querySelector(`.rsvp-status-line[data-event-id='${eventId}']`);
         if (statusLine) {
             if (newStatus === 'yes') {
-                statusLine.innerHTML = `<i class="fas fa-check-circle text-success me-2" title="RSVP Status"></i><span class="fw-bold text-success">I want to go!</span>`;
+                statusLine.innerHTML = `<i class="fas fa-check-circle text-success me-2" title="RSVP Status"></i><span class="fw-bold text-success">I'm going</span>`;
             } else if (newStatus === 'no') {
-                statusLine.innerHTML = `<i class="fas fa-times-circle text-danger me-2" title="RSVP Status"></i><span class="fw-bold text-danger">I can't go</span>`;
+                statusLine.innerHTML = `<i class="fas fa-times-circle text-danger me-2" title="RSVP Status"></i><span class="fw-bold text-danger">I'm not going</span>`;
             } else if (newStatus === 'waitlist') {
-                statusLine.innerHTML = `<i class="fas fa-hourglass-half text-warning me-2" title="RSVP Status"></i><span class="fw-bold text-warning">I am waitlisted.</span>`;
+                statusLine.innerHTML = `<i class="fas fa-hourglass-half text-warning me-2" title="RSVP Status"></i><span class="fw-bold text-warning">I am waitlisted</span>`;
             } else {
                 statusLine.innerHTML = '';
             }
@@ -560,12 +560,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (newStatus === 'yes') {
-            // User is going - show two buttons: solid green "I'm going" and outline "I can't go"
+            // Always show two buttons: 'I want to go!' (disabled) and 'I can't go'
             attendanceContainer.innerHTML = `
                 <div class="text-center">
                     <div class="btn-group w-100" role="group">
                         <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="yes" disabled>
-                            <i class="fas fa-check me-1"></i>I'm going
+                            <i class="fas fa-check me-1"></i>I want to go!
                         </button>
                         <button type="button" class="btn btn-outline-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="yes">
                             <i class="fas fa-times me-1"></i>I can't go
@@ -574,12 +574,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         } else if (newStatus === 'no') {
-            // User can't go - show two buttons: solid green "I can now go!" and outline red "I can't go" (disabled)
+            // Always show two buttons: 'I want to go!' and 'I can't go' (disabled)
             attendanceContainer.innerHTML = `
                 <div class="text-center">
                     <div class="btn-group w-100" role="group">
                         <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="no">
-                            <i class="fas fa-check me-1"></i>I can now go!
+                            <i class="fas fa-check me-1"></i>I want to go!
                         </button>
                         <button type="button" class="btn btn-outline-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="no" disabled>
                             <i class="fas fa-times me-1"></i>I can't go
