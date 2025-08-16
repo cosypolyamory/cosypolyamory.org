@@ -70,7 +70,10 @@ def extract_google_maps_info(maps_link):
 @bp.route('/')
 def events_list():
     """List all events with appropriate visibility"""
-    events = Event.select().where(Event.is_active == True).order_by(Event.exact_time)
+    now_dt = datetime.now()
+    events = Event.select().where(
+        (Event.is_active == True) & (Event.exact_time >= now_dt)
+    ).order_by(Event.exact_time)
     can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
     
     # Get user RSVPs for easy access in template
