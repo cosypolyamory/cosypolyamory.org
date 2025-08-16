@@ -62,33 +62,62 @@
                         </span>
                         </div>
                     </div>
-                    
-                    <!-- Date and Location Row - moved under title -->
+
+                    <!-- Hosts Section -->
+                    {% if can_see_details %}
                     <div class="row mb-4">
-                        <div class="col-md-4">
-                            <h6><i class="fas fa-calendar me-2 text-primary"></i>Date</h6>
-                            <p>{{ event.exact_time.strftime('%A, %b %d, %Y') }}</p>
+                        <div class="col-md-6">
+                            <h6>Host</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                {% if event.organizer.avatar_url %}
+                                    <span class="position-relative d-inline-block me-3" style="width: 40px; height: 40px;">
+                                        <img src="{{ event.organizer.avatar_url }}" alt="{{ event.organizer.name }}"
+                                             class="rounded-circle position-absolute top-0 start-0" style="width: 40px; height: 40px; object-fit: cover; z-index:2;"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center position-absolute top-0 start-0" 
+                                             style="width: 40px; height: 40px; display: none; z-index:1;">
+                                            <i class="fas fa-user text-white" style="font-size: 16px;"></i>
+                                        </div>
+                                    </span>
+                                {% else %}
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ event.organizer.name }}</strong>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
-                            {% if can_see_details %}
-                                <p>{{ event.exact_time.strftime('%H:%M') }}
-                                    {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
-                                    {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
-                                </p>
-                            {% else %}
-                                <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
-                            {% endif %}
+                        {% if event.co_host %}
+                        <div class="col-md-6">
+                            <h6>Co-host</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                {% if event.co_host.avatar_url %}
+                                    <span class="position-relative d-inline-block me-3" style="width: 40px; height: 40px;">
+                                        <img src="{{ event.co_host.avatar_url }}" alt="{{ event.co_host.name }}"
+                                             class="rounded-circle position-absolute top-0 start-0" style="width: 40px; height: 40px; object-fit: cover; z-index:2;"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center position-absolute top-0 start-0" 
+                                             style="width: 40px; height: 40px; display: none; z-index:1;">
+                                            <i class="fas fa-user text-white" style="font-size: 16px;"></i>
+                                        </div>
+                                    </span>
+                                {% else %}
+                                    <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ event.co_host.name }}</strong>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-5">
-                            <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
-                            {% if can_see_details %}
-                                <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
-                            {% else %}
-                                <p>{{ event.barrio }}</p>
-                            {% endif %}
-                        </div>
+                        {% endif %}
                     </div>
+                    {% endif %}
                     
                     <!-- Description Section -->
                     <div class="row mb-4">
@@ -105,6 +134,134 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Important notes about our events Section -->
+                    {% if event.event_note or (event.tips_for_attendees and event.tips_for_attendees.strip()) %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-warning bg-light">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-3">
+                                            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                                            Important notes about our events
+                                        </h5>
+                                        <div class="card-text">
+                                            {% if event.event_note %}
+                                                {% for paragraph in event.event_note.note.split('\n\n') %}
+                                                    {% if paragraph.strip() %}
+                                                        <p>{{ paragraph.strip() }}</p>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                            {% if event.event_note and event.tips_for_attendees and event.tips_for_attendees.strip() %}
+                                                <p></p>
+                                            {% endif %}
+                                            {% if event.tips_for_attendees and event.tips_for_attendees.strip() %}
+                                                {% for paragraph in event.tips_for_attendees.split('\n\n') %}
+                                                    {% if paragraph.strip() %}
+                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
+                    <!-- Google Maps Preview - full width under time/location -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="mt-4"><i class="fas fa-map-marker-alt me-2 text-primary"></i>Event Location</h6>
+                            {% if google_maps_api_key and google_maps_info %}
+                                {% if google_maps_info.lat and google_maps_info.lng %}
+                                    <!-- Embedded Google Maps with coordinates -->
+                                    <iframe
+                                        width="100%"
+                                        height="200"
+                                        style="border:0; border-radius: 0.375rem;"
+                                        loading="lazy"
+                                        allowfullscreen
+                                        referrerpolicy="no-referrer-when-downgrade"
+                                        src="https://www.google.com/maps/embed/v1/view?key={{ google_maps_api_key }}&center={{ google_maps_info.lat }},{{ google_maps_info.lng }}&zoom=15">
+                                    </iframe>
+                                {% elif google_maps_info.place_name %}
+                                    <!-- Embedded Google Maps with place name -->
+                                    <iframe
+                                        width="100%"
+                                        height="200"
+                                        style="border:0; border-radius: 0.375rem;"
+                                        loading="lazy"
+                                        allowfullscreen
+                                        referrerpolicy="no-referrer-when-downgrade"
+                                        src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_api_key }}&q={{ google_maps_info.place_name | urlencode }}">
+                                    </iframe>
+                                {% elif google_maps_info.embed_url %}
+                                    <!-- Embedded Google Maps with URL (for short URLs like goo.gl) -->
+                                    <iframe
+                                        width="100%"
+                                        height="200"
+                                        style="border:0; border-radius: 0.375rem;"
+                                        loading="lazy"
+                                        allowfullscreen
+                                        referrerpolicy="no-referrer-when-downgrade"
+                                        src="{{ google_maps_info.embed_url }}">
+                                    </iframe>
+                                {% elif google_maps_info.search_url %}
+                                    <!-- Use Google Maps Embed API search mode for short URLs -->
+                                    <iframe
+                                        width="100%"
+                                        height="200"
+                                        style="border:0; border-radius: 0.375rem;"
+                                        loading="lazy"
+                                        allowfullscreen
+                                        referrerpolicy="no-referrer-when-downgrade"
+                                        src="https://www.google.com/maps/embed/v1/search?key={{ google_maps_api_key }}&q={{ google_maps_info.search_url | urlencode }}">
+                                    </iframe>
+                                {% else %}
+                                    <!-- Fallback: show placeholder if we can't parse the URL -->
+                                    <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-map fa-3x mb-2"></i>
+                                            <br>
+                                            <small>Unable to parse map location</small>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% elif event.google_maps_link %}
+                                <!-- No API key configured - show placeholder -->
+                                <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-map fa-3x mb-2"></i>
+                                        <br>
+                                        <small>Map preview will be available when Google Maps API is configured</small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <!-- No Google Maps link provided -->
+                                <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-map-marker-alt fa-3x mb-2"></i>
+                                        <br>
+                                        <small>No map location provided for this event</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {% if event.google_maps_link %}
+                            <div class="mt-2">
+                                <a href="{{ event.google_maps_link }}" target="_blank" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in Google Maps
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    
+                    {% endif %}
                     
                     <!-- Attendees Section -->
                     
@@ -241,191 +398,6 @@
                     {% endif %}
                     
                     
-                    <!-- Event Details -->
-                    <div class="row mt-4">
-                    </div>
-
-                    {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
-                    <!-- Google Maps Preview - full width under time/location -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="mt-4"><i class="fas fa-map-marker-alt me-2 text-primary"></i>Event Location</h6>
-                            {% if google_maps_api_key and google_maps_info %}
-                                {% if google_maps_info.lat and google_maps_info.lng %}
-                                    <!-- Embedded Google Maps with coordinates -->
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        style="border:0; border-radius: 0.375rem;"
-                                        loading="lazy"
-                                        allowfullscreen
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        src="https://www.google.com/maps/embed/v1/view?key={{ google_maps_api_key }}&center={{ google_maps_info.lat }},{{ google_maps_info.lng }}&zoom=15">
-                                    </iframe>
-                                {% elif google_maps_info.place_name %}
-                                    <!-- Embedded Google Maps with place name -->
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        style="border:0; border-radius: 0.375rem;"
-                                        loading="lazy"
-                                        allowfullscreen
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_api_key }}&q={{ google_maps_info.place_name | urlencode }}">
-                                    </iframe>
-                                {% elif google_maps_info.embed_url %}
-                                    <!-- Embedded Google Maps with URL (for short URLs like goo.gl) -->
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        style="border:0; border-radius: 0.375rem;"
-                                        loading="lazy"
-                                        allowfullscreen
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        src="{{ google_maps_info.embed_url }}">
-                                    </iframe>
-                                {% elif google_maps_info.search_url %}
-                                    <!-- Use Google Maps Embed API search mode for short URLs -->
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        style="border:0; border-radius: 0.375rem;"
-                                        loading="lazy"
-                                        allowfullscreen
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        src="https://www.google.com/maps/embed/v1/search?key={{ google_maps_api_key }}&q={{ google_maps_info.search_url | urlencode }}">
-                                    </iframe>
-                                {% else %}
-                                    <!-- Fallback: show placeholder if we can't parse the URL -->
-                                    <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                        <div class="text-center text-muted">
-                                            <i class="fas fa-map fa-3x mb-2"></i>
-                                            <br>
-                                            <small>Unable to parse map location</small>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            {% elif event.google_maps_link %}
-                                <!-- No API key configured - show placeholder -->
-                                <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                    <div class="text-center text-muted">
-                                        <i class="fas fa-map fa-3x mb-2"></i>
-                                        <br>
-                                        <small>Map preview will be available when Google Maps API is configured</small>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <!-- No Google Maps link provided -->
-                                <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                    <div class="text-center text-muted">
-                                        <i class="fas fa-map-marker-alt fa-3x mb-2"></i>
-                                        <br>
-                                        <small>No map location provided for this event</small>
-                                    </div>
-                                </div>
-                            {% endif %}
-                            
-                            {% if event.google_maps_link %}
-                            <div class="mt-2">
-                                <a href="{{ event.google_maps_link }}" target="_blank" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-external-link-alt me-1"></i>Open in Google Maps
-                                </a>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <!-- Hosts Section -->
-                    {% if can_see_details %}
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h6>Host</h6>
-                            <div class="d-flex align-items-center mb-2">
-                                {% if event.organizer.avatar_url %}
-                                    <span class="position-relative d-inline-block me-3" style="width: 40px; height: 40px;">
-                                        <img src="{{ event.organizer.avatar_url }}" alt="{{ event.organizer.name }}"
-                                             class="rounded-circle position-absolute top-0 start-0" style="width: 40px; height: 40px; object-fit: cover; z-index:2;"
-                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center position-absolute top-0 start-0" 
-                                             style="width: 40px; height: 40px; display: none; z-index:1;">
-                                            <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                        </div>
-                                    </span>
-                                {% else %}
-                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                         style="width: 40px; height: 40px;">
-                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                    </div>
-                                {% endif %}
-                                <div>
-                                    <strong>{{ event.organizer.name }}</strong>
-                                </div>
-                            </div>
-                        </div>
-                        {% if event.co_host %}
-                        <div class="col-md-6">
-                            <h6>Co-host</h6>
-                            <div class="d-flex align-items-center mb-2">
-                                {% if event.co_host.avatar_url %}
-                                    <span class="position-relative d-inline-block me-3" style="width: 40px; height: 40px;">
-                                        <img src="{{ event.co_host.avatar_url }}" alt="{{ event.co_host.name }}"
-                                             class="rounded-circle position-absolute top-0 start-0" style="width: 40px; height: 40px; object-fit: cover; z-index:2;"
-                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center position-absolute top-0 start-0" 
-                                             style="width: 40px; height: 40px; display: none; z-index:1;">
-                                            <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                        </div>
-                                    </span>
-                                {% else %}
-                                    <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                         style="width: 40px; height: 40px;">
-                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                    </div>
-                                {% endif %}
-                                <div>
-                                    <strong>{{ event.co_host.name }}</strong>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Important notes about our events Section -->
-                    {% if event.event_note or (event.tips_for_attendees and event.tips_for_attendees.strip()) %}
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card border-warning bg-light">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">
-                                            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
-                                            Important notes about our events
-                                        </h5>
-                                        <div class="card-text">
-                                            {% if event.event_note %}
-                                                {% for paragraph in event.event_note.note.split('\n\n') %}
-                                                    {% if paragraph.strip() %}
-                                                        <p>{{ paragraph.strip() }}</p>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endif %}
-                                            {% if event.event_note and event.tips_for_attendees and event.tips_for_attendees.strip() %}
-                                                <p></p>
-                                            {% endif %}
-                                            {% if event.tips_for_attendees and event.tips_for_attendees.strip() %}
-                                                {% for paragraph in event.tips_for_attendees.split('\n\n') %}
-                                                    {% if paragraph.strip() %}
-                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                    {% endif %}
                     
                     <!-- Member-only notice -->
                     {% if not can_see_details %}

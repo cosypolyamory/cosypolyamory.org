@@ -48,13 +48,6 @@ def approved_user_required(f):
     return decorated_function
 
 
-def extract_google_maps_info(maps_link):
-    """Extract latitude/longitude from Google Maps link if possible"""
-    # This function should be imported or defined elsewhere
-    # For now, return None to avoid errors
-    return None
-
-
 @bp.route('/')
 def events_list():
     """List all events with appropriate visibility"""
