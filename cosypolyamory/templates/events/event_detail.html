@@ -386,7 +386,7 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-4 border-start">
-                                                <h6 class="text-warning mb-3">
+                                                <h6 class="text-warning mb-3" id="waitlist-count-header">
                                                     <i class="fas fa-user-clock me-2"></i>
                                                     Waitlist ({{ rsvps_waitlist|length }})
                                                 </h6>
@@ -687,6 +687,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateAttendanceUI(data) {
+        console.log('RSVP data received - rsvp_count:', data.rsvp_count, 'rsvp_no_count:', data.rsvp_no_count);
+        if (data.waitlist_html) console.log('Has waitlist_html');
+        if (data.waitlist_count) console.log('Has waitlist_count:', data.waitlist_count);
 
         // Update the attendance section
         const section = document.getElementById('attendance-section');
@@ -742,6 +745,36 @@ document.addEventListener('DOMContentLoaded', function() {
             const notAttendingHeader = document.getElementById('not-attending-count-header');
             if (notAttendingHeader) notAttendingHeader.innerHTML = `<i class="fas fa-times me-2"></i><span>Not Attending (${data.rsvp_no_count})</span>`;
         }
+        if (data.rsvp_waitlist_count !== undefined) {
+            const waitlistHeader = document.getElementById('waitlist-count-header');
+            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.rsvp_waitlist_count})</span>`;
+        } else if (data.waitlist_count !== undefined) {
+            const waitlistHeader = document.getElementById('waitlist-count-header');
+            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.waitlist_count})</span>`;
+        } else if (data.rsvps_waitlist !== undefined) {
+            const waitlistHeader = document.getElementById('waitlist-count-header');
+            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.rsvps_waitlist.length || 0})</span>`;
+        } else if (data.waitlist_html !== undefined) {
+            // Count waitlist items from the HTML if no explicit count is provided
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = data.waitlist_html;
+            const waitlistItems = tempDiv.querySelectorAll('.d-flex.align-items-center');
+            const waitlistCount = waitlistItems.length;
+            const waitlistHeader = document.getElementById('waitlist-count-header');
+            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${waitlistCount})</span>`;
+        } else {
+            // If no waitlist data is provided, preserve the current count
+            console.log('No waitlist data in response - preserving current count');
+            const waitlistHeader = document.getElementById('waitlist-count-header');
+            if (waitlistHeader) {
+                // Extract current count from the header and maintain it
+                const currentText = waitlistHeader.textContent;
+                const currentCount = currentText.match(/Waitlist \((\d+)\)/);
+                if (currentCount) {
+                    waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${currentCount[1]})</span>`;
+                }
+            }
+        }
         // Update capacity pills if provided
         if (data.capacity_pills_html) {
             const pillsContainer = document.getElementById('capacity-pills');
@@ -789,32 +822,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function updateButtonStates(status) {
-        if (status === 'yes') {
-            // User is going - green solid button for "I'm going", outline for "I can't"
-            attendingBtn.className = 'btn btn-success btn-lg me-2';
-            attendingBtn.innerHTML = '<i class="fas fa-check me-2"></i>I\'m going';
-            attendingBtn.disabled = true;
-            attendingBtn.removeAttribute('data-status');
-            
-            notAttendingBtn.className = 'btn btn-danger btn-lg';
-            notAttendingBtn.innerHTML = '<i class="fas fa-times me-2"></i>I can\'t go';
-            notAttendingBtn.disabled = false;
-            notAttendingBtn.setAttribute('data-status', 'no');
-        } else if (status === 'no') {
-            // User can't go - outline for "I want to go!", solid red for "I can't"
-            attendingBtn.className = 'btn btn-outline-success btn-lg me-2';
-            attendingBtn.innerHTML = '<i class="fas fa-check me-2"></i>I want to go!';
-            attendingBtn.disabled = false;
-            attendingBtn.setAttribute('data-status', 'yes');
-            
-            notAttendingBtn.className = 'btn btn-danger btn-lg';
-            notAttendingBtn.innerHTML = '<i class="fas fa-times me-2"></i>I can\'t';
-            notAttendingBtn.disabled = true;
-            notAttendingBtn.removeAttribute('data-status');
-        }
-    }
-    
     function showMessage(message, type) {
         // Create a simple alert message
         const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
@@ -835,25 +842,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 alertDiv.remove();
             }
         }, 3000);
-    }
-    
-    // Attach event listeners
-    if (attendingBtn) {
-        attendingBtn.addEventListener('click', function() {
-            const status = this.getAttribute('data-status');
-            if (status) {
-                updateAttendanceStatus(status, this);
-            }
-        });
-    }
-    
-    if (notAttendingBtn) {
-        notAttendingBtn.addEventListener('click', function() {
-            const status = this.getAttribute('data-status');
-            if (status) {
-                updateAttendanceStatus(status, this);
-            }
-        });
     }
 });
 
