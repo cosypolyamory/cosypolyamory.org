@@ -166,7 +166,18 @@ def create_event():
     
     # Get event notes for dropdown
     event_notes = list(EventNote.select().order_by(EventNote.name))
-    return render_template('events/create_event.html', organizers=organizer_list, event_notes=event_notes)
+    from datetime import datetime, timedelta
+    default_date = (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d')
+    default_hour = '19'
+    default_minute = '00'
+    return render_template(
+        'events/create_event.html',
+        organizers=organizer_list,
+        event_notes=event_notes,
+        default_date=default_date,
+        default_hour=default_hour,
+        default_minute=default_minute
+    )
 
 
 @bp.route('/create', methods=['POST'])
