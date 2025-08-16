@@ -201,10 +201,10 @@
                                         <i class="fas fa-users me-2 text-muted"></i>
                                         <span>{{ rsvp_counts[event.id] or 0 }}/{{ event.max_attendees }} attendees</span>
                                         <div class="ms-auto d-flex align-items-center flex-wrap">
-                                            {% if event.exact_time > now and event.max_attendees and (rsvp_counts[event.id] or 0) >= event.max_attendees %}
+                                            {% if event.max_attendees and (rsvp_counts[event.id] or 0) >= event.max_attendees %}
                                                 <span class="badge bg-warning text-dark align-middle ms-2">Full</span>
                                             {% endif %}
-                                            {% if event.exact_time > now and rsvps_waitlist and rsvps_waitlist.get(event.id) %}
+                                            {% if rsvps_waitlist and rsvps_waitlist.get(event.id) %}
                                                 <span class="badge bg-secondary align-middle ms-2">Waitlist</span>
                                             {% endif %}
                                         </div>
@@ -460,12 +460,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function updateAttendanceStatus(eventId, status, button, currentStatus) {
         console.log('updateAttendanceStatus called:', {eventId, status, currentStatus});
-        
         // Show loading state
         const originalText = button.innerHTML;
         button.disabled = true;
         button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
-        
+
         // Make AJAX request
         fetch(`/events/${eventId}/rsvp`, {
             method: 'POST',
@@ -475,14 +474,11 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: `status=${status}`
         })
-        .then(response => {
-            console.log('Response status:', response.status);
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('Response data:', data);
             if (data.success) {
                 updateButtonState(button, data.status, eventId);
+                updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
             } else {
                 showToast(data.message, 'error');
@@ -496,6 +492,45 @@ document.addEventListener('DOMContentLoaded', function() {
             button.innerHTML = originalText;
             button.disabled = false;
         });
+    }
+
+    // Update attendee count and pills after RSVP
+    function updateAttendeeInfo(eventId, data) {
+        // Find the event card
+        const eventCard = document.querySelector(`.event-card [data-event-id='${eventId}']`);
+        let card = eventCard ? eventCard.closest('.card') : null;
+        if (!card) return;
+
+        // Update attendee count and get maxAttendees
+        const attendeesSpan = card.querySelector('.fa-users').nextElementSibling;
+        let maxAttendees = null;
+        if (attendeesSpan && card.innerHTML.includes('attendees')) {
+            const maxAttendeesMatch = attendeesSpan.textContent.match(/\/(\d+)/);
+            maxAttendees = maxAttendeesMatch ? maxAttendeesMatch[1] : null;
+            if (data.rsvp_count !== undefined && maxAttendees) {
+                attendeesSpan.textContent = `${data.rsvp_count}/${maxAttendees} attendees`;
+            }
+        }
+
+        // Update pills (Full and Waitlist) to match event detail logic
+        const pillsContainer = attendeesSpan ? attendeesSpan.parentElement.querySelector('.ms-auto') : null;
+        if (pillsContainer) {
+            pillsContainer.innerHTML = '';
+            // Add Full pill if event is full (matches event detail logic)
+            if (maxAttendees && data.rsvp_count !== undefined && parseInt(data.rsvp_count) >= parseInt(maxAttendees)) {
+                const fullPill = document.createElement('span');
+                fullPill.className = 'badge bg-warning text-dark align-middle ms-2';
+                fullPill.textContent = 'Full';
+                pillsContainer.appendChild(fullPill);
+            }
+            // Add Waitlist pill if waitlist exists (matches event detail logic)
+            if (data.waitlist_html && /waitlist/i.test(data.waitlist_html)) {
+                const waitlistPill = document.createElement('span');
+                waitlistPill.className = 'badge bg-secondary align-middle ms-2';
+                waitlistPill.textContent = 'Waitlist';
+                pillsContainer.appendChild(waitlistPill);
+            }
+        }
     }
     
     function updateButtonState(button, newStatus, eventId) {

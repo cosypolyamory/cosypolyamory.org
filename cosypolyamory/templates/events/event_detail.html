@@ -676,8 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateAttendanceUI(data) {
         // Update the attendance confirmation section
-    // Only update the attendance confirmation section, not all card-bodies
-    const section = document.getElementById('attendance-section');
+        const section = document.getElementById('attendance-section');
         if (!section) return;
         let html = '';
         if (data.user_rsvp && data.user_rsvp.status === 'yes') {
@@ -743,14 +742,22 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Update attendee and not attending lists and counts
+        // Update attendee, not attending, and waitlist lists and counts
         if (data.rsvps_html) {
-            const attendeesCol = document.querySelector('.col-md-6 .text-success + div');
+            const attendeesCol = document.querySelector('h6#attendee-count-header + div');
             if (attendeesCol) attendeesCol.innerHTML = data.rsvps_html;
         }
         if (data.rsvps_no_html) {
-            const notAttendingCol = document.querySelector('.col-md-6.border-start .text-danger + div');
+            const notAttendingCol = document.querySelector('h6#not-attending-count-header + div');
             if (notAttendingCol) notAttendingCol.innerHTML = data.rsvps_no_html;
+        }
+        if (data.waitlist_html) {
+            // Find the Waitlist column by header text
+            const waitlistHeader = Array.from(document.querySelectorAll('h6')).find(h => h.textContent.includes('Waitlist'));
+            if (waitlistHeader) {
+                const waitlistCol = waitlistHeader.nextElementSibling;
+                if (waitlistCol) waitlistCol.innerHTML = data.waitlist_html;
+            }
         }
         if (data.rsvp_count !== undefined) {
             const attendeesHeader = document.getElementById('attendee-count-header');
