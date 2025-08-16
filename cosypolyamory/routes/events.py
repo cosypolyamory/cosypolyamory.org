@@ -28,6 +28,35 @@ from cosypolyamory.models.rsvp import RSVP
 from cosypolyamory.models.user import User
 from cosypolyamory.models.event_note import EventNote
 
+table_states = [
+    ["Event Capacity", "RSVP Status", "First Button Text", "First Button Style", "Second Button Text", "Second Button Style"],
+    ["Not Full", "No RSVP", "I want to go!", "outline", "I can't go!", "outline"],
+    ["Not Full", "RSVP Yes", "I am going", "solid", "I can't go", "outline"],
+    ["Not Full", "RSVP No", "I can go!", "outline", "I am not going.", "solid"],
+    ["Full", "No RSVP", "Waitlist me!", "outline", "I can't go!", "outline"],
+    ["Full", "RSVP Yes", "I am waitlisted.", "solid", "I can't go", "outline"],
+    ["Full", "RSVP No", "I want to go!", "outline", "I am not going.", "solid"]
+]
+
+#[S1] Not Full, No RSVP
+#   ├─ "I want to go!", outline ──────────────▶ [S2]
+#   └─ "I can't go!", outline ────────────────▶ [S3]
+#[S2] Not Full, RSVP Yes
+#   ├─ "I am going!", solid ──────────────▶ [S3]
+#   └─ "I can't go!", outline ─────────────────▶ [S5]
+#[S3] Not Full, RSVP No
+#   ├─ "I can go!", outline" ──────────────────▶ [S2]
+#   └─ "I am not going.", solid ────────────▶ [S3]
+#[S4] Full, No RSVP
+#   ├─ "Waitlist me!", outline ───────────────▶ [S5]
+#   └─ "I can't go!", outline ────────────────▶ [S6]
+#[S5] Full, RSVP Yes (waitlisted)
+#   ├─ "Waitlist me!" solid ──────────────────▶ [S2]
+#   └─ "I can't go" outline ─────────────────▶ [S6]
+#[S6] Full, RSVP No
+#   ├─ "I am waitlisted.", solid ──────────────▶ [S5]
+#   └─ "I am not going.", outline ────────────▶ [S6]
+
 bp = Blueprint('events', __name__, url_prefix='/events')
 
 
