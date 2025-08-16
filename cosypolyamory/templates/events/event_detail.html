@@ -123,6 +123,33 @@
                     </div>
                     {% endif %}
                     
+                    <!-- Event Details Section -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-calendar-day me-2 text-primary"></i>Date</h6>
+                            <p>{{ event.exact_time.strftime('%A, %b %d, %Y') }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
+                            {% if can_see_details %}
+                                <p>{{ event.exact_time.strftime('%H:%M') }}
+                                    {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
+                                    {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                </p>
+                            {% else %}
+                                <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-5">
+                            <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
+                            {% if can_see_details %}
+                                <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
+                            {% else %}
+                                <p>{{ event.barrio }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     <!-- Description Section -->
                     <div class="row mb-4">
                         <div class="col-12">
@@ -724,6 +751,41 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.header_pills_html) {
             const headerPills = document.getElementById('header-pills');
             if (headerPills) headerPills.innerHTML = data.header_pills_html;
+        }
+        
+        // Update capacity section if there's attendance data
+        if (data.rsvp_count !== undefined) {
+            // Update capacity text
+            const capacitySection = document.querySelector('.d-flex.justify-content-between .fw-bold');
+            if (capacitySection && capacitySection.textContent === 'Capacity:') {
+                const capacitySpan = capacitySection.parentElement.querySelector('span:last-child');
+                if (capacitySpan) {
+                    // Extract max_attendees from the existing text or use a data attribute if available
+                    const maxAttendees = capacitySpan.textContent.match(/\/(\d+) attendees/);
+                    if (maxAttendees) {
+                        const maxAttendeesCount = parseInt(maxAttendees[1]);
+                        // Update the text content
+                        const pillsElement = capacitySpan.querySelector('#capacity-pills');
+                        const pillsHtml = pillsElement ? pillsElement.outerHTML : '';
+                        capacitySpan.innerHTML = `${data.rsvp_count}/${maxAttendeesCount} attendees <span id="capacity-pills">${data.capacity_pills_html || ''}</span>`;
+                    }
+                }
+            }
+            
+            // Update progress bar
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                // Extract max_attendees from the capacity text or calculate from current percentage
+                const capacityText = document.querySelector('.d-flex.justify-content-between span:last-child');
+                if (capacityText) {
+                    const maxAttendees = capacityText.textContent.match(/\/(\d+) attendees/);
+                    if (maxAttendees) {
+                        const maxAttendeesCount = parseInt(maxAttendees[1]);
+                        const percentage = maxAttendeesCount > 0 ? (data.rsvp_count / maxAttendeesCount * 100) : 0;
+                        progressBar.style.width = `${percentage}%`;
+                    }
+                }
+            }
         }
     }
     
