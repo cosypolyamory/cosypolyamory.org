@@ -18,18 +18,6 @@ from cosypolyamory.utils import extract_google_maps_info
 
 bp = Blueprint('events', __name__, url_prefix='/events')
 
-import os
-from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
-from flask_login import login_required, current_user
-
-from cosypolyamory.models.event import Event
-from cosypolyamory.models.rsvp import RSVP
-from cosypolyamory.models.user import User
-from cosypolyamory.models.event_note import EventNote
-
-bp = Blueprint('events', __name__, url_prefix='/events')
-
 
 def organizer_required(f):
     """Decorator to require organizer access"""
@@ -71,9 +59,17 @@ def extract_google_maps_info(maps_link):
 def events_list():
     """List all events with appropriate visibility"""
     now_dt = datetime.now()
-    events = Event.select().where(
+    
+    # Fetch upcoming events (future events)
+    upcoming_events = Event.select().where(
         (Event.is_active == True) & (Event.exact_time >= now_dt)
     ).order_by(Event.exact_time)
+    
+    # Fetch past events (events that have already happened)
+    past_events = Event.select().where(
+        (Event.is_active == True) & (Event.exact_time < now_dt)
+    ).order_by(Event.exact_time.desc())
+    
     can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
     
     # Get user RSVPs for easy access in template
@@ -82,9 +78,10 @@ def events_list():
         rsvps = RSVP.select().where(RSVP.user == current_user)
         user_rsvps = {rsvp.event.id: rsvp for rsvp in rsvps}
     
-    # Get RSVP counts for each event
+    # Get RSVP counts for each event (both upcoming and past)
     rsvp_counts = {}
-    for event in events:
+    all_events = list(upcoming_events) + list(past_events)
+    for event in all_events:
         count = RSVP.select().where(RSVP.event == event, RSVP.status == 'yes').count()
         rsvp_counts[event.id] = count
     
@@ -97,9 +94,17 @@ def events_list():
                     setattr(self, attr, getattr(event, attr))
             self.description = (event.description or "").strip()
 
-    events_stripped = [EventWithStrippedDesc(e) for e in events]
+    upcoming_events_stripped = [EventWithStrippedDesc(e) for e in upcoming_events]
+    past_events_stripped = [EventWithStrippedDesc(e) for e in past_events]
+    
+    # Provide both upcoming and past events to template
+    # Also keep 'events' for backward compatibility with existing template logic
+    events_stripped = upcoming_events_stripped + past_events_stripped
+    
     return render_template('events/events_list.html', 
-                         events=events_stripped, 
+                         events=events_stripped,
+                         upcoming_events=upcoming_events_stripped,
+                         past_events=past_events_stripped,
                          can_see_details=can_see_details,
                          user_rsvps=user_rsvps,
                          rsvp_counts=rsvp_counts,
