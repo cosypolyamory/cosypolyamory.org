@@ -4,6 +4,7 @@ Application API endpoints
 Handles application review and management API operations.
 """
 
+import os
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_login import current_user
@@ -23,6 +24,22 @@ def admin_required(f):
             return jsonify({'error': 'Admin access required'}), 403
         return f(*args, **kwargs)
     return decorated_function
+
+
+@bp.route('/admin/application-questions')
+@admin_required
+def api_admin_application_questions():
+    """Return the application questions"""
+    questions = [
+        os.getenv('APPLICATION_QUESTION_1', 'Question 1'),
+        os.getenv('APPLICATION_QUESTION_2', 'Question 2'),
+        os.getenv('APPLICATION_QUESTION_3', 'Question 3'),
+        os.getenv('APPLICATION_QUESTION_4', 'Question 4'),
+        os.getenv('APPLICATION_QUESTION_5', 'Question 5'),
+        os.getenv('APPLICATION_QUESTION_6', 'Question 6'),
+        os.getenv('APPLICATION_QUESTION_7', 'Question 7'),
+    ]
+    return jsonify({'success': True, 'questions': questions})
 
 
 @bp.route('/admin/application/<int:application_id>')

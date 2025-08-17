@@ -670,75 +670,104 @@ function viewUser(userId) {
             return response.json();
         })
         .then(userData => {
-            // Try to fetch application answers for this user
-            fetch(`/api/admin/application/user/${userId}`)
-                .then(r => r.json())
-                .then(appData => {
-                    const modalBody = document.getElementById('userModalBody');
-                    let questionsHtml = '';
-                    if (appData.success && appData.application) {
-                        const app = appData.application;
-                        const questions = [
-                            'Why do you want to join?',
-                            'What are your expectations?',
-                            'How do you contribute to a positive community?',
-                            'Describe your experience with polyamory.',
-                            'What are your boundaries?',
-                            'How do you handle conflict?',
-                            'Anything else you want to share?'
-                        ];
-                        questionsHtml = `<div class='mt-3'><h6>Application Answers</h6>`;
-                        app.answers.forEach((ans, idx) => {
-                            if (ans && ans.trim() !== '') {
-                                questionsHtml += `<div class='mb-2'><strong>${questions[idx]}</strong><div class='border rounded p-2 bg-light'>${ans.replace(/\n/g, '<br>')}</div></div>`;
+            // Fetch the application questions first, then get application answers
+            Promise.all([
+                fetch('/api/admin/application-questions').then(r => r.json()),
+                fetch(`/api/admin/application/user/${userId}`).then(r => r.json())
+            ])
+            .then(([questionsData, appData]) => {
+                const modalBody = document.getElementById('userModalBody');
+                let questionsHtml = '';
+                
+                if (appData.success && appData.application && questionsData.success) {
+                    const app = appData.application;
+                    const questions = questionsData.questions;
+                    
+                    questionsHtml = `<div class='mt-3'><h6>Application Answers</h6>`;
+                    app.answers.forEach((ans, idx) => {
+                        if (ans && ans.trim() !== '' && idx < questions.length) {
+                            questionsHtml += `<div class='mb-2'><strong>${questions[idx]}</strong><div class='border rounded p-2 bg-light'>${ans.replace(/\n/g, '<br>')}</div></div>`;
+                        }
+                    });
+                    questionsHtml += '</div>';
+                }
+                modalBody.innerHTML = `
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="me-3">
+                            ${userData.avatar_url && userData.avatar_url.trim() !== '' ? 
+                                `<img src="${userData.avatar_url}" alt="${userData.name} Avatar" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 60px; height: 60px;\\'><i class=\\'fas fa-user text-white\\'></i></div>';">` :
+                                `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>`
                             }
-                        });
-                        questionsHtml += '</div>';
-                    }
-                    modalBody.innerHTML = `
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="me-3">
-                                ${userData.avatar_url && userData.avatar_url.trim() !== '' ? 
-                                    `<img src="${userData.avatar_url}" alt="${userData.name} Avatar" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 60px; height: 60px;\\'><i class=\\'fas fa-user text-white\\'></i></div>';">` :
-                                    `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                                        <i class="fas fa-user text-white"></i>
-                                    </div>`
-                                }
-                            </div>
-                            <div>
-                                <strong>${userData.name}</strong><br>
-                                <span class="text-muted small">${userData.email}</span>
-                                <span class="badge bg-${
-                                    userData.role === 'admin' ? 'orange' : 
-                                    userData.role === 'organizer' ? 'purple' :
-                                    userData.role === 'approved' ? 'success' :
-                                    userData.role === 'pending' ? 'warning' :
-                                    userData.role === 'rejected' ? 'danger' : 'secondary'
-                                } ms-2">${
-                                    userData.role === 'admin' ? 'Admin' :
-                                    userData.role === 'organizer' ? 'Organizer' :
-                                    userData.role === 'approved' ? 'Member' :
-                                    userData.role === 'pending' ? 'Pending' :
-                                    userData.role === 'rejected' ? 'Rejected' : userData.role
-                                }</span>
-                            </div>
                         </div>
-                        <div class="row small text-muted mb-2">
-                            <div class="col">Joined: ${new Date(userData.created_at).toLocaleDateString()}</div>
-                            <div class="col">Last Login: ${userData.last_login ? new Date(userData.last_login).toLocaleDateString() : 'Never'}</div>
+                        <div>
+                            <strong>${userData.name}</strong><br>
+                            <span class="text-muted small">${userData.email}</span>
+                            <span class="badge bg-${
+                                userData.role === 'admin' ? 'orange' : 
+                                userData.role === 'organizer' ? 'purple' :
+                                userData.role === 'approved' ? 'success' :
+                                userData.role === 'pending' ? 'warning' :
+                                userData.role === 'rejected' ? 'danger' : 'secondary'
+                            } ms-2">${
+                                userData.role === 'admin' ? 'Admin' :
+                                userData.role === 'organizer' ? 'Organizer' :
+                                userData.role === 'approved' ? 'Member' :
+                                userData.role === 'pending' ? 'Pending' :
+                                userData.role === 'rejected' ? 'Rejected' : userData.role
+                            }</span>
                         </div>
-                        ${questionsHtml}
-                    `;
-                    const modal = new bootstrap.Modal(document.getElementById('userModal'));
-                    modal.show();
-                })
-                .catch(() => {
-                    // fallback: show user info only
-                    const modalBody = document.getElementById('userModalBody');
-                    modalBody.innerHTML = `<div class='text-center'>Failed to load application answers.</div>`;
-                    const modal = new bootstrap.Modal(document.getElementById('userModal'));
-                    modal.show();
-                });
+                    </div>
+                    <div class="row small text-muted mb-2">
+                        <div class="col">Joined: ${new Date(userData.created_at).toLocaleDateString()}</div>
+                        <div class="col">Last Login: ${userData.last_login ? new Date(userData.last_login).toLocaleDateString() : 'Never'}</div>
+                    </div>
+                    ${questionsHtml}
+                `;
+                const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                modal.show();
+            })
+            .catch(() => {
+                // fallback: show user info only
+                const modalBody = document.getElementById('userModalBody');
+                modalBody.innerHTML = `
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="me-3">
+                            ${userData.avatar_url && userData.avatar_url.trim() !== '' ? 
+                                `<img src="${userData.avatar_url}" alt="${userData.name} Avatar" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">` :
+                                `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>`
+                            }
+                        </div>
+                        <div>
+                            <strong>${userData.name}</strong><br>
+                            <span class="text-muted small">${userData.email}</span>
+                            <span class="badge bg-${
+                                userData.role === 'admin' ? 'orange' : 
+                                userData.role === 'organizer' ? 'purple' :
+                                userData.role === 'approved' ? 'success' :
+                                userData.role === 'pending' ? 'warning' :
+                                userData.role === 'rejected' ? 'danger' : 'secondary'
+                            } ms-2">${
+                                userData.role === 'admin' ? 'Admin' :
+                                userData.role === 'organizer' ? 'Organizer' :
+                                userData.role === 'approved' ? 'Member' :
+                                userData.role === 'pending' ? 'Pending' :
+                                userData.role === 'rejected' ? 'Rejected' : userData.role
+                            }</span>
+                        </div>
+                    </div>
+                    <div class="row small text-muted mb-2">
+                        <div class="col">Joined: ${new Date(userData.created_at).toLocaleDateString()}</div>
+                        <div class="col">Last Login: ${userData.last_login ? new Date(userData.last_login).toLocaleDateString() : 'Never'}</div>
+                    </div>
+                    <div class='alert alert-warning mt-3'>Failed to load application answers.</div>
+                `;
+                const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                modal.show();
+            });
         })
         .catch(error => {
             console.error('Error in viewUser:', error);

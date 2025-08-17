@@ -6,7 +6,7 @@ Handles OAuth login, logout, and profile management.
 
 import os
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
 
 from cosypolyamory.models.user import User
@@ -354,7 +354,19 @@ def profile():
             current_user.name.startswith('musicbrainz_user_')):
             needs_info = True
     
-    return render_template('user/profile.html', user=current_user, needs_info=needs_info)
+    # Get stored form data from session (for retaining values after errors)
+    form_data = session.get('profile_form_data', {})
+    show_edit_modal = bool(form_data)  # Show edit modal if there's stored form data
+    
+    # Clear form data from session after we've retrieved it
+    if form_data:
+        session.pop('profile_form_data', None)
+    
+    return render_template('user/profile.html', 
+                         user=current_user, 
+                         needs_info=needs_info,
+                         form_data=form_data,
+                         show_edit_modal=show_edit_modal)
 
 
 @bp.route('/profile/update', methods=['POST'])
@@ -364,21 +376,42 @@ def update_profile():
     email = request.form.get('email', '').strip()
     name = request.form.get('name', '').strip()
     
+    # Check if this is an AJAX request by looking at Accept header or explicit parameter
+    is_ajax = ('application/json' in request.headers.get('Accept', '')) or \
+              request.args.get('format') == 'json' or \
+              request.form.get('ajax') == '1'
+    
+    # For non-AJAX requests, store form data in session in case we need to redirect back
+    if not is_ajax:
+        session['profile_form_data'] = {
+            'email': email,
+            'name': name
+        }
+    
     # Validation
     if not email or not name:
-        flash('Both email and name are required.', 'error')
+        error_msg = 'Both email and name are required.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
         return redirect(url_for('auth.profile'))
     
     # Basic email validation
     if '@' not in email or '.' not in email:
-        flash('Please enter a valid email address.', 'error')
+        error_msg = 'Please enter a valid email address.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
         return redirect(url_for('auth.profile'))
     
     # Check if email is already taken by another user
     try:
         existing_user = User.get(User.email == email)
         if existing_user.id != current_user.id:
-            flash('This email address is already in use by another account.', 'error')
+            error_msg = 'This email address is already in use by another account.'
+            if is_ajax:
+                return jsonify({'success': False, 'error': error_msg})
+            flash(error_msg, 'error')
             return redirect(url_for('auth.profile'))
     except User.DoesNotExist:
         pass  # Email is available
@@ -389,8 +422,18 @@ def update_profile():
         current_user.name = name
         current_user.save()
         
-        flash('Profile updated successfully!', 'success')
+        # Clear form data from session on successful update
+        if not is_ajax:
+            session.pop('profile_form_data', None)
+        
+        success_msg = 'Profile updated successfully!'
+        if is_ajax:
+            return jsonify({'success': True, 'message': success_msg})
+        flash(success_msg, 'success')
     except Exception as e:
-        flash(f'Error updating profile: {str(e)}', 'error')
+        error_msg = f'Error updating profile: {str(e)}'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
     
     return redirect(url_for('auth.profile'))

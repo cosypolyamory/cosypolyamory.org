@@ -480,35 +480,111 @@ function viewUser(userId) {
     fetch(`/api/admin/user/${userId}`)
         .then(response => response.json())
         .then(data => {
-            const modalBody = document.getElementById('userModalBody');
-            modalBody.innerHTML = `
-                <div class="row">
-                    <div class="col-md-4 text-center mb-3">
-                        ${data.avatar_url ? 
-                            `<img src="${data.avatar_url}" alt="Avatar" class="rounded-circle" style="width: 120px; height: 120px;">` :
-                            `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
-                                <i class="fas fa-user fa-3x text-white"></i>
-                            </div>`
+            // Fetch the application questions and answers
+            Promise.all([
+                fetch('/api/admin/application-questions').then(r => r.json()),
+                fetch(`/api/admin/application/user/${userId}`).then(r => r.json())
+            ])
+            .then(([questionsData, appData]) => {
+                const modalBody = document.getElementById('userModalBody');
+                let applicationHtml = '';
+                
+                if (appData.success && appData.application && questionsData.success) {
+                    const app = appData.application;
+                    const questions = questionsData.questions;
+                    
+                    applicationHtml = `
+                        <div class="mt-3">
+                            <h6>Application Answers</h6>
+                            <div class="accordion" id="applicationAccordion">
+                    `;
+                    app.answers.forEach((ans, idx) => {
+                        if (ans && ans.trim() !== '' && idx < questions.length) {
+                            applicationHtml += `
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answer${idx}" aria-expanded="false">
+                                            <strong>Q${idx + 1}: ${questions[idx]}</strong>
+                                        </button>
+                                    </h2>
+                                    <div id="answer${idx}" class="accordion-collapse collapse" data-bs-parent="#applicationAccordion">
+                                        <div class="accordion-body">
+                                            ${ans.replace(/\n/g, '<br>')}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
                         }
-                        <h5 class="mt-3 mb-1">${data.name}</h5>
-                        <span class="badge bg-primary">${data.role}</span>
+                    });
+                    applicationHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            ${data.avatar_url ? 
+                                `<img src="${data.avatar_url}" alt="Avatar" class="rounded-circle" style="width: 120px; height: 120px;">` :
+                                `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                                    <i class="fas fa-user fa-3x text-white"></i>
+                                </div>`
+                            }
+                            <h5 class="mt-3 mb-1">${data.name}</h5>
+                            <span class="badge bg-primary">${data.role}</span>
+                        </div>
+                        <div class="col-md-8">
+                            <dl class="row">
+                                <dt class="col-sm-4">Email:</dt>
+                                <dd class="col-sm-8">${data.email}</dd>
+                                <dt class="col-sm-4">Provider:</dt>
+                                <dd class="col-sm-8"><i class="${data.provider === 'musicbrainz' ? 'fas fa-music' : 'fab fa-' + data.provider} me-1"></i>${data.provider}</dd>
+                                <dt class="col-sm-4">Joined:</dt>
+                                <dd class="col-sm-8">${new Date(data.created_at).toLocaleDateString()}</dd>
+                                <dt class="col-sm-4">Last Login:</dt>
+                                <dd class="col-sm-8">${data.last_login ? new Date(data.last_login).toLocaleDateString() : 'Never'}</dd>
+                            </dl>
+                        </div>
                     </div>
-                    <div class="col-md-8">
-                        <dl class="row">
-                            <dt class="col-sm-4">Email:</dt>
-                            <dd class="col-sm-8">${data.email}</dd>
-                            <dt class="col-sm-4">Provider:</dt>
-                            <dd class="col-sm-8"><i class="${data.provider === 'musicbrainz' ? 'fas fa-music' : 'fab fa-' + data.provider} me-1"></i>${data.provider}</dd>
-                            <dt class="col-sm-4">Joined:</dt>
-                            <dd class="col-sm-8">${new Date(data.created_at).toLocaleDateString()}</dd>
-                            <dt class="col-sm-4">Last Login:</dt>
-                            <dd class="col-sm-8">${data.last_login ? new Date(data.last_login).toLocaleDateString() : 'Never'}</dd>
-                        </dl>
+                    ${applicationHtml}
+                `;
+                const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                modal.show();
+            })
+            .catch(() => {
+                // fallback: show user info only
+                const modalBody = document.getElementById('userModalBody');
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            ${data.avatar_url ? 
+                                `<img src="${data.avatar_url}" alt="Avatar" class="rounded-circle" style="width: 120px; height: 120px;">` :
+                                `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                                    <i class="fas fa-user fa-3x text-white"></i>
+                                </div>`
+                            }
+                            <h5 class="mt-3 mb-1">${data.name}</h5>
+                            <span class="badge bg-primary">${data.role}</span>
+                        </div>
+                        <div class="col-md-8">
+                            <dl class="row">
+                                <dt class="col-sm-4">Email:</dt>
+                                <dd class="col-sm-8">${data.email}</dd>
+                                <dt class="col-sm-4">Provider:</dt>
+                                <dd class="col-sm-8"><i class="${data.provider === 'musicbrainz' ? 'fas fa-music' : 'fab fa-' + data.provider} me-1"></i>${data.provider}</dd>
+                                <dt class="col-sm-4">Joined:</dt>
+                                <dd class="col-sm-8">${new Date(data.created_at).toLocaleDateString()}</dd>
+                                <dt class="col-sm-4">Last Login:</dt>
+                                <dd class="col-sm-8">${data.last_login ? new Date(data.last_login).toLocaleDateString() : 'Never'}</dd>
+                            </dl>
+                        </div>
                     </div>
-                </div>
-            `;
-            const modal = new bootstrap.Modal(document.getElementById('userModal'));
-            modal.show();
+                    <div class="alert alert-warning mt-3">Failed to load application details</div>
+                `;
+                const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                modal.show();
+            });
         })
         .catch(error => {
             console.error('Error:', error);
