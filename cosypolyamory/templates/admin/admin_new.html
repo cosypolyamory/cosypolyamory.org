@@ -196,6 +196,18 @@
     .tab-badge {
         font-size: 0.7rem;
     }
+    /* Ensure dropdown menus are always on top and never clipped */
+    .dropdown-menu {
+        z-index: 1060 !important;
+        min-width: 180px;
+    }
+    .user-card {
+        position: relative;
+        overflow: visible;
+    }
+    .user-list {
+        overflow: visible;
+    }
 </style>
 {% endblock %}
 
