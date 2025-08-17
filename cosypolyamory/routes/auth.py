@@ -375,6 +375,8 @@ def update_profile():
     """Update user profile information"""
     email = request.form.get('email', '').strip()
     name = request.form.get('name', '').strip()
+    pronoun_singular = request.form.get('pronoun_singular', '').strip()
+    pronoun_plural = request.form.get('pronoun_plural', '').strip()
     
     # Check if this is an AJAX request by looking at Accept header or explicit parameter
     is_ajax = ('application/json' in request.headers.get('Accept', '')) or \
@@ -385,7 +387,9 @@ def update_profile():
     if not is_ajax:
         session['profile_form_data'] = {
             'email': email,
-            'name': name
+            'name': name,
+            'pronoun_singular': pronoun_singular,
+            'pronoun_plural': pronoun_plural
         }
     
     # Validation
@@ -420,6 +424,8 @@ def update_profile():
         # Update user information
         current_user.email = email
         current_user.name = name
+        current_user.pronoun_singular = pronoun_singular if pronoun_singular else None
+        current_user.pronoun_plural = pronoun_plural if pronoun_plural else None
         current_user.save()
         
         # Clear form data from session on successful update

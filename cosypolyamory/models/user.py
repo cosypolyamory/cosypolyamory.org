@@ -14,6 +14,8 @@ class User(UserMixin, BaseModel):
     name = CharField()
     avatar_url = CharField(null=True)
     provider = CharField()  # 'google' or 'github'
+    pronoun_singular = CharField(null=True)  # e.g., "they", "she", "he"
+    pronoun_plural = CharField(null=True)    # e.g., "them", "her", "him"
     created_at = DateTimeField(default=datetime.now)
     last_login = DateTimeField(default=datetime.now)
     

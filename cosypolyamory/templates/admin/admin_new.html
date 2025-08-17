@@ -538,6 +538,15 @@ function viewUser(userId) {
                             <dl class="row">
                                 <dt class="col-sm-4">Email:</dt>
                                 <dd class="col-sm-8">${data.email}</dd>
+                                ${data.pronoun_singular || data.pronoun_plural ? `
+                                    <dt class="col-sm-4">Pronouns:</dt>
+                                    <dd class="col-sm-8">
+                                        ${data.pronoun_singular && data.pronoun_plural ? 
+                                            `${data.pronoun_singular}/${data.pronoun_plural}` :
+                                            (data.pronoun_singular || data.pronoun_plural)
+                                        }
+                                    </dd>
+                                ` : ''}
                                 <dt class="col-sm-4">Provider:</dt>
                                 <dd class="col-sm-8"><i class="${data.provider === 'musicbrainz' ? 'fas fa-music' : 'fab fa-' + data.provider} me-1"></i>${data.provider}</dd>
                                 <dt class="col-sm-4">Joined:</dt>
@@ -571,6 +580,15 @@ function viewUser(userId) {
                             <dl class="row">
                                 <dt class="col-sm-4">Email:</dt>
                                 <dd class="col-sm-8">${data.email}</dd>
+                                ${data.pronoun_singular || data.pronoun_plural ? `
+                                    <dt class="col-sm-4">Pronouns:</dt>
+                                    <dd class="col-sm-8">
+                                        ${data.pronoun_singular && data.pronoun_plural ? 
+                                            `${data.pronoun_singular}/${data.pronoun_plural}` :
+                                            (data.pronoun_singular || data.pronoun_plural)
+                                        }
+                                    </dd>
+                                ` : ''}
                                 <dt class="col-sm-4">Provider:</dt>
                                 <dd class="col-sm-8"><i class="${data.provider === 'musicbrainz' ? 'fas fa-music' : 'fab fa-' + data.provider} me-1"></i>${data.provider}</dd>
                                 <dt class="col-sm-4">Joined:</dt>

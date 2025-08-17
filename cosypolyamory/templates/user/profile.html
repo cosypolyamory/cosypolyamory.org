@@ -57,6 +57,30 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="pronoun_singular" class="form-label">
+                                        <i class="fas fa-user-tag me-1"></i>Pronouns (Singular)
+                                    </label>
+                                    <input type="text" class="form-control" id="pronoun_singular" name="pronoun_singular" 
+                                           value="{% if form_data and form_data.pronoun_singular %}{{ form_data.pronoun_singular }}{% else %}{{ user.pronoun_singular or '' }}{% endif %}" 
+                                           placeholder="they, she, he">
+                                    <div class="form-text">e.g., they, she, he</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="pronoun_plural" class="form-label">
+                                        <i class="fas fa-user-tag me-1"></i>Pronouns (Plural)
+                                    </label>
+                                    <input type="text" class="form-control" id="pronoun_plural" name="pronoun_plural" 
+                                           value="{% if form_data and form_data.pronoun_plural %}{{ form_data.pronoun_plural }}{% else %}{{ user.pronoun_plural or '' }}{% endif %}" 
+                                           placeholder="them, her, him">
+                                    <div class="form-text">e.g., them, her, him</div>
+                                </div>
+                            </div>
+                        </div>
                         <button type="submit" class="btn btn-warning">
                             <i class="fas fa-save me-2"></i>Update Profile
                         </button>
@@ -147,6 +171,20 @@
                                         </a>
                                     </td>
                                 </tr>
+                            {% endif %}
+                            {% if user.pronoun_singular or user.pronoun_plural %}
+                            <tr>
+                                <td><strong>Pronouns:</strong></td>
+                                <td>
+                                    {% if user.pronoun_singular and user.pronoun_plural %}
+                                        {{ user.pronoun_singular }}/{{ user.pronoun_plural }}
+                                    {% elif user.pronoun_singular %}
+                                        {{ user.pronoun_singular }}
+                                    {% elif user.pronoun_plural %}
+                                        {{ user.pronoun_plural }}
+                                    {% endif %}
+                                </td>
+                            </tr>
                             {% endif %}
                             <tr>
                                 <td><strong>User Email:</strong></td>
@@ -346,6 +384,30 @@
                         <input type="text" class="form-control" id="editName" name="name" 
                                value="{% if form_data and form_data.name %}{{ form_data.name }}{% else %}{{ user.name }}{% endif %}" required>
                         <div class="form-text">How you'd like to be known in the community</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editPronounSingular" class="form-label">
+                                    <i class="fas fa-user-tag me-1"></i>Pronouns (Singular)
+                                </label>
+                                <input type="text" class="form-control" id="editPronounSingular" name="pronoun_singular" 
+                                       value="{% if form_data and form_data.pronoun_singular %}{{ form_data.pronoun_singular }}{% else %}{{ user.pronoun_singular or '' }}{% endif %}" 
+                                       placeholder="they, she, he">
+                                <div class="form-text">e.g., they, she, he</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editPronounPlural" class="form-label">
+                                    <i class="fas fa-user-tag me-1"></i>Pronouns (Plural)
+                                </label>
+                                <input type="text" class="form-control" id="editPronounPlural" name="pronoun_plural" 
+                                       value="{% if form_data and form_data.pronoun_plural %}{{ form_data.pronoun_plural }}{% else %}{{ user.pronoun_plural or '' }}{% endif %}" 
+                                       placeholder="them, her, him">
+                                <div class="form-text">e.g., them, her, him</div>
+                            </div>
+                        </div>
                     </div>
                     {% if user.provider in ['reddit', 'musicbrainz'] %}
                         <div class="alert alert-info">
