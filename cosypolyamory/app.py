@@ -83,6 +83,16 @@ reddit = oauth.register(
     token_endpoint_auth_method='client_secret_basic',  # Reddit requires basic auth
 )
 
+musicbrainz = oauth.register(
+    name='musicbrainz',
+    client_id=os.getenv('MUSICBRAINZ_CLIENT_ID'),
+    client_secret=os.getenv('MUSICBRAINZ_CLIENT_SECRET'),
+    access_token_url='https://musicbrainz.org/oauth2/token',
+    authorize_url='https://musicbrainz.org/oauth2/authorize',
+    api_base_url='https://musicbrainz.org/',
+    client_kwargs={'scope': 'profile email'},
+)
+
 # In-memory user storage replaced with database
 # users = {} - removed
 

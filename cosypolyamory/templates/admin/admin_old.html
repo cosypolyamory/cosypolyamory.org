@@ -143,6 +143,10 @@
                                             <span class="badge bg-danger">Google</span>
                                         {% elif user.provider == 'github' %}
                                             <span class="badge bg-dark">GitHub</span>
+                                        {% elif user.provider == 'reddit' %}
+                                            <span class="badge bg-warning">Reddit</span>
+                                        {% elif user.provider == 'musicbrainz' %}
+                                            <span class="badge bg-success">MusicBrainz</span>
                                         {% else %}
                                             <span class="badge bg-secondary">{{ user.provider|title }}</span>
                                         {% endif %}

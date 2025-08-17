@@ -170,7 +170,7 @@
 
 <!-- User Detail Modal -->
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="userModalLabel">User Details</h5>
@@ -752,7 +752,6 @@ function viewUser(userId) {
                     <div class="alert alert-danger">
                         <h6>Error Loading User Details</h6>
                         <p>Failed to load user information: ${error.message}</p>
-                        <p>User ID: ${userId}</p>
                         <small>Check console for more details</small>
                     </div>
                 `;
@@ -806,7 +805,7 @@ function showUserModal(userData) {
         
         <div class="row">
             <div class="col-md-6">
-                <strong>User ID:</strong> ${userData.id}
+                <strong>Email:</strong> ${userData.email}
             </div>
             <div class="col-md-6">
                 <strong>Role:</strong> ${roleName}
