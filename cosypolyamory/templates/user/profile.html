@@ -111,11 +111,16 @@
                         {% endif %}
                     </div>
                     <div class="col-md-9">
-                        <h3>{{ user.name }}</h3>
-                        <p class="text-muted">{{ user.email }}</p>
-                        
-                        <!-- Role Badge -->
-                        <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h3 class="mb-0">
+                                {{ user.name }}
+                                {% if user.pronoun_singular or user.pronoun_plural %}
+                                    <small class="text-muted fs-6">
+                                        ({% if user.pronoun_singular and user.pronoun_plural %}{{ user.pronoun_singular }}/{{ user.pronoun_plural }}{% elif user.pronoun_singular %}{{ user.pronoun_singular }}{% else %}{{ user.pronoun_plural }}{% endif %})
+                                    </small>
+                                {% endif %}
+                            </h3>
+                            <!-- Role Badge -->
                             {% if user.role == 'admin' %}
                                 <span class="badge bg-danger fs-6">
                                     <i class="fas fa-shield-alt me-1"></i>Administrator
@@ -138,24 +143,9 @@
                                 </span>
                             {% endif %}
                         </div>
+                        <p class="text-muted">{{ user.email }}</p>
                         
                         <table class="table table-borderless">
-                            <tr>
-                                <td><strong>Provider:</strong></td>
-                                <td>
-                                    {% if user.provider == 'google' %}
-                                        <span class="badge bg-danger">Google</span>
-                                    {% elif user.provider == 'github' %}
-                                        <span class="badge bg-dark">GitHub</span>
-                                    {% elif user.provider == 'reddit' %}
-                                        <span class="badge bg-warning">Reddit</span>
-                                    {% elif user.provider == 'musicbrainz' %}
-                                        <span class="badge bg-success">MusicBrainz</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ user.provider|title }}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
                             <tr>
                                 <td><strong>Member since:</strong></td>
                                 <td>{{ user.created_at.strftime('%B %d, %Y at %H:%M') }}</td>
@@ -189,6 +179,22 @@
                             <tr>
                                 <td><strong>User Email:</strong></td>
                                 <td><code>{{ user.email }}</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Provider:</strong></td>
+                                <td>
+                                    {% if user.provider == 'google' %}
+                                        <span class="badge bg-danger">Google</span>
+                                    {% elif user.provider == 'github' %}
+                                        <span class="badge bg-dark">GitHub</span>
+                                    {% elif user.provider == 'reddit' %}
+                                        <span class="badge bg-warning">Reddit</span>
+                                    {% elif user.provider == 'musicbrainz' %}
+                                        <span class="badge bg-success">MusicBrainz</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ user.provider|title }}</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                         </table>
                         
