@@ -546,17 +546,38 @@ def rsvp_event(event_id):
         if status == '' or status is None:
             try:
                 rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
+                was_attending = rsvp.status == 'yes'
                 rsvp.delete_instance()
+                
+                # If user was attending and event has capacity, promote next waitlisted user
+                promoted_user = None
+                if was_attending and event.max_attendees:
+                    next_waitlisted = RSVP.select().where(
+                        (RSVP.event == event) & (RSVP.status == 'waitlist')
+                    ).order_by(RSVP.created_at).first()
+                    if next_waitlisted:
+                        next_waitlisted.status = 'yes'
+                        next_waitlisted.updated_at = datetime.now()
+                        next_waitlisted.save()
+                        promoted_user = next_waitlisted.user.name
+                        
                 message = 'Attendance cancelled'
+                if promoted_user:
+                    message += f'. {promoted_user} has been moved from waitlist to attending.'
+                    
                 if request.headers.get('Accept') == 'application/json':
                     # Recalculate lists and counts
                     rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
                     rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
                     rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
                     rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
-                    from flask import render_template_string
+                    rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
+                    from flask import render_template
                     attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps)
                     not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
+                    waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist)
+                    capacity_pills_html = render_template('events/_capacity_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist)
+                    header_pills_html = render_template('events/_header_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist, now=datetime.now())
                     return jsonify({
                         'success': True,
                         'message': message,
@@ -565,7 +586,11 @@ def rsvp_event(event_id):
                         'rsvp_count': rsvp_count,
                         'rsvp_no_count': rsvp_no_count,
                         'rsvps_html': attendees_html,
-                        'rsvps_no_html': not_attending_html
+                        'rsvps_no_html': not_attending_html,
+                        'waitlist_html': waitlist_html,
+                        'capacity_pills_html': capacity_pills_html,
+                        'header_pills_html': header_pills_html,
+                        'promoted_user': promoted_user
                     })
                 flash(message, 'success')
             except RSVP.DoesNotExist:
@@ -605,15 +630,21 @@ def rsvp_event(event_id):
             rsvp.notes = notes
             rsvp.updated_at = datetime.now()
             rsvp.save()
-            # Automatic promotion disabled - manual control preferred
-            # if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
-            #     yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-            #     if yes_count < event.max_attendees:
-            #         next_waitlisted = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at).first()
-            #         if next_waitlisted:
-            #             next_waitlisted.status = 'yes'
-            #             next_waitlisted.updated_at = datetime.now()
-            #             next_waitlisted.save()
+            
+            # Automatic waitlist promotion when user changes from attending to not attending
+            promoted_user = None
+            if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
+                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+                if yes_count < event.max_attendees:
+                    next_waitlisted = RSVP.select().where(
+                        (RSVP.event == event) & (RSVP.status == 'waitlist')
+                    ).order_by(RSVP.created_at).first()
+                    if next_waitlisted:
+                        next_waitlisted.status = 'yes'
+                        next_waitlisted.updated_at = datetime.now()
+                        next_waitlisted.save()
+                        promoted_user = next_waitlisted.user.name
+                        message += f' {promoted_user} has been moved from waitlist to attending.'
         except RSVP.DoesNotExist:
             # New RSVP
             if status == 'yes' and event.max_attendees and rsvp_count >= event.max_attendees:
@@ -648,7 +679,7 @@ def rsvp_event(event_id):
         header_pills_html = render_template('events/_header_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist, now=datetime.now())
         user_rsvp = {'status': rsvp.status} if rsvp else None
         if request.headers.get('Accept') == 'application/json':
-            return jsonify({
+            response_data = {
                 'success': True,
                 'message': message,
                 'status': rsvp.status,
@@ -661,7 +692,11 @@ def rsvp_event(event_id):
                 'waitlist_html': waitlist_html,
                 'capacity_pills_html': capacity_pills_html,
                 'header_pills_html': header_pills_html
-            })
+            }
+            # Add promoted user info if someone was promoted
+            if 'promoted_user' in locals() and promoted_user:
+                response_data['promoted_user'] = promoted_user
+            return jsonify(response_data)
         flash(message, 'success')
         return redirect(url_for('events.event_detail', event_id=event_id))
         

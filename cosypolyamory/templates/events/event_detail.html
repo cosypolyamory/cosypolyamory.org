@@ -685,6 +685,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 // DOM is replaced, so no need to restore button state
                 updateAttendanceUI(data);
+                
+                // Show promotion notification if someone was promoted from waitlist
+                if (data.promoted_user) {
+                    showMessage(`${data.promoted_user} has taken your spot. Lucky them!`, 'success');
+                }
             } else {
                 showMessage(data.message, 'error');
                 // Only restore if button is still in DOM
