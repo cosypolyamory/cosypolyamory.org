@@ -32,14 +32,31 @@
                             <a href="{{ url_for('admin.edit_event_note', note_id=note.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                         </div>
                         <div class="card-body">
-                            <p class="mb-0 text-muted">
-                                {% set note_text = note.note | replace('\n', ' ') %}
-                                {% if note_text | length > 300 %}
-                                    {{ note_text[:300] }}...
+                            <div class="mb-0 text-muted">
+                                {% set note_text = note.note %}
+                                {% if note_text | length > 600 %}
+                                    {% set truncated_text = note_text[:600] %}
+                                    <!-- Find the last complete paragraph or sentence -->
+                                    {% if '\n\n' in truncated_text %}
+                                        {% set last_paragraph_end = truncated_text.rfind('\n\n') %}
+                                        {% set display_text = truncated_text[:last_paragraph_end] %}
+                                    {% else %}
+                                        {% set display_text = truncated_text %}
+                                    {% endif %}
+                                    {% for paragraph in display_text.split('\n\n') %}
+                                        {% if paragraph.strip() %}
+                                            <p class="mb-2">{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <p class="mb-0"><em>...</em></p>
                                 {% else %}
-                                    {{ note_text }}
+                                    {% for paragraph in note_text.split('\n\n') %}
+                                        {% if paragraph.strip() %}
+                                            <p class="mb-2">{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                        {% endif %}
+                                    {% endfor %}
                                 {% endif %}
-                            </p>
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
