@@ -208,13 +208,11 @@
                                                 </button>
                                             </li>
                                             {% endif %}
-                                            {% if event.max_attendees and rsvp_count >= event.max_attendees %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-hourglass-half me-2 text-warning"></i>Move to Waitlist
                                                 </button>
                                             </li>
-                                            {% endif %}
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">

@@ -749,13 +749,8 @@ def admin_move_rsvp(event_id, user_id):
             current_yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
             is_event_full = event.max_attendees and current_yes_count >= event.max_attendees
             
-            # Validate move based on capacity constraints
-            if new_status == 'waitlist' and not is_event_full:
-                message = 'Cannot move to waitlist: Event is not full. Move to attending or not attending instead.'
-                if request.headers.get('Accept') == 'application/json':
-                    return jsonify({'success': False, 'message': message})
-                flash(message, 'error')
-                return redirect(url_for('events.event_detail', event_id=event_id))
+            # Allow organizers to move people to waitlist regardless of capacity status
+            # (removed previous restriction that prevented waitlist moves when event not full)
             
             # Handle capacity constraints when moving to 'yes'
             if new_status == 'yes' and prev_status != 'yes':
