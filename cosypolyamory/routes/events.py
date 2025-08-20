@@ -435,6 +435,43 @@ def edit_event_post(event_id):
                 edit_attendance_url = url_for('events.edit_attendance', event_id=event_id)
                 flash(f'Cannot reduce event capacity to {new_max_attendees}. There are currently {current_attending_count} people attending. Please <a href="{edit_attendance_url}">manage attendance</a> to remove some attendees before reducing the capacity.', 'error')
                 return redirect(url_for('events.edit_event', event_id=event_id))
+            
+            # Check for capacity increase that would allow waitlist promotion
+            old_max_attendees = event.max_attendees
+            if (old_max_attendees and new_max_attendees > old_max_attendees) or (not old_max_attendees and new_max_attendees):
+                # Event capacity is being increased - check for waitlisted users
+                available_spots = new_max_attendees - current_attending_count
+                waitlisted_users = RSVP.select().where(
+                    (RSVP.event == event) & (RSVP.status == 'waitlist')
+                ).order_by(RSVP.created_at).limit(available_spots)
+                
+                if waitlisted_users.exists():
+                    # Check if this is a confirmation request
+                    if request.form.get('confirm_promotions') == 'true':
+                        # Promote waitlisted users to attending
+                        promoted_users = []
+                        for rsvp in waitlisted_users:
+                            rsvp.status = 'yes'
+                            rsvp.updated_at = datetime.now()
+                            rsvp.save()
+                            promoted_users.append(rsvp.user.name)
+                        
+                        # Continue with normal event save
+                        promotion_message = f" {len(promoted_users)} people were promoted from waitlist: {', '.join(promoted_users)}"
+                    else:
+                        # Return list of users who would be promoted for confirmation
+                        users_to_promote = [{'name': rsvp.user.name, 'id': rsvp.user.id} for rsvp in waitlisted_users]
+                        
+                        if request.headers.get('Accept') == 'application/json':
+                            return jsonify({
+                                'needs_confirmation': True,
+                                'users_to_promote': users_to_promote,
+                                'available_spots': available_spots
+                            })
+                        else:
+                            # For non-AJAX requests, show a different error message directing to use the interface
+                            flash(f'Increasing capacity to {new_max_attendees} would promote {len(users_to_promote)} people from waitlist. Please use the web interface to confirm this change.', 'info')
+                            return redirect(url_for('events.edit_event', event_id=event_id))
 
         # Update event
         event.title = title
@@ -453,7 +490,11 @@ def edit_event_post(event_id):
         event.event_note = event_note
         event.save()
         
-        flash(f'Event "{title}" has been updated successfully!', 'success')
+        success_message = f'Event "{title}" has been updated successfully!'
+        if 'promotion_message' in locals():
+            success_message += promotion_message
+        
+        flash(success_message, 'success')
         return redirect(url_for('events.event_detail', event_id=event.id))
         
     except Event.DoesNotExist:

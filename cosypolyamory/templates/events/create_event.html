@@ -4,6 +4,33 @@
 
 {% block content %}
 <div class="container">
+    {% if is_edit %}
+    <!-- Header Navigation for Edit Event -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body py-3">
+                    <div class="d-flex flex-wrap gap-2">
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Event
+                            </a>
+                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-list me-2"></i>All Events
+                            </a>
+                            {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
+                            <a href="{{ url_for('events.edit_attendance', event_id=event.id) }}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-users-cog me-2"></i>Edit Attendance
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
     <h1>{% if is_edit %}Edit Event{% else %}Create New Event{% endif %}</h1>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -464,5 +491,138 @@ document.addEventListener('DOMContentLoaded', function() {
         updateNotePreview();
     }
 });
+
+// Capacity increase and waitlist promotion handling
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const maxAttendeesInput = document.getElementById('max_attendees');
+    
+    if (form && maxAttendeesInput) {
+        form.addEventListener('submit', function(e) {
+            // Only handle this for edit events
+            {% if is_edit %}
+            e.preventDefault();
+            handleFormSubmission();
+            {% endif %}
+        });
+    }
+});
+
+{% if is_edit %}
+function handleFormSubmission() {
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    
+    // Make AJAX request to check for waitlist promotions
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.needs_confirmation) {
+            showPromotionModal(data.users_to_promote, data.available_spots);
+        } else {
+            // No confirmation needed, submit form normally
+            form.submit();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Fall back to normal form submission
+        form.submit();
+    });
+}
+
+function showPromotionModal(usersToPromote, availableSpots) {
+    const modal = document.getElementById('capacityIncreaseModal');
+    const usersList = document.getElementById('promotionUsersList');
+    const confirmBtn = document.getElementById('confirmPromotionBtn');
+    
+    // Clear and populate users list
+    usersList.innerHTML = '';
+    usersToPromote.forEach(user => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex align-items-center';
+        li.innerHTML = `<i class="fas fa-user me-2 text-primary"></i>${user.name}`;
+        usersList.appendChild(li);
+    });
+    
+    // Update the count text
+    const countText = document.getElementById('promotionCount');
+    countText.textContent = usersToPromote.length;
+    
+    // Show modal
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Handle confirmation
+    confirmBtn.onclick = function() {
+        modalInstance.hide();
+        submitWithConfirmation();
+    };
+}
+
+function submitWithConfirmation() {
+    const form = document.querySelector('form');
+    
+    // Add confirmation flag to form data
+    const confirmInput = document.createElement('input');
+    confirmInput.type = 'hidden';
+    confirmInput.name = 'confirm_promotions';
+    confirmInput.value = 'true';
+    form.appendChild(confirmInput);
+    
+    // Submit form normally
+    form.submit();
+}
+{% endif %}
 </script>
+
+<!-- Capacity Increase Modal -->
+{% if is_edit %}
+<div class="modal fade" id="capacityIncreaseModal" tabindex="-1" aria-labelledby="capacityIncreaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="capacityIncreaseModalLabel">
+                    <i class="fas fa-arrow-up me-2"></i>Confirm Capacity Increase
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Increasing the event capacity will automatically promote <strong><span id="promotionCount">0</span> people</strong> from the waitlist to attending.
+                </div>
+                
+                <h6 class="mb-3">People who will be promoted to attending:</h6>
+                <ul class="list-group list-group-flush" id="promotionUsersList">
+                    <!-- Users will be populated by JavaScript -->
+                </ul>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Promotions are based on waitlist order (first come, first served).
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmPromotionBtn">
+                    <i class="fas fa-check me-2"></i>Confirm and Update Event
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
