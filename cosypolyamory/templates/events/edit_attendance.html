@@ -249,43 +249,115 @@
     </div>
 </div>
 
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmMoveModal" tabindex="-1" aria-labelledby="confirmMoveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmMoveModalLabel">Confirm RSVP Move</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMoveText"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmMoveBtn">Move</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove RSVP Modal -->
+<div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmRemoveModalLabel">Remove RSVP</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmRemoveText"></p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Reuse the existing moveRSVP and removeRSVP functions
+// Global variables for modal confirmation
+let pendingMoveAction = null;
+let pendingRemoveAction = null;
+
+// Updated moveRSVP function with modal confirmation
 function moveRSVP(eventId, userId, newStatus, userName) {
-    if (!confirm(`Move ${userName} to ${newStatus}?`)) {
-        return;
-    }
+    // Set up the confirmation modal
+    const statusText = newStatus === 'yes' ? 'Attending' : 
+                      newStatus === 'waitlist' ? 'Waitlist' :
+                      newStatus === 'no' ? 'Not Attending' : newStatus;
     
+    document.getElementById('confirmMoveText').textContent = `Move ${userName} to ${statusText}?`;
+    
+    // Store the action to execute if confirmed
+    pendingMoveAction = () => {
+        executeMoveRSVP(eventId, userId, newStatus, userName);
+    };
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmMoveModal'));
+    modal.show();
+}
+
+function executeMoveRSVP(eventId, userId, newStatus, userName) {
     fetch(`/events/${eventId}/admin/rsvp/${userId}/move`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json'
         },
-        body: JSON.stringify({
-            new_status: newStatus
-        })
+        body: `status=${encodeURIComponent(newStatus)}`
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Show success message briefly before reload
+            showToast('Success', data.message || `${userName} moved successfully`, 'success');
             // Reload the page to show updated attendance
-            window.location.reload();
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
-            alert('Error: ' + data.message);
+            showToast('Error', data.message, 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while updating the RSVP.');
+        showToast('Error', 'An error occurred while updating the RSVP.', 'error');
     });
 }
 
 function removeRSVP(eventId, userId, userName) {
-    if (!confirm(`Remove ${userName}'s RSVP entirely? This cannot be undone.`)) {
-        return;
-    }
+    // Set up the confirmation modal
+    document.getElementById('confirmRemoveText').textContent = `Remove ${userName}'s RSVP entirely?`;
     
+    // Store the action to execute if confirmed
+    pendingRemoveAction = () => {
+        executeRemoveRSVP(eventId, userId, userName);
+    };
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmRemoveModal'));
+    modal.show();
+}
+
+function executeRemoveRSVP(eventId, userId, userName) {
     fetch(`/events/${eventId}/admin/rsvp/${userId}/remove`, {
         method: 'POST',
         headers: {
@@ -295,16 +367,76 @@ function removeRSVP(eventId, userId, userName) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Show success message briefly before reload
+            showToast('Success', data.message || `${userName}'s RSVP removed successfully`, 'success');
             // Reload the page to show updated attendance
-            window.location.reload();
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
-            alert('Error: ' + data.message);
+            showToast('Error', data.message, 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while removing the RSVP.');
+        showToast('Error', 'An error occurred while removing the RSVP.', 'error');
     });
 }
+
+// Toast notification function
+function showToast(title, message, type) {
+    const toastClass = type === 'success' ? 'text-bg-success' : 'text-bg-danger';
+    const toastHtml = `
+        <div class="toast ${toastClass}" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">${title}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '1055';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Add the toast
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remove from DOM after hiding
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+// Event listeners for modal confirmation buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('confirmMoveBtn').addEventListener('click', function() {
+        if (pendingMoveAction) {
+            pendingMoveAction();
+            pendingMoveAction = null;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('confirmMoveModal')).hide();
+    });
+    
+    document.getElementById('confirmRemoveBtn').addEventListener('click', function() {
+        if (pendingRemoveAction) {
+            pendingRemoveAction();
+            pendingRemoveAction = null;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('confirmRemoveModal')).hide();
+    });
+});
 </script>
 {% endblock %}
