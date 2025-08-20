@@ -426,6 +426,16 @@ def edit_event_post(event_id):
                 flash('Selected event note not found.', 'error')
                 return redirect(url_for('events.edit_event', event_id=event_id))
 
+        # Validate capacity reduction
+        if max_attendees:
+            new_max_attendees = int(max_attendees)
+            current_attending_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+            
+            if current_attending_count > new_max_attendees:
+                edit_attendance_url = url_for('events.edit_attendance', event_id=event_id)
+                flash(f'Cannot reduce event capacity to {new_max_attendees}. There are currently {current_attending_count} people attending. Please <a href="{edit_attendance_url}">manage attendance</a> to remove some attendees before reducing the capacity.', 'error')
+                return redirect(url_for('events.edit_event', event_id=event_id))
+
         # Update event
         event.title = title
         event.description = description
@@ -531,15 +541,15 @@ def rsvp_event(event_id):
             rsvp.notes = notes
             rsvp.updated_at = datetime.now()
             rsvp.save()
-            # If user was 'yes' and now is not, promote first waitlisted
-            if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
-                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                if yes_count < event.max_attendees:
-                    next_waitlisted = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at).first()
-                    if next_waitlisted:
-                        next_waitlisted.status = 'yes'
-                        next_waitlisted.updated_at = datetime.now()
-                        next_waitlisted.save()
+            # Automatic promotion disabled - manual control preferred
+            # if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
+            #     yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+            #     if yes_count < event.max_attendees:
+            #         next_waitlisted = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at).first()
+            #         if next_waitlisted:
+            #             next_waitlisted.status = 'yes'
+            #             next_waitlisted.updated_at = datetime.now()
+            #             next_waitlisted.save()
         except RSVP.DoesNotExist:
             # New RSVP
             if status == 'yes' and event.max_attendees and rsvp_count >= event.max_attendees:
@@ -625,17 +635,17 @@ def admin_remove_rsvp(event_id, user_id):
             prev_status = rsvp.status
             rsvp.delete_instance()
             
-            # If removing a 'yes' RSVP and event has max capacity, promote from waitlist
-            if prev_status == 'yes' and event.max_attendees:
-                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                if yes_count < event.max_attendees:
-                    next_waitlisted = RSVP.select().where(
-                        (RSVP.event == event) & (RSVP.status == 'waitlist')
-                    ).order_by(RSVP.created_at).first()
-                    if next_waitlisted:
-                        next_waitlisted.status = 'yes'
-                        next_waitlisted.updated_at = datetime.now()
-                        next_waitlisted.save()
+            # Automatic promotion disabled - manual control preferred
+            # if prev_status == 'yes' and event.max_attendees:
+            #     yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+            #     if yes_count < event.max_attendees:
+            #         next_waitlisted = RSVP.select().where(
+            #             (RSVP.event == event) & (RSVP.status == 'waitlist')
+            #         ).order_by(RSVP.created_at).first()
+            #         if next_waitlisted:
+            #             next_waitlisted.status = 'yes'
+            #             next_waitlisted.updated_at = datetime.now()
+            #             next_waitlisted.save()
             
             message = f'RSVP removed for {target_user.name}'
             
@@ -770,18 +780,18 @@ def admin_move_rsvp(event_id, user_id):
             rsvp.updated_at = datetime.now()
             rsvp.save()
             
-            # If user was 'yes' and now is not, promote first waitlisted
-            if prev_status == 'yes' and new_status != 'yes' and event.max_attendees:
-                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                if yes_count < event.max_attendees:
-                    next_waitlisted = RSVP.select().where(
-                        (RSVP.event == event) & (RSVP.status == 'waitlist')
-                    ).order_by(RSVP.created_at).first()
-                    if next_waitlisted:
-                        next_waitlisted.status = 'yes'
-                        next_waitlisted.updated_at = datetime.now()
-                        next_waitlisted.save()
-                        message += f' {next_waitlisted.user.name} was promoted from waitlist.'
+            # Automatic promotion disabled - manual control preferred
+            # if prev_status == 'yes' and new_status != 'yes' and event.max_attendees:
+            #     yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+            #     if yes_count < event.max_attendees:
+            #         next_waitlisted = RSVP.select().where(
+            #             (RSVP.event == event) & (RSVP.status == 'waitlist')
+            #         ).order_by(RSVP.created_at).first()
+            #         if next_waitlisted:
+            #             next_waitlisted.status = 'yes'
+            #             next_waitlisted.updated_at = datetime.now()
+            #             next_waitlisted.save()
+            #             message += f' {next_waitlisted.user.name} was promoted from waitlist.'
             
             if request.headers.get('Accept') == 'application/json':
                 # Recalculate lists and counts for real-time update
