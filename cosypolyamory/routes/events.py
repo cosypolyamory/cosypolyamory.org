@@ -131,6 +131,13 @@ def event_detail(event_id):
     # Extract Google Maps information
     google_maps_info = extract_google_maps_info(event.google_maps_link) if event.google_maps_link else None
     is_user_waitlisted = user_rsvp and user_rsvp.status == 'waitlist'
+    
+    # Check if user can manage RSVPs (admin, organizer, or event host)
+    can_manage_rsvps = (current_user.is_authenticated and 
+                       (current_user.role == 'admin' or 
+                        current_user.can_organize_events() or 
+                        current_user.id == event.created_by_id))
+    
     return render_template('events/event_detail.html', 
         event=event, 
         can_see_details=can_see_details,
@@ -141,6 +148,7 @@ def event_detail(event_id):
         rsvps_no=rsvps_no,
         rsvps_waitlist=rsvps_waitlist,
         is_user_waitlisted=is_user_waitlisted,
+        can_manage_rsvps=can_manage_rsvps,
         google_maps_api_key=os.getenv('GOOGLE_MAPS_API_KEY'),
         google_maps_info=google_maps_info,
         now=datetime.now())
@@ -589,6 +597,278 @@ def rsvp_event(event_id):
             return jsonify({'success': False, 'message': message})
         flash(message, 'error')
         return redirect(url_for('events.events_list'))
+
+
+@bp.route('/<int:event_id>/admin/rsvp/<user_id>/remove', methods=['POST'])
+@approved_user_required
+def admin_remove_rsvp(event_id, user_id):
+    """Remove a user's RSVP (admin/organizer only)"""
+    from flask import jsonify
+    
+    try:
+        event = Event.get_by_id(event_id)
+        target_user = User.get_by_id(user_id)
+        
+        # Check permissions: admin, organizer, or event host
+        if not (current_user.role == 'admin' or 
+                current_user.can_organize_events() or 
+                current_user.id == event.created_by_id):
+            message = 'Permission denied. Only administrators, organizers, or event hosts can remove RSVPs.'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': message})
+            flash(message, 'error')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+        
+        # Find and remove the RSVP
+        try:
+            rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == target_user))
+            prev_status = rsvp.status
+            rsvp.delete_instance()
+            
+            # If removing a 'yes' RSVP and event has max capacity, promote from waitlist
+            if prev_status == 'yes' and event.max_attendees:
+                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+                if yes_count < event.max_attendees:
+                    next_waitlisted = RSVP.select().where(
+                        (RSVP.event == event) & (RSVP.status == 'waitlist')
+                    ).order_by(RSVP.created_at).first()
+                    if next_waitlisted:
+                        next_waitlisted.status = 'yes'
+                        next_waitlisted.updated_at = datetime.now()
+                        next_waitlisted.save()
+            
+            message = f'RSVP removed for {target_user.name}'
+            
+            if request.headers.get('Accept') == 'application/json':
+                # Recalculate lists and counts for real-time update
+                rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+                rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
+                rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
+                rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+                rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
+                rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
+                
+                from flask import render_template
+                attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps, event=event)
+                not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no, event=event)
+                waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist, event=event)
+                maybe_html = render_template('events/event_detail_maybe.html', rsvps_maybe=rsvps_maybe, event=event)
+                capacity_pills_html = render_template('events/_capacity_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist)
+                header_pills_html = render_template('events/_header_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist, now=datetime.now())
+                
+                return jsonify({
+                    'success': True,
+                    'message': message,
+                    'rsvp_count': rsvp_count,
+                    'rsvp_no_count': rsvp_no_count,
+                    'waitlist_count': rsvps_waitlist.count() if hasattr(rsvps_waitlist, 'count') else len(rsvps_waitlist),
+                    'maybe_count': rsvps_maybe.count() if hasattr(rsvps_maybe, 'count') else len(rsvps_maybe),
+                    'rsvps_html': attendees_html,
+                    'rsvps_no_html': not_attending_html,
+                    'waitlist_html': waitlist_html,
+                    'maybe_html': maybe_html,
+                    'capacity_pills_html': capacity_pills_html,
+                    'header_pills_html': header_pills_html
+                })
+            
+            flash(message, 'success')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+            
+        except RSVP.DoesNotExist:
+            message = f'No RSVP found for {target_user.name}'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': message})
+            flash(message, 'info')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+        
+    except Event.DoesNotExist:
+        message = 'Event not found.'
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': message})
+        flash(message, 'error')
+        return redirect(url_for('events.events_list'))
+    except User.DoesNotExist:
+        message = 'User not found.'
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': message})
+        flash(message, 'error')
+        return redirect(url_for('events.event_detail', event_id=event_id))
+    except Exception as e:
+        message = f'Error removing RSVP: {str(e)}'
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': message})
+        flash(message, 'error')
+        return redirect(url_for('events.event_detail', event_id=event_id))
+
+
+@bp.route('/<int:event_id>/admin/rsvp/<user_id>/move', methods=['POST'])
+@approved_user_required
+def admin_move_rsvp(event_id, user_id):
+    """Move a user's RSVP to a different status (admin/organizer only)"""
+    from flask import jsonify
+    
+    try:
+        event = Event.get_by_id(event_id)
+        target_user = User.get_by_id(user_id)
+        new_status = request.form.get('status')
+        
+        # Check permissions: admin, organizer, or event host
+        if not (current_user.role == 'admin' or 
+                current_user.can_organize_events() or 
+                current_user.id == event.created_by_id):
+            message = 'Permission denied. Only administrators, organizers, or event hosts can move RSVPs.'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': message})
+            flash(message, 'error')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+        
+        # Validate status
+        if new_status not in ['yes', 'no', 'maybe', 'waitlist']:
+            message = 'Invalid status. Must be yes, no, maybe, or waitlist.'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': message})
+            flash(message, 'error')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+        
+        # Find and update the RSVP
+        try:
+            rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == target_user))
+            prev_status = rsvp.status
+            
+            # Check current event capacity
+            current_yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+            is_event_full = event.max_attendees and current_yes_count >= event.max_attendees
+            
+            # Validate move based on capacity constraints
+            if new_status == 'waitlist' and not is_event_full:
+                message = 'Cannot move to waitlist: Event is not full. Move to attending or not attending instead.'
+                if request.headers.get('Accept') == 'application/json':
+                    return jsonify({'success': False, 'message': message})
+                flash(message, 'error')
+                return redirect(url_for('events.event_detail', event_id=event_id))
+            
+            # Handle capacity constraints when moving to 'yes'
+            if new_status == 'yes' and prev_status != 'yes':
+                if is_event_full:
+                    message = f'Cannot move to attending: Event is full. {target_user.name} should be moved to waitlist instead.'
+                    if request.headers.get('Accept') == 'application/json':
+                        return jsonify({'success': False, 'message': message})
+                    flash(message, 'error')
+                    return redirect(url_for('events.event_detail', event_id=event_id))
+                else:
+                    message = f'{target_user.name} moved to attending.'
+            elif new_status == 'no':
+                message = f'{target_user.name} moved to not attending.'
+            elif new_status == 'maybe':
+                message = f'{target_user.name} moved to maybe attending.'
+            elif new_status == 'waitlist':
+                message = f'{target_user.name} moved to waitlist.'
+            else:
+                message = f'{target_user.name} status updated.'
+            
+            rsvp.status = new_status
+            rsvp.updated_at = datetime.now()
+            rsvp.save()
+            
+            # If user was 'yes' and now is not, promote first waitlisted
+            if prev_status == 'yes' and new_status != 'yes' and event.max_attendees:
+                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+                if yes_count < event.max_attendees:
+                    next_waitlisted = RSVP.select().where(
+                        (RSVP.event == event) & (RSVP.status == 'waitlist')
+                    ).order_by(RSVP.created_at).first()
+                    if next_waitlisted:
+                        next_waitlisted.status = 'yes'
+                        next_waitlisted.updated_at = datetime.now()
+                        next_waitlisted.save()
+                        message += f' {next_waitlisted.user.name} was promoted from waitlist.'
+            
+            if request.headers.get('Accept') == 'application/json':
+                # Recalculate lists and counts for real-time update
+                rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+                rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
+                rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
+                rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+                rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
+                rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
+                
+                # Check if current user can manage RSVPs
+                can_manage_rsvps = (current_user.role == 'admin' or 
+                                   current_user.can_organize_events() or 
+                                   current_user.id == event.created_by_id)
+                
+                from flask import render_template
+                try:
+                    attendees_html = render_template('events/event_detail_attendees.html', 
+                                                   rsvps=rsvps, event=event, can_manage_rsvps=can_manage_rsvps)
+                    not_attending_html = render_template('events/event_detail_not_attending.html', 
+                                                       rsvps_no=rsvps_no, event=event, can_manage_rsvps=can_manage_rsvps)
+                    waitlist_html = render_template('events/event_detail_waitlist.html', 
+                                                  rsvps_waitlist=rsvps_waitlist, event=event, can_manage_rsvps=can_manage_rsvps)
+                    maybe_html = render_template('events/event_detail_maybe.html', 
+                                               rsvps_maybe=rsvps_maybe, event=event, can_manage_rsvps=can_manage_rsvps)
+                    capacity_pills_html = render_template('events/_capacity_pills.html', 
+                                                        rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist)
+                    header_pills_html = render_template('events/_header_pills.html', 
+                                                       rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist, now=datetime.now())
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': message,
+                        'new_status': new_status,
+                        'rsvp_count': rsvp_count,
+                        'rsvp_no_count': rsvp_no_count,
+                        'rsvp_waitlist_count': rsvps_waitlist.count(),
+                        'waitlist_count': rsvps_waitlist.count(),
+                        'maybe_count': rsvps_maybe.count(),
+                        'rsvps_html': attendees_html,
+                        'rsvps_no_html': not_attending_html,
+                        'waitlist_html': waitlist_html,
+                        'maybe_html': maybe_html,
+                        'capacity_pills_html': capacity_pills_html,
+                        'header_pills_html': header_pills_html
+                    })
+                except Exception as template_error:
+                    # Fallback to simple response if template rendering fails
+                    return jsonify({
+                        'success': True,
+                        'message': message,
+                        'new_status': new_status,
+                        'rsvp_count': rsvp_count,
+                        'rsvp_no_count': rsvp_no_count,
+                        'rsvp_waitlist_count': rsvps_waitlist.count(),
+                        'template_error': str(template_error)
+                    })
+            
+            flash(message, 'success')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+            
+        except RSVP.DoesNotExist:
+            message = f'No RSVP found for {target_user.name}'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': message})
+            flash(message, 'info')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+        
+    except Event.DoesNotExist:
+        message = 'Event not found.'
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': message})
+        flash(message, 'error')
+        return redirect(url_for('events.events_list'))
+    except User.DoesNotExist:
+        message = 'User not found.'
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': message})
+        flash(message, 'error')
+        return redirect(url_for('events.event_detail', event_id=event_id))
+    except Exception as e:
+        message = f'Error moving RSVP: {str(e)}'
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'message': message})
+        flash(message, 'error')
+        return redirect(url_for('events.event_detail', event_id=event_id))
+
 
 # Event route implementations will be moved here from app.py
 # during the refactoring process
