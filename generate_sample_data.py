@@ -102,62 +102,77 @@ def create_sample_users():
     
     print("👥 Creating sample users...")
     
-    # Define user distribution
-    users_data = [
-        # Admin (1)
-        {
-            'name': 'Rumpskins',
-            'email': 'rump@cosypolyamory.org', 
-            'role': 'admin',
-            'has_application': False,
-            'application_status': 'approved'
-        },
-        
-        # Organizers (2)
-        {
-            'name': 'Evil-Momma',
-            'email': 'kirsten@example.com',
-            'role': 'organizer', 
-            'has_application': True,
-            'application_status': 'approved'
-        },
-        {
-            'name': 'Alex Event-Planner',
-            'email': 'alex.planner@example.com',
-            'role': 'organizer',
-            'has_application': True, 
-            'application_status': 'approved'
-        }
+    # Define pronoun options for diversity
+    pronoun_options = [
+        ('they', 'them'),
+        ('she', 'her'),
+        ('he', 'him'),
+        ('xe', 'xem'),
+        ('ze', 'zir'),
+        ('they', 'them'),  # More common, so appears twice
+        ('she', 'her'),    # More common, so appears twice
+        ('he', 'him'),     # More common, so appears twice
+        (None, None),      # Some users don't specify pronouns
     ]
     
-    # Generate approved members (12)
-    for i in range(12):
+    def get_random_pronouns():
+        """Get random pronouns from the options"""
+        return random.choice(pronoun_options)
+    
+    # Define user distribution per your requirements
+    users_data = []
+    
+    # Generate approved members (10)
+    for i in range(10):
+        pronouns = get_random_pronouns()
         users_data.append({
             'name': fake.name(),
             'email': fake.unique.email(),
             'role': 'approved',
             'has_application': True,
-            'application_status': 'approved'
+            'application_status': 'approved',
+            'pronoun_singular': pronouns[0],
+            'pronoun_plural': pronouns[1]
         })
     
-    # Generate pending members (8) 
-    for i in range(8):
+    # Generate organizers (3)
+    organizer_names = ['Alex Event-Planner', 'Sam Community-Builder', 'Morgan Facilitator']
+    for i, name in enumerate(organizer_names):
+        pronouns = get_random_pronouns()
+        users_data.append({
+            'name': name,
+            'email': f'{name.lower().replace(" ", ".").replace("-", "")}@example.com',
+            'role': 'organizer',
+            'has_application': True,
+            'application_status': 'approved',
+            'pronoun_singular': pronouns[0],
+            'pronoun_plural': pronouns[1]
+        })
+    
+    # Generate pending applications (5)
+    for i in range(5):
+        pronouns = get_random_pronouns()
         users_data.append({
             'name': fake.name(),
-            'email': fake.unique.email(), 
+            'email': fake.unique.email(),
             'role': 'pending',
             'has_application': True,
-            'application_status': 'pending'
+            'application_status': 'pending',
+            'pronoun_singular': pronouns[0],
+            'pronoun_plural': pronouns[1]
         })
     
-    # Generate users who logged in but never applied (5)
-    for i in range(5):
+    # Generate users who logged in but never applied (3)
+    for i in range(3):
+        pronouns = get_random_pronouns()
         users_data.append({
             'name': fake.name(),
             'email': fake.unique.email(),
             'role': 'new',
             'has_application': False,
-            'application_status': None
+            'application_status': None,
+            'pronoun_singular': pronouns[0],
+            'pronoun_plural': pronouns[1]
         })
     
     created_users = []
@@ -171,7 +186,9 @@ def create_sample_users():
             role=user_data['role'],
             provider='test',
             avatar_url=f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_data['name'].replace(' ', '')}",
-            last_login=fake.date_time_between(start_date='-3M', end_date='now')
+            last_login=fake.date_time_between(start_date='-3M', end_date='now'),
+            pronoun_singular=user_data['pronoun_singular'],
+            pronoun_plural=user_data['pronoun_plural']
         )
         
         created_users.append(user)
@@ -181,10 +198,11 @@ def create_sample_users():
             create_user_application(user, user_data['application_status'])
     
     print(f"   ✅ Created {len(created_users)} users")
-    print(f"      - 1 admin, 2 organizers")
-    print(f"      - 12 approved members")  
-    print(f"      - 8 pending applications")
-    print(f"      - 5 users without applications")
+    print(f"      - 0 admins")
+    print(f"      - 3 organizers") 
+    print(f"      - 10 approved members")  
+    print(f"      - 5 pending applications")
+    print(f"      - 3 users without applications")
     
     return created_users
 

@@ -56,7 +56,12 @@
                     <!-- Pending Users Tab -->
                     <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Pending Applications</h6>
+                            <div class="d-flex align-items-center">
+                                <h6 class="mb-0 me-3">Pending Applications</h6>
+                                <a href="{{ url_for('admin.moderate') }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-gavel me-1"></i>Review Applications
+                                </a>
+                            </div>
                             <div class="d-flex align-items-center">
                                 <span class="text-muted me-3">Showing <span id="pending-showing">0</span> of <span id="pending-total">0</span></span>
                                 <div class="btn-group btn-group-sm">
@@ -328,11 +333,11 @@ function createUserCard(user) {
                 </div>
                 <div class="d-flex align-items-center">
                     <span class="badge bg-${roleColors[user.role]} role-badge me-3">${roleName[user.role]}</span>
-                    <div class="btn-group">
-                        <button class="btn btn-outline-primary btn-sm" onclick="viewUser('${user.id}')" title="View Details">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <div class="btn-group">
+                    ${user.has_application && user.application_status === 'pending' ? 
+                        '<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>' : 
+                        '<div class="btn-group"><button class="btn btn-outline-primary btn-sm" onclick="viewUser(\\''+user.id+'\\')" title="View Details"><i class="fas fa-eye"></i></button><div class="btn-group"><button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Change Role"><i class="fas fa-user-cog"></i></button><ul class="dropdown-menu" id="dropdown-'+user.id+'"></ul></div></div>'
+                    }
+                </div>
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Change Role">
                                 <i class="fas fa-user-cog"></i>
                             </button>
