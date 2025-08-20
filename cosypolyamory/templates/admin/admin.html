@@ -415,9 +415,7 @@ function createUserCard(user) {
     // Only show application buttons for pending users
     if (user.role === 'pending' || user.role === 'new') {
         if (user.has_application && user.application_id) {
-            applicationInfo = `<div class="mt-1">
-                <a href="#" onclick="openApplicationReviewModal(${user.application_id})" class="btn btn-info fw-bold px-3 py-1" style="font-size:1rem;">Review Application</a>
-            </div>`;
+            applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-warning\">Application submitted</span></div>`;
         } else if (user.has_application && !user.application_id) {
             applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-warning\">Application data unavailable</span></div>`;
         } else {
@@ -518,75 +516,6 @@ function createUserCard(user) {
             </div>
         </div>
     `;
-}
-
-// Application review modal functions
-function openApplicationReviewModal(applicationId) {
-    const modal = new bootstrap.Modal(document.getElementById('applicationReviewModal'));
-    const body = document.getElementById('applicationReviewModalBody');
-    body.innerHTML = '<div class="text-center text-muted py-5">Loading...</div>';
-    fetch(`/api/admin/application/${applicationId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (!data.success) {
-                body.innerHTML = `<div class='alert alert-danger'>${data.error || 'Failed to load application.'}</div>`;
-                return;
-            }
-            const app = data.application;
-            let answersHtml = '';
-            app.answers.forEach((ans, idx) => {
-                if (ans && ans.trim() !== '') {
-                    answersHtml += `<div class='mb-3'><strong>Q${idx+1}:</strong> <div class='border rounded p-2 bg-light'>${ans.replace(/\n/g, '<br>')}</div></div>`;
-                }
-            });
-                        // Only show approve/reject buttons for pending applications
-                        const showApprovalButtons = app.status === 'pending' || app.status === 'new';
-                        
-                        body.innerHTML = `
-                                <div>
-                                    <h5>User: ${app.user_name} <span class='text-muted small'>(${app.user_email})</span></h5>
-                                    <p><strong>Status:</strong> <span class='badge bg-info'>${app.status}</span></p>
-                                    <p><strong>Submitted:</strong> ${new Date(app.submitted_at).toLocaleString()}</p>
-                                    ${app.reviewed_at ? `<p><strong>Reviewed:</strong> ${new Date(app.reviewed_at).toLocaleString()}</p>` : ''}
-                                    ${answersHtml}
-                                    ${app.review_notes ? `<div class='mt-3'><strong>Review Notes:</strong><div class='border rounded p-2 bg-light'>${app.review_notes.replace(/\n/g, '<br>')}</div></div>` : ''}
-                                    ${showApprovalButtons ? `
-                                    <div class='mt-4 d-flex justify-content-end gap-2'>
-                                        <button class='btn btn-success' onclick='reviewApplication(${app.id}, "accept")'>Accept</button>
-                                        <button class='btn btn-danger' onclick='reviewApplication(${app.id}, "reject")'>Reject</button>
-                                    </div>
-                                    ` : ''}
-                                </div>
-                        `;
-        })
-        .catch(err => {
-            body.innerHTML = `<div class='alert alert-danger'>Failed to load application.</div>`;
-        });
-    modal.show();
-}
-
-function reviewApplication(applicationId, action) {
-    const body = document.getElementById('applicationReviewModalBody');
-    body.innerHTML += `<div class='text-center text-muted mt-2' id='reviewing-msg'>Processing...</div>`;
-    fetch(`/api/admin/application/${applicationId}/review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
-    })
-    .then(r => r.json())
-    .then(data => {
-        document.getElementById('reviewing-msg').remove();
-        if (data.success) {
-            body.innerHTML += `<div class='alert alert-success mt-3'>Application ${action === 'accept' ? 'approved' : 'rejected'} successfully.</div>`;
-            setTimeout(() => { window.location.reload(); }, 1200);
-        } else {
-            body.innerHTML += `<div class='alert alert-danger mt-3'>${data.error || 'Failed to update application.'}</div>`;
-        }
-    })
-    .catch(() => {
-        document.getElementById('reviewing-msg').remove();
-        body.innerHTML += `<div class='alert alert-danger mt-3'>Failed to update application.</div>`;
-    });
 }
 
 function updatePagination(tabName, pagination) {
