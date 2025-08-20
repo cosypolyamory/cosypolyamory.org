@@ -136,7 +136,7 @@ def event_detail(event_id):
     can_manage_rsvps = (current_user.is_authenticated and 
                        (current_user.role == 'admin' or 
                         current_user.can_organize_events() or 
-                        current_user.id == event.created_by_id))
+                        current_user.id == event.organizer_id))
     
     # Prepare calendar data for Add to Calendar feature
     from datetime import timedelta
@@ -686,7 +686,7 @@ def admin_remove_rsvp(event_id, user_id):
         # Check permissions: admin, organizer, or event host
         if not (current_user.role == 'admin' or 
                 current_user.can_organize_events() or 
-                current_user.id == event.created_by_id):
+                current_user.id == event.organizer_id):
             message = 'Permission denied. Only administrators, organizers, or event hosts can remove RSVPs.'
             if request.headers.get('Accept') == 'application/json':
                 return jsonify({'success': False, 'message': message})
@@ -789,7 +789,7 @@ def admin_move_rsvp(event_id, user_id):
         # Check permissions: admin, organizer, or event host
         if not (current_user.role == 'admin' or 
                 current_user.can_organize_events() or 
-                current_user.id == event.created_by_id):
+                current_user.id == event.organizer_id):
             message = 'Permission denied. Only administrators, organizers, or event hosts can move RSVPs.'
             if request.headers.get('Accept') == 'application/json':
                 return jsonify({'success': False, 'message': message})
@@ -864,7 +864,7 @@ def admin_move_rsvp(event_id, user_id):
                 # Check if current user can manage RSVPs
                 can_manage_rsvps = (current_user.role == 'admin' or 
                                    current_user.can_organize_events() or 
-                                   current_user.id == event.created_by_id)
+                                   current_user.id == event.organizer_id)
                 
                 from flask import render_template
                 try:
