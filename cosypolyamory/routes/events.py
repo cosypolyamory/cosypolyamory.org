@@ -870,5 +870,48 @@ def admin_move_rsvp(event_id, user_id):
         return redirect(url_for('events.event_detail', event_id=event_id))
 
 
+@bp.route('/<int:event_id>/admin/attendance')
+@approved_user_required
+def edit_attendance(event_id):
+    """Edit attendance page for admins/organizers"""
+    try:
+        event = Event.get_by_id(event_id)
+    except Event.DoesNotExist:
+        flash('Event not found.', 'error')
+        return redirect(url_for('events.events_list'))
+    
+    # Check if user can edit attendance
+    if not (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id):
+        flash('Access denied. Only admins, organizers, and event creators can edit attendance.', 'error')
+        return redirect(url_for('events.event_detail', event_id=event_id))
+    
+    # Get all RSVPs
+    rsvps_attending = list(RSVP.select().where(
+        (RSVP.event == event) & (RSVP.status == 'yes')
+    ).order_by(RSVP.created_at))
+    
+    rsvps_waitlist = list(RSVP.select().where(
+        (RSVP.event == event) & (RSVP.status == 'waitlist')
+    ).order_by(RSVP.created_at))
+    
+    rsvps_not_attending = list(RSVP.select().where(
+        (RSVP.event == event) & (RSVP.status == 'no')
+    ).order_by(RSVP.created_at))
+    
+    # Calculate counts
+    rsvp_count = len(rsvps_attending)
+    waitlist_count = len(rsvps_waitlist)
+    not_attending_count = len(rsvps_not_attending)
+    
+    return render_template('events/edit_attendance.html',
+                         event=event,
+                         rsvps_attending=rsvps_attending,
+                         rsvps_waitlist=rsvps_waitlist,
+                         rsvps_not_attending=rsvps_not_attending,
+                         rsvp_count=rsvp_count,
+                         waitlist_count=waitlist_count,
+                         not_attending_count=not_attending_count)
+
+
 # Event route implementations will be moved here from app.py
 # during the refactoring process
