@@ -270,3 +270,40 @@ def api_delete_user():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+
+@bp.route('/admin/event-note/<int:note_id>/usage')
+@admin_required
+def check_event_note_usage(note_id):
+    """Check if an event note is being used by any events"""
+    try:
+        from cosypolyamory.models.event_note import EventNote
+        
+        # Verify the note exists
+        try:
+            note = EventNote.get_by_id(note_id)
+        except EventNote.DoesNotExist:
+            return jsonify({'success': False, 'error': 'Event note not found'}), 404
+        
+        # Find all events using this note
+        events_using_note = list(Event.select().where(Event.event_note == note))
+        
+        # Format event information
+        events_data = []
+        for event in events_using_note:
+            events_data.append({
+                'id': event.id,
+                'title': event.title,
+                'exact_time': event.exact_time.isoformat()
+            })
+        
+        return jsonify({
+            'success': True,
+            'note_id': note_id,
+            'note_name': note.name,
+            'events_using_note': events_data,
+            'can_delete': len(events_data) == 0
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500

@@ -163,3 +163,27 @@ def edit_event_note(note_id):
         flash('Event note updated successfully.', 'success')
         return redirect(url_for('admin.event_notes'))
     return render_template('events/edit_event_note.html', note=note)
+
+@bp.route('/event-notes/<int:note_id>/delete', methods=['POST'])
+@admin_or_organizer_required
+def delete_event_note(note_id):
+    try:
+        note = EventNote.get_by_id(note_id)
+    except EventNote.DoesNotExist:
+        flash('Event note not found.', 'error')
+        return redirect(url_for('admin.event_notes'))
+    
+    # Check if the note is being used by any events
+    from cosypolyamory.models.event import Event
+    events_using_note = list(Event.select().where(Event.event_note == note))
+    
+    if events_using_note:
+        event_titles = [event.title for event in events_using_note]
+        flash(f'Cannot delete note "{note.name}" because it is being used by the following events: {", ".join(event_titles)}', 'error')
+        return redirect(url_for('admin.event_notes'))
+    
+    # Safe to delete
+    note_name = note.name
+    note.delete_instance()
+    flash(f'Event note "{note_name}" has been deleted successfully.', 'success')
+    return redirect(url_for('admin.event_notes'))
