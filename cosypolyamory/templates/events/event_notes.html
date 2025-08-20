@@ -25,26 +25,24 @@
             </div>
             <div class="card-body">
                 {% if event_notes %}
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Note</th>
-                                <th style="width: 120px;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for note in event_notes %}
-                            <tr>
-                                <td>{{ note.name }}</td>
-                                <td style="white-space: pre-line;">{{ note.note }}</td>
-                                <td>
-                                    <a href="{{ url_for('admin.edit_event_note', note_id=note.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    {% for note in event_notes %}
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ note.name }}</h6>
+                            <a href="{{ url_for('admin.edit_event_note', note_id=note.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0 text-muted">
+                                {% set note_text = note.note | replace('\n', ' ') %}
+                                {% if note_text | length > 300 %}
+                                    {{ note_text[:300] }}...
+                                {% else %}
+                                    {{ note_text }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
                 {% else %}
                     <div class="text-center text-muted py-4">No event notes found.</div>
                 {% endif %}
