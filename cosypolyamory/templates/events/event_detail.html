@@ -180,7 +180,7 @@
                                             {% if event.event_note %}
                                                 {% for paragraph in event.event_note.note.split('\n\n') %}
                                                     {% if paragraph.strip() %}
-                                                        <p>{{ paragraph.strip() }}</p>
+                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
                                                     {% endif %}
                                                 {% endfor %}
                                             {% endif %}
