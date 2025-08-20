@@ -185,3 +185,32 @@ h4 {
   padding-top: 5px;
   font-size: 1rem; /* Slightly smaller font size for better fit */
 }
+
+/* Responsive margin adjustments for medium screens (~900px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  #content {
+    /* Reduce margins significantly for tablets and medium screens */
+    max-width: 95% !important;
+    width: 95% !important;
+  }
+  
+  .container-md {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 767px) {
+  #content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .container-md {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
