@@ -48,6 +48,12 @@
     line-height: 1.6;
 }
 
+.event-description:hover {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
 /* Mobile optimization - reduce margins and padding */
 @media (max-width: 768px) {
     /* Override base template's container constraints on mobile */
@@ -171,7 +177,9 @@
                                             {% endif %}
                                         </div>
                                 </div>
-                                <div class="card-text event-description" style="white-space: pre-line; margin-top: 0;">{{ event.description[:900]|e|trim }}{% if event.description|length > 900 %}...{% endif %}</div>
+                                <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="text-decoration-none text-dark">
+                                    <div class="card-text event-description" style="white-space: pre-line; margin-top: 0; cursor: pointer;">{{ event.description[:900]|e|trim }}{% if event.description|length > 900 %}...{% endif %}</div>
+                                </a>
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-calendar me-2 text-muted"></i>
