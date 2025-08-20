@@ -138,6 +138,26 @@ def event_detail(event_id):
                         current_user.can_organize_events() or 
                         current_user.id == event.created_by_id))
     
+    # Prepare calendar data for Add to Calendar feature
+    from datetime import timedelta
+    
+    # For approved users, use exact times
+    if can_see_details:
+        calendar_start = event.exact_time.strftime('%Y%m%dT%H%M%S')
+        if event.end_time:
+            calendar_end = event.end_time.strftime('%Y%m%dT%H%M%S')
+        else:
+            # Default to 2 hours if no end time specified
+            calendar_end = (event.exact_time + timedelta(hours=2)).strftime('%Y%m%dT%H%M%S')
+        calendar_location = event.establishment_name
+        if event.google_maps_link:
+            calendar_location += f", {event.google_maps_link}"
+    else:
+        # For non-approved users, use general date
+        calendar_start = event.date.strftime('%Y%m%dT%H%M%S')
+        calendar_end = (event.date + timedelta(hours=2)).strftime('%Y%m%dT%H%M%S')
+        calendar_location = event.barrio
+    
     return render_template('events/event_detail.html', 
         event=event, 
         can_see_details=can_see_details,
@@ -151,7 +171,10 @@ def event_detail(event_id):
         can_manage_rsvps=can_manage_rsvps,
         google_maps_api_key=os.getenv('GOOGLE_MAPS_API_KEY'),
         google_maps_info=google_maps_info,
-        now=datetime.now())
+        now=datetime.now(),
+        calendar_start=calendar_start,
+        calendar_end=calendar_end,
+        calendar_location=calendar_location)
 
 
 @bp.route('/create')

@@ -345,6 +345,13 @@
                                                     </button>
                                                 {% endif %}
                                             </div>
+                                            
+                                            <!-- Add to Calendar Button -->
+                                            <div class="text-center mt-3">
+                                                <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#addToCalendarModal">
+                                                    <i class="fas fa-calendar-plus me-2"></i>Add to Calendar
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -898,5 +905,181 @@ function copyToClipboard(elementId) {
         });
     }
 }
+
+// Add to Calendar functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Store event data for calendar functions
+    window.eventData = {
+        title: {{ event.title|tojson }},
+        startDate: {{ calendar_start|tojson }},
+        endDate: {{ calendar_end|tojson }},
+        location: {{ calendar_location|tojson }},
+        description: {{ event.description|tojson }}
+        {% if can_see_details and event.tips_for_attendees %}
+        + "\n\nTips for attendees: " + {{ event.tips_for_attendees|tojson }}
+        {% endif %}
+        {% if not can_see_details %}
+        + "\n\n" + {{ event.time_period|tojson }}
+        {% endif %}
+    };
+});
+
+function addToGoogleCalendar() {
+    const event = window.eventData;
+    const encodedTitle = encodeURIComponent(event.title);
+    const encodedDescription = encodeURIComponent(event.description);
+    const encodedLocation = encodeURIComponent(event.location);
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${event.startDate}/${event.endDate}&details=${encodedDescription}&location=${encodedLocation}`;
+    window.open(url, '_blank');
+}
+
+function addToOutlookCalendar() {
+    const event = window.eventData;
+    const startISO = formatDateForOutlook(event.startDate);
+    const endISO = formatDateForOutlook(event.endDate);
+    const encodedTitle = encodeURIComponent(event.title);
+    const encodedDescription = encodeURIComponent(event.description);
+    const encodedLocation = encodeURIComponent(event.location);
+    const url = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodedTitle}&startdt=${startISO}&enddt=${endISO}&body=${encodedDescription}&location=${encodedLocation}`;
+    window.open(url, '_blank');
+}
+
+function addToYahooCalendar() {
+    const event = window.eventData;
+    const encodedTitle = encodeURIComponent(event.title);
+    const encodedDescription = encodeURIComponent(event.description);
+    const encodedLocation = encodeURIComponent(event.location);
+    const url = `https://calendar.yahoo.com/?v=60&view=d&type=20&title=${encodedTitle}&st=${event.startDate}&dur=0200&desc=${encodedDescription}&in_loc=${encodedLocation}`;
+    window.open(url, '_blank');
+}
+
+function addToAppleCalendar() {
+    const event = window.eventData;
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//cosypolyamory.org//Event//EN
+BEGIN:VEVENT
+UID:event-{{ event.id }}-${Date.now()}@cosypolyamory.org
+DTSTART:${event.startDate}
+DTEND:${event.endDate}
+SUMMARY:${event.title}
+DESCRIPTION:${event.description.replace(/\n/g, '\\n')}
+LOCATION:${event.location}
+END:VEVENT
+END:VCALENDAR`;
+    
+    const blob = new Blob([icsContent], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${event.title}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function formatDateForOutlook(dateString) {
+    return dateString.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/, '$1-$2-$3T$4:$5:$6');
+}
 </script>
+
+<!-- Add to Calendar Modal -->
+<div class="modal fade" id="addToCalendarModal" tabindex="-1" aria-labelledby="addToCalendarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToCalendarModalLabel">
+                    <i class="fas fa-calendar-plus me-2"></i>Add to Calendar
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Event Summary -->
+                <div class="mb-4">
+                    <h6 class="text-primary">{{ event.title }}</h6>
+                    {% if can_see_details %}
+                        <p class="mb-2">
+                            <i class="fas fa-calendar me-2"></i>
+                            <strong>{{ event.exact_time.strftime('%A, %B %d, %Y at %I:%M %p') }}</strong>
+                            {% if event.end_time %}
+                                - {{ event.end_time.strftime('%I:%M %p') }}
+                            {% endif %}
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            {{ event.establishment_name }}
+                        </p>
+                    {% else %}
+                        <p class="mb-2">
+                            <i class="fas fa-calendar me-2"></i>
+                            <strong>{{ event.time_period }}</strong>
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            {{ event.barrio }}
+                        </p>
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="fas fa-info-circle me-1"></i>
+                                Exact time and location details are available to approved community members.
+                            </small>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <h6 class="mb-2">Description:</h6>
+                        <div class="text-muted">
+                            {% set description_lines = event.description.split('\n') %}
+                            {% set excerpt_lines = description_lines[:3] %}
+                            {% for line in excerpt_lines %}
+                                {% if line.strip() %}
+                                    <p class="mb-2">{{ line.strip() }}</p>
+                                {% endif %}
+                            {% endfor %}
+                            {% if description_lines|length > 3 %}
+                                <p class="mb-0"><em>...</em></p>
+                            {% endif %}
+                        </div>
+                        {% if can_see_details and event.tips_for_attendees %}
+                            <h6 class="mb-2 mt-3">Tips for attendees:</h6>
+                            <div class="text-muted">
+                                {% set tips_lines = event.tips_for_attendees.split('\n') %}
+                                {% set tips_excerpt = tips_lines[:2] %}
+                                {% for line in tips_excerpt %}
+                                    {% if line.strip() %}
+                                        <p class="mb-2">{{ line.strip() }}</p>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if tips_lines|length > 2 %}
+                                    <p class="mb-0"><em>... (excerpt)</em></p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Calendar Options -->
+                <div class="d-grid gap-3">
+                    <button type="button" class="btn btn-primary" onclick="addToGoogleCalendar()">
+                        <i class="fab fa-google me-2"></i>Google Calendar
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="addToOutlookCalendar()">
+                        <i class="fab fa-microsoft me-2"></i>Outlook Calendar
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="addToYahooCalendar()">
+                        <i class="fab fa-yahoo me-2"></i>Yahoo Calendar
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="addToAppleCalendar()">
+                        <i class="fab fa-apple me-2"></i>Apple Calendar (Download .ics)
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
