@@ -142,11 +142,13 @@
                                             Manage
                                         </button>
                                         <ul class="dropdown-menu">
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-check me-2 text-success"></i>Move to Attending
                                                 </button>
                                             </li>
+                                            {% endif %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-times me-2 text-danger"></i>Move to Not Attending
@@ -199,16 +201,20 @@
                                             Manage
                                         </button>
                                         <ul class="dropdown-menu">
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-check me-2 text-success"></i>Move to Attending
                                                 </button>
                                             </li>
+                                            {% endif %}
+                                            {% if event.max_attendees and rsvp_count >= event.max_attendees %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-hourglass-half me-2 text-warning"></i>Move to Waitlist
                                                 </button>
                                             </li>
+                                            {% endif %}
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
