@@ -681,6 +681,15 @@ def rsvp_event(event_id):
     
     try:
         event = Event.get_by_id(event_id)
+        
+        # Prevent hosts and co-hosts from RSVPing to their own events
+        if current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id):
+            message = 'Hosts and co-hosts cannot RSVP to their own events.'
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': message}), 403
+            flash(message, 'error')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+        
         status = request.form.get('status')
         notes = request.form.get('notes', '')
         

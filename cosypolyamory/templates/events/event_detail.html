@@ -341,9 +341,13 @@
                                     {% if event.exact_time > now %}
                                     <div class="mb-4" id="attendance-section">
                                         {% set user_rsvp = user_rsvp %}
+                                        {% set is_host_or_cohost = current_user.is_authenticated and (current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id)) %}
                                         <div class="text-center">
                                             <div class="rsvp-status-line mt-2 mb-3">
-                                                {% if user_rsvp %}
+                                                {% if is_host_or_cohost %}
+                                                    <i class="fas fa-crown text-warning me-2" title="Host/Co-host"></i>
+                                                    <span class="fw-bold text-info">You are {% if current_user.id == event.organizer_id %}the host{% else %}a co-host{% endif %} of this event</span>
+                                                {% elif user_rsvp %}
                                                     {% if user_rsvp.status == 'yes' %}
                                                         <i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i>
                                                         <span class="fw-bold text-success">I'm going</span>
@@ -358,17 +362,17 @@
                                             </div>
                                             <div class="d-flex gap-2 justify-content-center" role="group">
                                                 {% if not user_rsvp %}
-                                                    <button class="btn btn-success attendance-btn" data-event-id="{{ event.id }}" data-status="yes" style="min-width: 140px;">
+                                                    <button class="btn btn-success attendance-btn" data-event-id="{{ event.id }}" data-status="yes" {% if is_host_or_cohost %}disabled{% endif %} style="min-width: 140px;">
                                                         <i class="fas fa-check me-2"></i>I want to go!
                                                     </button>
-                                                    <button class="btn btn-danger attendance-btn" data-event-id="{{ event.id }}" data-status="no" style="min-width: 120px;">
+                                                    <button class="btn btn-danger attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if is_host_or_cohost %}disabled{% endif %} style="min-width: 120px;">
                                                         <i class="fas fa-times me-2"></i>I can't go
                                                     </button>
                                                 {% else %}
-                                                    <button class="btn btn-success attendance-btn" data-event-id="{{ event.id }}" data-status="yes" {% if user_rsvp.status == 'yes' or user_rsvp.status == 'waitlist' %}disabled{% endif %} style="min-width: 140px;">
+                                                    <button class="btn btn-success attendance-btn" data-event-id="{{ event.id }}" data-status="yes" {% if user_rsvp.status == 'yes' or user_rsvp.status == 'waitlist' or is_host_or_cohost %}disabled{% endif %} style="min-width: 140px;">
                                                         <i class="fas fa-check me-2"></i>I want to go!
                                                     </button>
-                                                    <button class="btn btn-danger attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if user_rsvp.status == 'no' %}disabled{% endif %} style="min-width: 120px;">
+                                                    <button class="btn btn-danger attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if user_rsvp.status == 'no' or is_host_or_cohost %}disabled{% endif %} style="min-width: 120px;">
                                                         <i class="fas fa-times me-2"></i>I can't go
                                                     </button>
                                                 {% endif %}
@@ -667,6 +671,10 @@ Log in or join our community for more details: {{ request.url }}</textarea>
 console.log('RSVP script loaded');
 document.addEventListener('DOMContentLoaded', function() {
     let eventId = "{{ event.id }}";
+    let currentUserId = {% if current_user.is_authenticated %}"{{ current_user.id }}"{% else %}null{% endif %};
+    let eventOrganizerId = "{{ event.organizer_id }}";
+    let eventCoHostId = {% if event.co_host %}"{{ event.co_host.id }}"{% else %}null{% endif %};
+    let isHostOrCohost = currentUserId && (currentUserId === eventOrganizerId || (eventCoHostId && currentUserId === eventCoHostId));
 
     // Use event delegation instead of direct attachment
     document.addEventListener('click', function(e) {
@@ -735,7 +743,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const section = document.getElementById('attendance-section');
         if (!section) return;
         let html = '';
-        if (data.user_rsvp) {
+        
+        // Check if user is host or co-host
+        if (isHostOrCohost) {
+            let hostTypeText = currentUserId === eventOrganizerId ? 'the host' : 'a co-host';
+            html += `<div class="text-center"><div class="rsvp-status-line mt-2 mb-3">` +
+                `<i class="fas fa-crown text-warning me-2" title="Host/Co-host"></i>` +
+                `<span class="fw-bold text-info">You are ${hostTypeText} of this event</span></div>` +
+                `<div class="d-flex gap-2 justify-content-center" role="group">` +
+                `<button class="btn btn-success attendance-btn" data-event-id="${eventId}" data-status="yes" style="min-width: 140px;" disabled>` +
+                `<i class="fas fa-check me-2"></i>I want to go!</button>` +
+                `<button class="btn btn-danger attendance-btn" data-event-id="${eventId}" data-status="no" style="min-width: 120px;" disabled>` +
+                `<i class="fas fa-times me-2"></i>I can't go</button></div></div>`;
+        } else if (data.user_rsvp) {
             let statusLine = '';
             if (data.user_rsvp.status === 'yes') {
                 statusLine = `<i class=\"fas fa-check-circle text-secondary me-2\" title=\"RSVP Status\"></i><span class=\"fw-bold text-success\">I'm going</span>`;
