@@ -99,6 +99,11 @@ def reject_application(application_id):
         application.reviewed_by = current_user
         application.review_notes = request.form.get('notes', '')
         application.save()
+
+        # Update user status
+        user = application.user
+        user.role = "rejected"
+        user.save()
         
         flash(f'Application for {application.user.name} has been rejected.', 'info')
     except UserApplication.DoesNotExist:
