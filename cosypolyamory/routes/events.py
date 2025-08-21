@@ -13,6 +13,7 @@ from cosypolyamory.models.user import User
 from cosypolyamory.models.event import Event
 from cosypolyamory.models.rsvp import RSVP
 from cosypolyamory.models.event_note import EventNote
+from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, approved_user_required
 from cosypolyamory.utils import extract_google_maps_info
 
@@ -266,6 +267,27 @@ def create_event_post():
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
         
         # Check if organizer and co-host need RSVPs and if there's space for them
+        # Validate Google Maps link if provided
+        valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']
+        if google_maps_link:
+            is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
+            if not is_valid_maps_link:
+                flash('If provided, Google Maps link must be from Google Maps (maps.google.com, www.google.com/maps, or maps.app.goo.gl).', 'error')
+                return redirect(url_for('events.create_event'))
+        
+        # Handle co-host - moved up here before capacity validation
+        co_host = None
+        if co_host_id:
+            try:
+                co_host = User.get_by_id(co_host_id)
+                if not co_host.can_organize_events():
+                    flash('Co-host must be an organizer.', 'error')
+                    return redirect(url_for('events.create_event'))
+            except User.DoesNotExist:
+                flash('Co-host not found.', 'error')
+                return redirect(url_for('events.create_event'))
+
+        # Validate capacity against host RSVPs
         if max_attendees:
             max_capacity = int(max_attendees)
             
@@ -299,26 +321,6 @@ def create_event_post():
                 else:
                     flash(f'Cannot create event with capacity of {max_capacity}. The organizer needs an RSVP but there is not enough space in the event.', 'error')
                 return redirect(url_for('events.create_event'))
-
-        # Validate Google Maps link if provided
-        valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']
-        if google_maps_link:
-            is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
-            if not is_valid_maps_link:
-                flash('If provided, Google Maps link must be from Google Maps (maps.google.com, www.google.com/maps, or maps.app.goo.gl).', 'error')
-                return redirect(url_for('events.create_event'))
-        
-        # Handle co-host
-        co_host = None
-        if co_host_id:
-            try:
-                co_host = User.get_by_id(co_host_id)
-                if not co_host.can_organize_events():
-                    flash('Co-host must be an organizer.', 'error')
-                    return redirect(url_for('events.create_event'))
-            except User.DoesNotExist:
-                flash('Co-host not found.', 'error')
-                return redirect(url_for('events.create_event'))
         
         # Handle event note
         event_note_id = request.form.get('event_note_id')
@@ -339,48 +341,49 @@ def create_event_post():
             flash(f'Cannot create event with capacity of {max_attendees}. Minimum capacity must be at least {required_hosts} to accommodate the organizer{" and co-host" if co_host else ""}.', 'error')
             return redirect(url_for('events.create_event'))
 
-
-        # Create event
-        event = Event.create(
-            title=title,
-            description=description,
-            barrio=barrio,
-            time_period=time_period,
-            date=date,
-            establishment_name=establishment_name,
-            google_maps_link=google_maps_link,
-            location_notes=location_notes or None,
-            exact_time=exact_time,
-            organizer=organizer,
-            co_host=co_host,
-            tips_for_attendees=tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None,
-            max_attendees=int(max_attendees) if max_attendees else None,
-            event_note=event_note
-        )
-        
-        # Automatically create RSVPs for organizer and co-host
-        # Create or update organizer RSVP
-        organizer_rsvp, created = RSVP.get_or_create(
-            event=event,
-            user=organizer,
-            defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
-        )
-        if not created and organizer_rsvp.status != 'yes':
-            organizer_rsvp.status = 'yes'
-            organizer_rsvp.updated_at = datetime.now()
-            organizer_rsvp.save()
+        # Create event and automatic RSVPs in a transaction
+        with database.atomic():
+            # Create event
+            event = Event.create(
+                title=title,
+                description=description,
+                barrio=barrio,
+                time_period=time_period,
+                date=date,
+                establishment_name=establishment_name,
+                google_maps_link=google_maps_link,
+                location_notes=location_notes or None,
+                exact_time=exact_time,
+                organizer=organizer,
+                co_host=co_host,
+                tips_for_attendees=tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None,
+                max_attendees=int(max_attendees) if max_attendees else None,
+                event_note=event_note
+            )
             
-        # Create or update co-host RSVP if there is a co-host
-        if co_host:
-            cohost_rsvp, created = RSVP.get_or_create(
+            # Automatically create RSVPs for organizer and co-host
+            # Create or update organizer RSVP
+            organizer_rsvp, created = RSVP.get_or_create(
                 event=event,
-                user=co_host,
+                user=organizer,
                 defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
             )
-            if not created and cohost_rsvp.status != 'yes':
-                cohost_rsvp.status = 'yes'
-                cohost_rsvp.updated_at = datetime.now()
-                cohost_rsvp.save()
+            if not created and organizer_rsvp.status != 'yes':
+                organizer_rsvp.status = 'yes'
+                organizer_rsvp.updated_at = datetime.now()
+                organizer_rsvp.save()
+                
+            # Create or update co-host RSVP if there is a co-host
+            if co_host:
+                cohost_rsvp, created = RSVP.get_or_create(
+                    event=event,
+                    user=co_host,
+                    defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                )
+                if not created and cohost_rsvp.status != 'yes':
+                    cohost_rsvp.status = 'yes'
+                    cohost_rsvp.updated_at = datetime.now()
+                    cohost_rsvp.save()
         
         flash(f'Event "{title}" has been created successfully!', 'success')
         return redirect(url_for('events.event_detail', event_id=event.id))
@@ -610,46 +613,48 @@ def edit_event_post(event_id):
                             flash(f'Increasing capacity to {new_max_attendees} would promote {len(users_to_promote)} people from waitlist. Please use the web interface to confirm this change.', 'info')
                             return redirect(url_for('events.edit_event', event_id=event_id))
 
-        # Update event
-        event.title = title
-        event.description = description
-        event.barrio = barrio
-        event.time_period = time_period
-        event.date = date
-        event.establishment_name = establishment_name
-        event.google_maps_link = google_maps_link
-        event.location_notes = location_notes or None
-        event.exact_time = exact_time
-        event.organizer = organizer
-        event.co_host = co_host
-        event.tips_for_attendees = tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None
-        event.max_attendees = int(max_attendees) if max_attendees else None
-        event.event_note = event_note
-        event.save()
-        
-        # Automatically create/update RSVPs for organizer and co-host
-        # Create or update organizer RSVP
-        organizer_rsvp, created = RSVP.get_or_create(
-            event=event,
-            user=organizer,
-            defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
-        )
-        if not created and organizer_rsvp.status != 'yes':
-            organizer_rsvp.status = 'yes'
-            organizer_rsvp.updated_at = datetime.now()
-            organizer_rsvp.save()
+        # Update event and RSVPs in a transaction
+        with database.atomic():
+            # Update event
+            event.title = title
+            event.description = description
+            event.barrio = barrio
+            event.time_period = time_period
+            event.date = date
+            event.establishment_name = establishment_name
+            event.google_maps_link = google_maps_link
+            event.location_notes = location_notes or None
+            event.exact_time = exact_time
+            event.organizer = organizer
+            event.co_host = co_host
+            event.tips_for_attendees = tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None
+            event.max_attendees = int(max_attendees) if max_attendees else None
+            event.event_note = event_note
+            event.save()
             
-        # Create or update co-host RSVP if there is a co-host
-        if co_host:
-            cohost_rsvp, created = RSVP.get_or_create(
+            # Automatically create/update RSVPs for organizer and co-host
+            # Create or update organizer RSVP
+            organizer_rsvp, created = RSVP.get_or_create(
                 event=event,
-                user=co_host,
+                user=organizer,
                 defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
             )
-            if not created and cohost_rsvp.status != 'yes':
-                cohost_rsvp.status = 'yes'
-                cohost_rsvp.updated_at = datetime.now()
-                cohost_rsvp.save()
+            if not created and organizer_rsvp.status != 'yes':
+                organizer_rsvp.status = 'yes'
+                organizer_rsvp.updated_at = datetime.now()
+                organizer_rsvp.save()
+                
+            # Create or update co-host RSVP if there is a co-host
+            if co_host:
+                cohost_rsvp, created = RSVP.get_or_create(
+                    event=event,
+                    user=co_host,
+                    defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                )
+                if not created and cohost_rsvp.status != 'yes':
+                    cohost_rsvp.status = 'yes'
+                    cohost_rsvp.updated_at = datetime.now()
+                    cohost_rsvp.save()
         
         success_message = f'Event "{title}" has been updated successfully!'
         if 'promotion_message' in locals():
@@ -683,21 +688,22 @@ def rsvp_event(event_id):
         # Handle RSVP cancellation (empty status)
         if status == '' or status is None:
             try:
-                rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
-                was_attending = rsvp.status == 'yes'
-                rsvp.delete_instance()
-                
-                # If user was attending and event has capacity, promote next waitlisted user
-                promoted_user = None
-                if was_attending and event.max_attendees:
-                    next_waitlisted = RSVP.select().where(
-                        (RSVP.event == event) & (RSVP.status == 'waitlist')
-                    ).order_by(RSVP.created_at).first()
-                    if next_waitlisted:
-                        next_waitlisted.status = 'yes'
-                        next_waitlisted.updated_at = datetime.now()
-                        next_waitlisted.save()
-                        promoted_user = next_waitlisted.user.name
+                with database.atomic():
+                    rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
+                    was_attending = rsvp.status == 'yes'
+                    rsvp.delete_instance()
+                    
+                    # If user was attending and event has capacity, promote next waitlisted user
+                    promoted_user = None
+                    if was_attending and event.max_attendees:
+                        next_waitlisted = RSVP.select().where(
+                            (RSVP.event == event) & (RSVP.status == 'waitlist')
+                        ).order_by(RSVP.created_at).first()
+                        if next_waitlisted:
+                            next_waitlisted.status = 'yes'
+                            next_waitlisted.updated_at = datetime.now()
+                            next_waitlisted.save()
+                            promoted_user = next_waitlisted.user.name
                         
                 message = 'Attendance cancelled'
                 if promoted_user:
@@ -750,58 +756,60 @@ def rsvp_event(event_id):
         rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
         # If user is already RSVP'd, update their status
         try:
-            rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
-            prev_status = rsvp.status
-            if status == 'yes':
-                if event.max_attendees and rsvp_count >= event.max_attendees and prev_status != 'yes':
-                    rsvp.status = 'waitlist'
-                    message = 'Event is full. You have been added to the waitlist.'
-                else:
-                    rsvp.status = 'yes'
-                    message = 'Attendance confirmed: Going'
-            elif status == 'no':
-                rsvp.status = 'no'
-                message = 'Attendance confirmed: Not Going'
-            elif status == 'maybe':
-                rsvp.status = 'maybe'
-                message = 'Attendance confirmed: Maybe'
-            rsvp.notes = notes
-            rsvp.updated_at = datetime.now()
-            rsvp.save()
-            
-            # Automatic waitlist promotion when user changes from attending to not attending
-            promoted_user = None
-            if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
-                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                if yes_count < event.max_attendees:
-                    next_waitlisted = RSVP.select().where(
-                        (RSVP.event == event) & (RSVP.status == 'waitlist')
-                    ).order_by(RSVP.created_at).first()
-                    if next_waitlisted:
-                        next_waitlisted.status = 'yes'
-                        next_waitlisted.updated_at = datetime.now()
-                        next_waitlisted.save()
-                        promoted_user = next_waitlisted.user.name
-                        message += f' {promoted_user} has been moved from waitlist to attending.'
+            with database.atomic():
+                rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
+                prev_status = rsvp.status
+                if status == 'yes':
+                    if event.max_attendees and rsvp_count >= event.max_attendees and prev_status != 'yes':
+                        rsvp.status = 'waitlist'
+                        message = 'Event is full. You have been added to the waitlist.'
+                    else:
+                        rsvp.status = 'yes'
+                        message = 'Attendance confirmed: Going'
+                elif status == 'no':
+                    rsvp.status = 'no'
+                    message = 'Attendance confirmed: Not Going'
+                elif status == 'maybe':
+                    rsvp.status = 'maybe'
+                    message = 'Attendance confirmed: Maybe'
+                rsvp.notes = notes
+                rsvp.updated_at = datetime.now()
+                rsvp.save()
+                
+                # Automatic waitlist promotion when user changes from attending to not attending
+                promoted_user = None
+                if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
+                    yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
+                    if yes_count < event.max_attendees:
+                        next_waitlisted = RSVP.select().where(
+                            (RSVP.event == event) & (RSVP.status == 'waitlist')
+                        ).order_by(RSVP.created_at).first()
+                        if next_waitlisted:
+                            next_waitlisted.status = 'yes'
+                            next_waitlisted.updated_at = datetime.now()
+                            next_waitlisted.save()
+                            promoted_user = next_waitlisted.user.name
+                            message += f' {promoted_user} has been moved from waitlist to attending.'
         except RSVP.DoesNotExist:
             # New RSVP
-            if status == 'yes' and event.max_attendees and rsvp_count >= event.max_attendees:
-                rsvp = RSVP.create(
-                    event=event,
-                    user=current_user,
-                    status='waitlist',
-                    notes=notes
-                )
-                message = 'Event is full. You have been added to the waitlist.'
-            else:
-                rsvp = RSVP.create(
-                    event=event,
-                    user=current_user,
-                    status=status,
-                    notes=notes
-                )
-                status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
-                message = f'Attendance confirmed: {status_text}'
+            with database.atomic():
+                if status == 'yes' and event.max_attendees and rsvp_count >= event.max_attendees:
+                    rsvp = RSVP.create(
+                        event=event,
+                        user=current_user,
+                        status='waitlist',
+                        notes=notes
+                    )
+                    message = 'Event is full. You have been added to the waitlist.'
+                else:
+                    rsvp = RSVP.create(
+                        event=event,
+                        user=current_user,
+                        status=status,
+                        notes=notes
+                    )
+                    status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
+                    message = f'Attendance confirmed: {status_text}'
 
         # Prepare response
         rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
