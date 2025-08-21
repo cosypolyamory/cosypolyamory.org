@@ -1,5 +1,5 @@
 {# Renders the capacity pills for the event detail page #}
-{% if rsvp_count >= event.max_attendees %}
+{% if event.max_attendees and rsvp_count >= event.max_attendees %}
     <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
 {% endif %}
 {% if rsvps_waitlist|length > 0 %}
