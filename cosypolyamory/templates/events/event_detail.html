@@ -222,70 +222,82 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <h6 class="mt-4"><i class="fas fa-map-marker-alt me-2 text-primary"></i>Event Location</h6>
-                            {% if google_maps_api_key and google_maps_info %}
-                                {% if google_maps_info.lat and google_maps_info.lng %}
-                                    <!-- Embedded Google Maps with coordinates -->
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        style="border:0; border-radius: 0.375rem;"
-                                        loading="lazy"
-                                        allowfullscreen
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        src="https://www.google.com/maps/embed/v1/view?key={{ google_maps_api_key }}&center={{ google_maps_info.lat }},{{ google_maps_info.lng }}&zoom=15">
-                                    </iframe>
-                                {% elif google_maps_info.place_name %}
-                                    <!-- Embedded Google Maps with place name -->
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        style="border:0; border-radius: 0.375rem;"
-                                        loading="lazy"
-                                        allowfullscreen
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_api_key }}&q={{ google_maps_info.place_name | urlencode }}">
-                                    </iframe>
-                                {% elif google_maps_info.embed_url %}
-                                    <!-- Embedded Google Maps with URL (for short URLs like goo.gl) -->
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        style="border:0; border-radius: 0.375rem;"
-                                        loading="lazy"
-                                        allowfullscreen
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        src="{{ google_maps_info.embed_url }}">
-                                    </iframe>
-                                {% elif google_maps_info.search_url %}
-                                    <!-- Use Google Maps Embed API search mode for short URLs -->
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        style="border:0; border-radius: 0.375rem;"
-                                        loading="lazy"
-                                        allowfullscreen
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        src="https://www.google.com/maps/embed/v1/search?key={{ google_maps_api_key }}&q={{ google_maps_info.search_url | urlencode }}">
-                                    </iframe>
+                            {% if event.google_maps_link %}
+                                {% if google_maps_api_key %}
+                                    {% if google_maps_info %}
+                                        {% if google_maps_info.lat and google_maps_info.lng %}
+                                            <!-- Embedded Google Maps with coordinates -->
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                style="border:0; border-radius: 0.375rem;"
+                                                loading="lazy"
+                                                allowfullscreen
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                src="https://www.google.com/maps/embed/v1/view?key={{ google_maps_api_key }}&center={{ google_maps_info.lat }},{{ google_maps_info.lng }}&zoom=15">
+                                            </iframe>
+                                        {% elif google_maps_info.place_name %}
+                                            <!-- Embedded Google Maps with place name -->
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                style="border:0; border-radius: 0.375rem;"
+                                                loading="lazy"
+                                                allowfullscreen
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_api_key }}&q={{ google_maps_info.place_name | urlencode }}">
+                                            </iframe>
+                                        {% elif google_maps_info.embed_url %}
+                                            <!-- Embedded Google Maps with URL (for short URLs like goo.gl) -->
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                style="border:0; border-radius: 0.375rem;"
+                                                loading="lazy"
+                                                allowfullscreen
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                src="{{ google_maps_info.embed_url }}">
+                                            </iframe>
+                                        {% elif google_maps_info.search_url %}
+                                            <!-- Use Google Maps Embed API search mode for short URLs -->
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                style="border:0; border-radius: 0.375rem;"
+                                                loading="lazy"
+                                                allowfullscreen
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                src="https://www.google.com/maps/embed/v1/search?key={{ google_maps_api_key }}&q={{ google_maps_info.search_url | urlencode }}">
+                                            </iframe>
+                                        {% endif %}
+                                    {% else %}
+                                        <!-- URL parsing failed - show helpful error with examples -->
+                                        <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                            <div class="text-center text-muted">
+                                                <i class="fas fa-exclamation-triangle fa-3x mb-2 text-warning"></i>
+                                                <br>
+                                                <small><strong>Unable to parse Google Maps URL</strong></small>
+                                                <br>
+                                                <small class="mt-2 d-block">Please use one of these formats:</small>
+                                                <small class="d-block mt-1">
+                                                    • <code>https://maps.google.com/maps?q=Location+Name</code><br>
+                                                    • <code>https://www.google.com/maps/place/Location+Name</code><br>
+                                                    • <code>https://goo.gl/maps/shorturl</code><br>
+                                                    • <code>https://maps.app.goo.gl/shorturl</code>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                 {% else %}
-                                    <!-- Fallback: show placeholder if we can't parse the URL -->
+                                    <!-- No API key configured - show placeholder -->
                                     <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
                                         <div class="text-center text-muted">
                                             <i class="fas fa-map fa-3x mb-2"></i>
                                             <br>
-                                            <small>Unable to parse map location</small>
+                                            <small>Map preview will be available when Google Maps API key is added.</small>
                                         </div>
                                     </div>
                                 {% endif %}
-                            {% elif event.google_maps_link %}
-                                <!-- No API key configured - show placeholder -->
-                                <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                    <div class="text-center text-muted">
-                                        <i class="fas fa-map fa-3x mb-2"></i>
-                                        <br>
-                                        <small>Map preview will be available when Google Maps API is configured</small>
-                                    </div>
-                                </div>
                             {% else %}
                                 <!-- No Google Maps link provided -->
                                 <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
