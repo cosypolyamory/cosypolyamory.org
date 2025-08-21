@@ -40,11 +40,11 @@ def api_admin_users_by_role(role):
             # Show both 'pending' and 'new' users under the pending tab
             # Fetch all users with role 'pending' or 'new'
             all_pending_new = list(User.select().where(User.role.in_(['pending', 'new'])))
-            # Split into those with a pending application and those without
+            # Split into those with an application and those without
             with_pending_app = []
             without_pending_app = []
             for user in all_pending_new:
-                application = UserApplication.select().where((UserApplication.user == user) & (UserApplication.status == 'pending')).first()
+                application = UserApplication.select().where(UserApplication.user == user).first()
                 if application:
                     with_pending_app.append((user, application))
                 else:

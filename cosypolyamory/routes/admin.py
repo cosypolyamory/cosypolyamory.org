@@ -24,8 +24,11 @@ def moderate_applications():
     page = request.args.get('page', 1, type=int)
     per_page = 10
     
-    # Get paginated pending applications
-    pending_applications_query = UserApplication.select().where(UserApplication.status == 'pending').order_by(UserApplication.submitted_at)
+    # Get paginated pending applications (applications from users with pending/new status)
+    pending_applications_query = (UserApplication.select()
+                                 .join(User)
+                                 .where(User.role == "pending")
+                                 .order_by(UserApplication.submitted_at))
     total_applications = pending_applications_query.count()
     
     # Calculate pagination
@@ -71,7 +74,6 @@ def approve_application(application_id):
     """Approve a user application"""
     try:
         application = UserApplication.get_by_id(application_id)
-        application.status = 'approved'
         application.reviewed_at = datetime.now()
         application.reviewed_by = current_user
         application.review_notes = request.form.get('notes', '')
@@ -79,6 +81,7 @@ def approve_application(application_id):
         
         # Update user status
         user = application.user
+        user.role = 'approved'
         user.is_approved = True
         user.save()
         
@@ -94,7 +97,6 @@ def reject_application(application_id):
     """Reject a user application"""
     try:
         application = UserApplication.get_by_id(application_id)
-        application.status = 'rejected'
         application.reviewed_at = datetime.now()
         application.reviewed_by = current_user
         application.review_notes = request.form.get('notes', '')
@@ -103,6 +105,7 @@ def reject_application(application_id):
         # Update user status
         user = application.user
         user.role = "rejected"
+        user.is_approved = False
         user.save()
         
         flash(f'Application for {application.user.name} has been rejected.', 'info')

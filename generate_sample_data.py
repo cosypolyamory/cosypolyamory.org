@@ -279,7 +279,6 @@ def create_user_application(user, status):
     
     UserApplication.create(
         user=user,
-        status=status,
         question_1_answer=random.choice(sample_responses['question_1']),
         question_2_answer=random.choice(sample_responses['question_2']),
         question_3_answer=random.choice(sample_responses['question_3']),
@@ -476,10 +475,16 @@ def display_summary():
     print(f"   - Maybe: {maybe_rsvps}")
     print(f"   - No: {no_rsvps}")
     
-    # Count applications
+    # Count applications by user role instead of application status
     total_apps = UserApplication.select().count()
-    pending_apps = UserApplication.select().where(UserApplication.status == 'pending').count()
-    approved_apps = UserApplication.select().where(UserApplication.status == 'approved').count()
+    pending_apps = (UserApplication.select()
+                   .join(User)
+                   .where(User.role.in_(['pending', 'new']))
+                   .count())
+    approved_apps = (UserApplication.select()
+                    .join(User)
+                    .where(User.role == 'approved')
+                    .count())
     
     print(f"📋 Applications: {total_apps} total")
     print(f"   - Pending: {pending_apps}")

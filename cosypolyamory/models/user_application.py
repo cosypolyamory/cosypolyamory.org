@@ -10,11 +10,6 @@ from cosypolyamory.models.user import User
 class UserApplication(BaseModel):
     """User application for community approval"""
     user = ForeignKeyField(User, backref='application')
-    status = CharField(choices=[
-        ('pending', 'Pending Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected')
-    ], default='pending')
     
     # Questionnaire responses (stored as JSON-like text)
     question_1_answer = TextField(null=True)
@@ -32,6 +27,16 @@ class UserApplication(BaseModel):
     
     class Meta:
         table_name = 'user_applications'
+    
+    @property
+    def status(self):
+        """Derive status from user role"""
+        if self.user.role == 'approved':
+            return 'approved'
+        elif self.user.role == 'rejected':
+            return 'rejected'
+        else:
+            return 'pending'
     
     def __str__(self):
         return f"Application for {self.user.name} - {self.status}"

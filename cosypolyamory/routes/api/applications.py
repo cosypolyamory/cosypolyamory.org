@@ -90,11 +90,9 @@ def api_admin_application_review(application_id):
         user = application.user
         
         if action == 'accept':
-            application.status = 'approved'
             user.role = 'approved'
             user.is_approved = True
         else:
-            application.status = 'rejected'
             user.role = 'rejected'
             user.is_approved = False
         
