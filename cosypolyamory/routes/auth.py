@@ -307,7 +307,13 @@ def oauth_callback(provider):
             flash(f'Successfully logged in with {provider.title()}!', 'success')
         except Exception as db_error:
             print(f"Database error: {db_error}")
-            flash(f'Database error during login: {str(db_error)}', 'error')
+            error_msg = str(db_error)
+            
+            # Check for specific constraint failures and provide user-friendly messages
+            if 'NOT NULL constraint failed: users.email' in error_msg or ('UNIQUE constraint failed' in error_msg and 'email' in error_msg):
+                flash('This email address is already associated with another account. Please use a different login method or account.', 'error')
+            else:
+                flash(f'Database error during login: {error_msg}', 'error')
             return redirect(url_for('auth.login'))
         
         # Redirect to next page or appropriate landing page
