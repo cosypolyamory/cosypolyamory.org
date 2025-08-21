@@ -22,17 +22,14 @@
                             {% endif %}
                             
                             {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] %}
-                                <a href="{{ url_for('events.edit_attendance', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                                <a href="{{ url_for('events.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
                                     <i class="fas fa-users-cog me-2"></i>Manage Attendance
-                                </a>
-                                <a href="{{ url_for('events.create_event') }}" class="btn btn-outline-success btn-sm">
-                                    <i class="fas fa-plus me-2"></i>Create New Event
                                 </a>
                             {% endif %}
                         </div>
                         
                         <div class="d-flex flex-wrap gap-2">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
                                 <i class="fas fa-share me-2"></i>Share Event
                             </button>
                         </div>
