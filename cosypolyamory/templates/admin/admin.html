@@ -450,6 +450,7 @@ function createUserCard(user) {
                     ${applicationInfo}
                 </div>
                 <div class="col-12 col-sm-auto mt-2 mt-sm-0">
+                    ${user.role !== 'admin' ? `
                     <div class="btn-group dropdown position-relative">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Click to change user role" aria-expanded="false">
                             Change role
@@ -459,13 +460,6 @@ function createUserCard(user) {
                             ${(() => {
                                 let options = [];
                                 const currentUserRole = window.getCurrentUserRole();
-                                
-                                // Only admins can make other users admin
-                                if (currentUserRole === 'admin' && user.role !== 'admin') {
-                                    options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'admin')">
-                                        <i class="fas fa-crown me-2" style="color: #fd7e14;"></i>Make admin
-                                    </button></li>`);
-                                }
                                 
                                 // Organizer option (available to all admins/organizers)
                                 if (user.role === 'approved') {
@@ -500,6 +494,7 @@ function createUserCard(user) {
                             })()}
                         </ul>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         </div>
