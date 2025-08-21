@@ -12,6 +12,8 @@ from flask_login import login_required, current_user
 from cosypolyamory.models.user import User
 from cosypolyamory.models.user_application import UserApplication
 from cosypolyamory.models.event_note import EventNote
+from cosypolyamory.models.event import Event
+from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, admin_or_organizer_required
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -73,21 +75,22 @@ def moderate_applications():
 def approve_application(application_id):
     """Approve a user application"""
     try:
-        application = UserApplication.get_by_id(application_id)
-        application.reviewed_at = datetime.now()
-        application.reviewed_by = current_user
-        application.review_notes = request.form.get('notes', '')
-        application.save()
-        
-        # Update user status
-        user = application.user
-        user.role = 'approved'
-        user.is_approved = True
-        user.save()
-        
+        with database.atomic():
+            application = UserApplication.get_by_id(application_id)
+            application.reviewed_at = datetime.now()
+            application.reviewed_by = current_user
+            application.review_notes = request.form.get('notes', '')
+            application.save()
+            
+            # Update user status
+            user = application.user
+            user.role = 'approved'
+            user.is_approved = True
+            user.save()
+            
         flash(f'Application for {user.name} has been approved.', 'success')
-    except UserApplication.DoesNotExist:
-        flash('Application not found.', 'error')
+    except Exception as e:
+        flash(f'Error approving application: {str(e)}', 'error')
     
     return redirect(url_for('admin.moderate_applications'))
 
@@ -96,21 +99,24 @@ def approve_application(application_id):
 def reject_application(application_id):
     """Reject a user application"""
     try:
-        application = UserApplication.get_by_id(application_id)
-        application.reviewed_at = datetime.now()
-        application.reviewed_by = current_user
-        application.review_notes = request.form.get('notes', '')
-        application.save()
+        with database.atomic():
+            application = UserApplication.get_by_id(application_id)
+            application.reviewed_at = datetime.now()
+            application.reviewed_by = current_user
+            application.review_notes = request.form.get('notes', '')
+            application.save()
 
-        # Update user status
-        user = application.user
-        user.role = "rejected"
-        user.is_approved = False
-        user.save()
-        
+            # Update user status
+            user = application.user
+            user.role = "rejected"
+            user.is_approved = False
+            user.save()
+            
         flash(f'Application for {application.user.name} has been rejected.', 'info')
     except UserApplication.DoesNotExist:
         flash('Application not found.', 'error')
+    except Exception as e:
+        flash(f'Error rejecting application: {str(e)}', 'error')
     
     return redirect(url_for('admin.moderate_applications'))
 
@@ -129,22 +135,28 @@ def event_notes():
     notes = EventNote.select().order_by(EventNote.name)
     return render_template('events/event_notes.html', event_notes=notes)
 
-@bp.route('/event-notes/add', methods=['GET', 'POST'])
+@bp.route('/event-notes/add', methods=['POST'])
 @admin_or_organizer_required
 def add_event_note():
-    if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        note = request.form.get('note', '').strip()
-        if not name or not note:
-            flash('Both name and note are required.', 'error')
-            return render_template('events/add_event_note.html')
-        # Check for duplicate name
-        if EventNote.select().where(EventNote.name == name).exists():
-            flash('A note with this name already exists.', 'error')
-            return render_template('events/add_event_note.html')
-        EventNote.create(name=name, note=note)
-        flash('Event note added successfully.', 'success')
-        return redirect(url_for('admin.event_notes'))
+
+    try:
+        with database.atomic():
+            name = request.form.get('name', '').strip()
+            note = request.form.get('note', '').strip()
+            if not name or not note:
+                flash('Both name and note are required.', 'error')
+                return render_template('events/add_event_note.html')
+            # Check for duplicate name
+            if EventNote.select().where(EventNote.name == name).exists():
+                flash('A note with this name already exists.', 'error')
+                return render_template('events/add_event_note.html')
+            EventNote.create(name=name, note=note)
+            flash('Event note added successfully.', 'success')
+            return redirect(url_for('admin.event_notes'))
+    except Exception as e:
+        flash(f'Error adding event note: {str(e)}', 'error')
+        return render_template('events/edit_event_note.html', note=note)
+
     return render_template('events/add_event_note.html')
 
 @bp.route('/event-notes/<int:note_id>/edit', methods=['GET', 'POST'])
@@ -161,15 +173,24 @@ def edit_event_note(note_id):
         if not name or not note_text:
             flash('Both name and note are required.', 'error')
             return render_template('events/edit_event_note.html', note=note)
-        # Check for duplicate name (excluding self)
-        if EventNote.select().where((EventNote.name == name) & (EventNote.id != note.id)).exists():
-            flash('A note with this name already exists.', 'error')
+        
+        try:
+            with database.atomic():
+                # Check for duplicate name (excluding self)
+                if EventNote.select().where((EventNote.name == name) & (EventNote.id != note.id)).exists():
+                    flash('A note with this name already exists.', 'error')
+                    return render_template('events/edit_event_note.html', note=note)
+                
+                note.name = name
+                note.note = note_text
+                note.save()
+                
+            flash('Event note updated successfully.', 'success')
+            return redirect(url_for('admin.event_notes'))
+        except Exception as e:
+            flash(f'Error updating event note: {str(e)}', 'error')
             return render_template('events/edit_event_note.html', note=note)
-        note.name = name
-        note.note = note_text
-        note.save()
-        flash('Event note updated successfully.', 'success')
-        return redirect(url_for('admin.event_notes'))
+            
     return render_template('events/edit_event_note.html', note=note)
 
 @bp.route('/event-notes/<int:note_id>/delete', methods=['POST'])
@@ -181,17 +202,23 @@ def delete_event_note(note_id):
         flash('Event note not found.', 'error')
         return redirect(url_for('admin.event_notes'))
     
-    # Check if the note is being used by any events
-    from cosypolyamory.models.event import Event
-    events_using_note = list(Event.select().where(Event.event_note == note))
-    
-    if events_using_note:
-        event_titles = [event.title for event in events_using_note]
-        flash(f'Cannot delete note "{note.name}" because it is being used by the following events: {", ".join(event_titles)}', 'error')
-        return redirect(url_for('admin.event_notes'))
-    
-    # Safe to delete
-    note_name = note.name
-    note.delete_instance()
-    flash(f'Event note "{note_name}" has been deleted successfully.', 'success')
+    try:
+        with database.atomic():
+            # Check if the note is being used by any events
+            from cosypolyamory.models.event import Event
+            events_using_note = list(Event.select().where(Event.event_note == note))
+            
+            if events_using_note:
+                event_titles = [event.title for event in events_using_note]
+                flash(f'Cannot delete note "{note.name}" because it is being used by the following events: {", ".join(event_titles)}', 'error')
+                return redirect(url_for('admin.event_notes'))
+            
+            # Safe to delete
+            note_name = note.name
+            note.delete_instance()
+            
+        flash(f'Event note "{note_name}" has been deleted successfully.', 'success')
+    except Exception as e:
+        flash(f'Error deleting event note: {str(e)}', 'error')
+        
     return redirect(url_for('admin.event_notes'))
