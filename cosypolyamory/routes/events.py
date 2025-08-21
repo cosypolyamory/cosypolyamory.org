@@ -295,6 +295,15 @@ def create_event_post():
                 flash('Selected event note not found.', 'error')
                 return redirect(url_for('events.create_event'))
 
+        # Validate max_attendees against required host RSVPs
+        required_hosts = 1  # organizer
+        if co_host:
+            required_hosts = 2  # organizer + co-host
+            
+        if max_attendees and int(max_attendees) < required_hosts:
+            flash(f'Cannot create event with capacity of {max_attendees}. Minimum capacity must be at least {required_hosts} to accommodate the organizer{" and co-host" if co_host else ""}.', 'error')
+            return redirect(url_for('events.create_event'))
+
         # Create event
         event = Event.create(
             title=title,
@@ -312,6 +321,30 @@ def create_event_post():
             max_attendees=int(max_attendees) if max_attendees else None,
             event_note=event_note
         )
+        
+        # Automatically create RSVPs for organizer and co-host
+        # Create or update organizer RSVP
+        organizer_rsvp, created = RSVP.get_or_create(
+            event=event,
+            user=organizer,
+            defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+        )
+        if not created and organizer_rsvp.status != 'yes':
+            organizer_rsvp.status = 'yes'
+            organizer_rsvp.updated_at = datetime.now()
+            organizer_rsvp.save()
+            
+        # Create or update co-host RSVP if there is a co-host
+        if co_host:
+            cohost_rsvp, created = RSVP.get_or_create(
+                event=event,
+                user=co_host,
+                defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+            )
+            if not created and cohost_rsvp.status != 'yes':
+                cohost_rsvp.status = 'yes'
+                cohost_rsvp.updated_at = datetime.now()
+                cohost_rsvp.save()
         
         flash(f'Event "{title}" has been created successfully!', 'success')
         return redirect(url_for('events.event_detail', event_id=event.id))
@@ -438,8 +471,17 @@ def edit_event_post(event_id):
             except User.DoesNotExist:
                 flash('Co-host not found.', 'error')
                 return redirect(url_for('events.edit_event', event_id=event_id))
+        else:
+            # Co-host is being removed
+            if event.co_host:
+                try:
+                    cohost_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == event.co_host))
+                    cohost_rsvp.delete_instance()
+                    flash("Co-host and their RSVP have been removed.", 'info')
+                except RSVP.DoesNotExist:
+                    pass
         
-        # Handle event note
+        # Check if we're adding a new co-host 
         event_note_id = request.form.get('event_note_id')
         event_note = None
         if event_note_id:
@@ -512,6 +554,30 @@ def edit_event_post(event_id):
         event.max_attendees = int(max_attendees) if max_attendees else None
         event.event_note = event_note
         event.save()
+        
+        # Automatically create/update RSVPs for organizer and co-host
+        # Create or update organizer RSVP
+        organizer_rsvp, created = RSVP.get_or_create(
+            event=event,
+            user=organizer,
+            defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+        )
+        if not created and organizer_rsvp.status != 'yes':
+            organizer_rsvp.status = 'yes'
+            organizer_rsvp.updated_at = datetime.now()
+            organizer_rsvp.save()
+            
+        # Create or update co-host RSVP if there is a co-host
+        if co_host:
+            cohost_rsvp, created = RSVP.get_or_create(
+                event=event,
+                user=co_host,
+                defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+            )
+            if not created and cohost_rsvp.status != 'yes':
+                cohost_rsvp.status = 'yes'
+                cohost_rsvp.updated_at = datetime.now()
+                cohost_rsvp.save()
         
         success_message = f'Event "{title}" has been updated successfully!'
         if 'promotion_message' in locals():
