@@ -11,6 +11,7 @@ from flask_login import current_user
 
 from cosypolyamory.models.user_application import UserApplication
 from cosypolyamory.models.user import User
+from cosypolyamory.database import database
 
 bp = Blueprint('applications', __name__)
 
@@ -89,18 +90,20 @@ def api_admin_application_review(application_id):
         application = UserApplication.get_by_id(application_id)
         user = application.user
         
-        if action == 'accept':
-            user.role = 'approved'
-            user.is_approved = True
-        else:
-            user.role = 'rejected'
-            user.is_approved = False
-        
-        application.reviewed_at = datetime.now()
-        application.reviewed_by = current_user if hasattr(current_user, 'id') else None
-        application.review_notes = notes
-        application.save()
-        user.save()
+        # Update application and user status in a transaction
+        with database.atomic():
+            if action == 'accept':
+                user.role = 'approved'
+                user.is_approved = True
+            else:
+                user.role = 'rejected'
+                user.is_approved = False
+            
+            application.reviewed_at = datetime.now()
+            application.reviewed_by = current_user if hasattr(current_user, 'id') else None
+            application.review_notes = notes
+            application.save()
+            user.save()
         
         return jsonify({'success': True})
     except UserApplication.DoesNotExist:
