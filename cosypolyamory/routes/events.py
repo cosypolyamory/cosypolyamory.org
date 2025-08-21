@@ -265,6 +265,41 @@ def create_event_post():
         date = dt.strptime(date_str, '%Y-%m-%d')
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
         
+        # Check if organizer and co-host need RSVPs and if there's space for them
+        if max_attendees:
+            max_capacity = int(max_attendees)
+            
+            # Check if organizer already has an RSVP for this event (shouldn't happen in create, but let's be safe)
+            organizer_needs_rsvp = True
+            cohost_needs_rsvp = bool(co_host)
+            
+            try:
+                # This shouldn't exist for a new event, but check anyway
+                existing_organizer_rsvp = RSVP.get((RSVP.user == organizer))
+                if existing_organizer_rsvp.status == 'yes':
+                    organizer_needs_rsvp = False
+            except RSVP.DoesNotExist:
+                pass
+                
+            if co_host:
+                try:
+                    # This shouldn't exist for a new event, but check anyway
+                    existing_cohost_rsvp = RSVP.get((RSVP.user == co_host))
+                    if existing_cohost_rsvp.status == 'yes':
+                        cohost_needs_rsvp = False
+                except RSVP.DoesNotExist:
+                    pass
+            
+            # Calculate how many RSVPs we need to create
+            rsvps_needed = (1 if organizer_needs_rsvp else 0) + (1 if cohost_needs_rsvp else 0)
+            
+            if rsvps_needed > max_capacity:
+                if co_host:
+                    flash(f'Cannot create event with capacity of {max_capacity}. The organizer and co-host need RSVPs but there is not enough space for them in the event.', 'error')
+                else:
+                    flash(f'Cannot create event with capacity of {max_capacity}. The organizer needs an RSVP but there is not enough space in the event.', 'error')
+                return redirect(url_for('events.create_event'))
+
         # Validate Google Maps link if provided
         valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']
         if google_maps_link:
@@ -303,6 +338,7 @@ def create_event_post():
         if max_attendees and int(max_attendees) < required_hosts:
             flash(f'Cannot create event with capacity of {max_attendees}. Minimum capacity must be at least {required_hosts} to accommodate the organizer{" and co-host" if co_host else ""}.', 'error')
             return redirect(url_for('events.create_event'))
+
 
         # Create event
         event = Event.create(
@@ -499,6 +535,42 @@ def edit_event_post(event_id):
             if current_attending_count > new_max_attendees:
                 edit_attendance_url = url_for('events.edit_attendance', event_id=event_id)
                 flash(f'Cannot reduce event capacity to {new_max_attendees}. There are currently {current_attending_count} people attending. Please <a href="{edit_attendance_url}">manage attendance</a> to remove some attendees before reducing the capacity.', 'error')
+                return redirect(url_for('events.edit_event', event_id=event_id))
+            
+            # Check if organizer and co-host have RSVPs and if there's space for them
+            # Get current RSVPs for organizer and co-host
+            organizer_needs_rsvp = False
+            cohost_needs_rsvp = False
+            
+            try:
+                organizer_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == organizer))
+                if organizer_rsvp.status != 'yes':
+                    organizer_needs_rsvp = True
+            except RSVP.DoesNotExist:
+                organizer_needs_rsvp = True
+                
+            if co_host:
+                try:
+                    cohost_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == co_host))
+                    if cohost_rsvp.status != 'yes':
+                        cohost_needs_rsvp = True
+                except RSVP.DoesNotExist:
+                    cohost_needs_rsvp = True
+            
+            # Calculate how many additional RSVPs we need
+            additional_rsvps_needed = (1 if organizer_needs_rsvp else 0) + (1 if cohost_needs_rsvp else 0)
+            
+            if current_attending_count + additional_rsvps_needed > new_max_attendees:
+                missing_hosts = []
+                if organizer_needs_rsvp:
+                    missing_hosts.append("organizer")
+                if cohost_needs_rsvp:
+                    missing_hosts.append("co-host")
+                
+                if len(missing_hosts) == 1:
+                    flash(f'Cannot save event changes. The {missing_hosts[0]} needs an RSVP but there is not enough space in the event (capacity: {new_max_attendees}, current attending: {current_attending_count}).', 'error')
+                else:
+                    flash(f'Cannot save event changes. The {" and ".join(missing_hosts)} need RSVPs but there is not enough space in the event (capacity: {new_max_attendees}, current attending: {current_attending_count}).', 'error')
                 return redirect(url_for('events.edit_event', event_id=event_id))
             
             # Check for capacity increase that would allow waitlist promotion
