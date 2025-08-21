@@ -181,6 +181,7 @@
                             <input type="url" class="form-control" id="google_maps_link" name="google_maps_link"
                                    placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/@..."
                                    value="{% if event %}{{ event.google_maps_link }}{% endif %}">
+                            <div id="maps-url-feedback" class="form-text" style="display: none;"></div>
                             <div class="form-text">Optional. Approved members will see an embedded map preview if provided.</div>
                         </div>
                         
@@ -340,6 +341,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Setup event notes preview
     setupEventNotes();
+    
+    // Setup Google Maps validation
+    setupGoogleMapsValidation();
 });
 
 function setupEventNotes() {
@@ -608,6 +612,116 @@ function deleteEvent() {
     
     document.body.appendChild(form);
     form.submit();
+}
+
+// Google Maps URL validation
+function validateGoogleMapsURL(url) {
+    if (!url || url.trim() === '') {
+        return { valid: true, message: '', type: 'empty' };
+    }
+    
+    try {
+        // Check if it's a valid URL
+        new URL(url);
+        
+        // Check for Google Maps patterns
+        const patterns = [
+            // Format 1: Coordinates in URL path (/@lat,lng,zoom)
+            /@-?\d+\.?\d*,-?\d+\.?\d*,\d+\.?\d*z/,
+            
+            // Format 2: Place with coordinates (/place/Name/@lat,lng)
+            /\/place\/[^/@]+\/@-?\d+\.?\d*,-?\d+\.?\d*/,
+            
+            // Format 3: URL parameters (3d41.381138!4d2.186112)
+            /3d-?\d+\.?\d*!4d-?\d+\.?\d*/,
+            
+            // Format 4: Place ID format (/place/LocationName)
+            /\/place\/[^/@?]+/,
+            
+            // Format 5: Query parameter format (?q=location)
+            /[?&]q=[^&]+/,
+            
+            // Format 6: Short URLs (will need server-side resolution)
+            /goo\.gl\/maps/,
+            /maps\.app\.goo\.gl/
+        ];
+        
+        const isValidFormat = patterns.some(pattern => pattern.test(url));
+        
+        if (isValidFormat) {
+            return { 
+                valid: true, 
+                message: '✓ Valid Google Maps URL format', 
+                type: 'success' 
+            };
+        } else {
+            return { 
+                valid: false, 
+                message: '⚠ URL format not recognized. Please use a Google Maps link.', 
+                type: 'warning' 
+            };
+        }
+        
+    } catch (e) {
+        return { 
+            valid: false, 
+            message: '✗ Invalid URL format', 
+            type: 'error' 
+        };
+    }
+}
+
+function setupGoogleMapsValidation() {
+    const mapsInput = document.getElementById('google_maps_link');
+    const feedbackDiv = document.getElementById('maps-url-feedback');
+    
+    if (!mapsInput || !feedbackDiv) return;
+    
+    function updateValidation() {
+        const url = mapsInput.value.trim();
+        const validation = validateGoogleMapsURL(url);
+        
+        // Clear previous states
+        mapsInput.classList.remove('is-valid', 'is-invalid');
+        feedbackDiv.style.display = 'none';
+        
+        if (validation.type === 'empty') {
+            // No validation feedback for empty field
+            return;
+        }
+        
+        // Show feedback
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.textContent = validation.message;
+        
+        if (validation.type === 'success') {
+            mapsInput.classList.add('is-valid');
+            feedbackDiv.className = 'form-text text-success';
+        } else if (validation.type === 'warning') {
+            feedbackDiv.className = 'form-text text-warning';
+            // Add examples
+            feedbackDiv.innerHTML = validation.message + '<br><small>Supported formats:<br>' +
+                '• <code>https://maps.google.com/maps?q=Location+Name</code><br>' +
+                '• <code>https://www.google.com/maps/place/Location+Name</code><br>' +
+                '• <code>https://goo.gl/maps/shorturl</code><br>' +
+                '• <code>https://maps.app.goo.gl/shorturl</code></small>';
+        } else {
+            mapsInput.classList.add('is-invalid');
+            feedbackDiv.className = 'form-text text-danger';
+        }
+    }
+    
+    // Real-time validation with debounce
+    let validationTimeout;
+    mapsInput.addEventListener('input', function() {
+        clearTimeout(validationTimeout);
+        validationTimeout = setTimeout(updateValidation, 500);
+    });
+    
+    // Initial validation if field has value
+    if (mapsInput.value.trim()) {
+        updateValidation();
+    }
 }
 </script>
 
