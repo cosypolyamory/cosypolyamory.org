@@ -2,6 +2,22 @@
 {%- block title -%}home{% endblock %}
 {%- block content -%}
 
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="row mb-3">
+            <div class="col-12">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message|safe }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endwith %}
+
 <div class="row my-0 my-lg-5">
   <div class="col-10 col-md-4 order-md-2 mx-auto logo">
     <img src="/static/img/cosypolyamory.org.svg" alt="Cosy Polyamory Hearth-plus-Infinite-shaped Logo" width=75%>
