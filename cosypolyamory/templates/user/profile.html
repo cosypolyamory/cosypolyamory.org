@@ -282,12 +282,14 @@
                         <li><i class="fas fa-envelope me-2 text-info"></i>Contact organizers with questions</li>
                     </ul>
                     <div class="mt-3">
-                        <a href="{{ url_for('user.application_status') }}" class="btn btn-warning">
-                            <i class="fas fa-clock me-2"></i>Check Application Status
-                        </a>
-                        <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-calendar-alt me-2"></i>Browse Events
-                        </a>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                            <a href="{{ url_for('user.application_status') }}" class="btn btn-warning">
+                                <i class="fas fa-clock me-2"></i>Check Application Status
+                            </a>
+                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-calendar-alt me-2"></i>Browse Events
+                            </a>
+                        </div>
                     </div>
                     
                 {% elif user.role in ['admin', 'organizer'] %}
@@ -306,17 +308,19 @@
                         <li><i class="fas fa-check-circle me-2 text-success"></i>All approved member privileges</li>
                     </ul>
                     <div class="mt-3">
-                        <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-calendar-alt me-2"></i>Events list
-                        </a>
-                        <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
-                            <i class="fas fa-calendar-plus me-2"></i>Create Event
-                        </a>
-                        {% if user.role in ['admin', 'organizer'] %}
-                            <a href="{{ url_for('admin.moderate_applications') }}" class="btn btn-warning">
-                                <i class="fas fa-gavel me-2"></i>Review Applications
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-calendar-alt me-2"></i>Events list
                             </a>
-                        {% endif %}
+                            <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
+                                <i class="fas fa-calendar-plus me-2"></i>Create Event
+                            </a>
+                            {% if user.role in ['admin', 'organizer'] %}
+                                <a href="{{ url_for('admin.moderate_applications') }}" class="btn btn-warning">
+                                    <i class="fas fa-gavel me-2"></i>Review Applications
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
                     
                 {% else %}
@@ -331,12 +335,14 @@
                         <li><i class="fas fa-envelope me-2 text-info"></i>Contact organizers with questions</li>
                     </ul>
                     <div class="mt-3">
-                        <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-calendar-alt me-2"></i>Browse Events
-                        </a>
-                        <a href="{{ url_for('pages.values') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-heart me-2"></i>Community Values
-                        </a>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-calendar-alt me-2"></i>Browse Events
+                            </a>
+                            <a href="{{ url_for('pages.values') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-heart me-2"></i>Community Values
+                            </a>
+                        </div>
                     </div>
                 {% endif %}
             </div>
