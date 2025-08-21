@@ -11,6 +11,7 @@ from cosypolyamory.models.user import User
 from cosypolyamory.models.user_application import UserApplication
 from cosypolyamory.models.event import Event
 from cosypolyamory.models.rsvp import RSVP
+from cosypolyamory.database import database
 
 bp = Blueprint('admin', __name__)
 
@@ -174,12 +175,12 @@ def api_change_user_role():
             return jsonify({'success': False, 'error': 'User not found'})
         
         # Update user role and corresponding boolean flags
-        user.role = new_role
-        user.is_admin = (new_role == 'admin')
-        user.is_organizer = (new_role == 'organizer')
-        user.is_approved = (new_role in ['admin', 'organizer', 'approved'])
-        
-        user.save()
+        with database.atomic():
+            user.role = new_role
+            user.is_admin = (new_role == 'admin')
+            user.is_organizer = (new_role == 'organizer')
+            user.is_approved = (new_role in ['admin', 'organizer', 'approved'])
+            user.save()
         
         return jsonify({
             'success': True, 
@@ -253,15 +254,16 @@ def api_delete_user():
             })
 
         # Delete related records first (UserApplication, RSVP, etc.)
-        # Delete user applications
-        UserApplication.delete().where(UserApplication.user == user).execute()
-        
-        # Delete RSVPs
-        RSVP.delete().where(RSVP.user == user).execute()
-        
-        # Delete the user
-        user_name = user.name
-        user.delete_instance()
+        with database.atomic():
+            # Delete user applications
+            UserApplication.delete().where(UserApplication.user == user).execute()
+            
+            # Delete RSVPs
+            RSVP.delete().where(RSVP.user == user).execute()
+            
+            # Delete the user
+            user_name = user.name
+            user.delete_instance()
         
         return jsonify({
             'success': True, 
