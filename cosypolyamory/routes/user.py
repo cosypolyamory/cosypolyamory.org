@@ -10,6 +10,7 @@ from flask_login import login_required, current_user
 
 from cosypolyamory.models.user import User
 from cosypolyamory.models.user_application import UserApplication
+from cosypolyamory.database import database
 
 bp = Blueprint('user', __name__)
 
@@ -51,22 +52,29 @@ def submit_application():
     except UserApplication.DoesNotExist:
         pass
     
-    # Create application
-    application = UserApplication.create(
-        user=current_user,
-        question_1_answer=request.form.get('question_1', ''),
-        question_2_answer=request.form.get('question_2', ''),
-        question_3_answer=request.form.get('question_3', ''),
-        question_4_answer=request.form.get('question_4', ''),
-        question_5_answer=request.form.get('question_5', ''),
-        question_6_answer=request.form.get('question_6', ''),
-        question_7_answer=request.form.get('question_7', ''),
-    )
-    # Set user role to 'pending' after application submission
-    current_user.role = 'pending'
-    current_user.save()
-    flash('Your application has been submitted! You will be notified once it has been reviewed.', 'success')
-    return redirect(url_for('user.application_status'))
+    # Create application and update user status in a transaction
+    try:
+        with database.atomic():
+            # Create application
+            application = UserApplication.create(
+                user=current_user,
+                question_1_answer=request.form.get('question_1', ''),
+                question_2_answer=request.form.get('question_2', ''),
+                question_3_answer=request.form.get('question_3', ''),
+                question_4_answer=request.form.get('question_4', ''),
+                question_5_answer=request.form.get('question_5', ''),
+                question_6_answer=request.form.get('question_6', ''),
+                question_7_answer=request.form.get('question_7', ''),
+            )
+            # Set user role to 'pending' after application submission
+            current_user.role = 'pending'
+            current_user.save()
+            
+        flash('Your application has been submitted! You will be notified once it has been reviewed.', 'success')
+        return redirect(url_for('user.application_status'))
+    except Exception as e:
+        flash(f'Error submitting application: {str(e)}', 'error')
+        return redirect(url_for('user.apply'))
 
 
 @bp.route('/application-status')
