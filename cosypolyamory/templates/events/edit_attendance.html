@@ -71,11 +71,23 @@
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <div class="fw-bold">{{ rsvp.user.name }}</div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            {% if rsvp.user.id == organizer_id %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif rsvp.user.id == co_host_id %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                         <small class="text-muted">
                                             RSVP'd {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
                                         </small>
                                     </div>
+                                    {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
                                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -100,6 +112,7 @@
                                             </li>
                                         </ul>
                                     </div>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endfor %}
@@ -128,11 +141,23 @@
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <div class="fw-bold">{{ rsvp.user.name }}</div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            {% if rsvp.user.id == organizer_id %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif rsvp.user.id == co_host_id %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                         <small class="text-muted">
                                             Waitlisted {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
                                         </small>
                                     </div>
+                                    {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
                                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -159,6 +184,11 @@
                                             </li>
                                         </ul>
                                     </div>
+                                    {% else %}
+                                    <div class="text-muted small">
+                                        <i class="fas fa-lock me-1"></i>Protected
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endfor %}
@@ -187,11 +217,23 @@
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <div class="fw-bold">{{ rsvp.user.name }}</div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            {% if rsvp.user.id == organizer_id %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif rsvp.user.id == co_host_id %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                         <small class="text-muted">
                                             RSVP'd {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
                                         </small>
                                     </div>
+                                    {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
                                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -218,6 +260,11 @@
                                             </li>
                                         </ul>
                                     </div>
+                                    {% else %}
+                                    <div class="text-muted small">
+                                        <i class="fas fa-lock me-1"></i>Protected
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endfor %}

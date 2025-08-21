@@ -1073,6 +1073,12 @@ def edit_attendance(event_id):
     waitlist_count = len(rsvps_waitlist)
     not_attending_count = len(rsvps_not_attending)
     
+    # Prepare host information for template
+    organizer_id = event.organizer_id
+    co_host_id = None
+    if event.co_host:
+        co_host_id = event.co_host.id
+    
     return render_template('events/edit_attendance.html',
                          event=event,
                          rsvps_attending=rsvps_attending,
@@ -1080,7 +1086,9 @@ def edit_attendance(event_id):
                          rsvps_not_attending=rsvps_not_attending,
                          rsvp_count=rsvp_count,
                          waitlist_count=waitlist_count,
-                         not_attending_count=not_attending_count)
+                         not_attending_count=not_attending_count,
+                         organizer_id=organizer_id,
+                         co_host_id=co_host_id)
 
 
 # Event route implementations will be moved here from app.py
