@@ -262,6 +262,11 @@
                         <a href="{% if event %}{{ url_for('events.event_detail', event_id=event.id) }}{% else %}{{ url_for('events.events_list') }}{% endif %}" class="btn btn-outline-secondary btn-lg me-md-2">
                             Cancel
                         </a>
+                        {% if is_edit %}
+                        <button type="button" class="btn btn-danger btn-lg me-md-2" onclick="confirmDeleteEvent()">
+                            <i class="fas fa-trash me-2"></i>Delete Event
+                        </button>
+                        {% endif %}
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="fas fa-{% if is_edit %}save{% else %}calendar-plus{% endif %} me-2"></i>
                             {% if is_edit %}Update Event{% else %}Create Event{% endif %}
@@ -581,6 +586,29 @@ function submitWithConfirmation() {
     form.submit();
 }
 {% endif %}
+
+function confirmDeleteEvent() {
+    // Show the delete confirmation modal
+    const modal = document.getElementById('deleteEventModal');
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Handle the confirmation button click
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        modalInstance.hide();
+        deleteEvent();
+    };
+}
+
+function deleteEvent() {
+    // Create form to submit DELETE request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("events.delete_event", event_id=event.id) if event else "" }}';
+    
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 
 <!-- Capacity Increase Modal -->
@@ -618,6 +646,52 @@ function submitWithConfirmation() {
                 </button>
                 <button type="button" class="btn btn-primary" id="confirmPromotionBtn">
                     <i class="fas fa-check me-2"></i>Confirm and Update Event
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Delete Event Confirmation Modal -->
+{% if is_edit %}
+<div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteEventModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Event Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-warning me-2"></i>
+                    <strong>This action cannot be undone!</strong>
+                </div>
+                
+                <p class="mb-3">Are you sure you want to delete this event?</p>
+                
+                <div class="bg-light p-3 rounded mb-3">
+                    <h6 class="mb-2">Event: <strong>{{ event.title if event else '' }}</strong></h6>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        {{ event.date.strftime('%B %d, %Y at %I:%M %p') if event else '' }}
+                    </small>
+                </div>
+                
+                <p class="text-muted">This will permanently remove:</p>
+                <ul class="text-muted">
+                    <li>All event information</li>
+                    <li>All attendance data</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-2"></i>Delete Event
                 </button>
             </div>
         </div>

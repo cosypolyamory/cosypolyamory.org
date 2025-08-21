@@ -22,6 +22,9 @@
                             {% endif %}
                             
                             {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] %}
+                                <a href="{{ url_for('events.edit_attendance', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-users-cog me-2"></i>Manage Attendance
+                                </a>
                                 <a href="{{ url_for('events.create_event') }}" class="btn btn-outline-success btn-sm">
                                     <i class="fas fa-plus me-2"></i>Create New Event
                                 </a>
@@ -428,17 +431,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    <!-- Edit Attendance Button for Admins/Organizers -->
-                                    {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer']) %}
-                                    <div class="border-top pt-3 mt-3">
-                                        <div class="text-center">
-                                            <a href="{{ url_for('events.edit_attendance', event_id=event.id) }}" class="btn btn-outline-primary">
-                                                <i class="fas fa-users-cog me-2"></i>Edit Attendance
-                                            </a>
-                                        </div>
-                                    </div>
-                                    {% endif %}
                                 </div>
                             </div>
                         </div>

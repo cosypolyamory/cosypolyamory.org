@@ -267,27 +267,6 @@ def create_event_post():
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
         
         # Check if organizer and co-host need RSVPs and if there's space for them
-        # Validate Google Maps link if provided
-        valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']
-        if google_maps_link:
-            is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
-            if not is_valid_maps_link:
-                flash('If provided, Google Maps link must be from Google Maps (maps.google.com, www.google.com/maps, or maps.app.goo.gl).', 'error')
-                return redirect(url_for('events.create_event'))
-        
-        # Handle co-host - moved up here before capacity validation
-        co_host = None
-        if co_host_id:
-            try:
-                co_host = User.get_by_id(co_host_id)
-                if not co_host.can_organize_events():
-                    flash('Co-host must be an organizer.', 'error')
-                    return redirect(url_for('events.create_event'))
-            except User.DoesNotExist:
-                flash('Co-host not found.', 'error')
-                return redirect(url_for('events.create_event'))
-
-        # Validate capacity against host RSVPs
         if max_attendees:
             max_capacity = int(max_attendees)
             
@@ -320,6 +299,26 @@ def create_event_post():
                     flash(f'Cannot create event with capacity of {max_capacity}. The organizer and co-host need RSVPs but there is not enough space for them in the event.', 'error')
                 else:
                     flash(f'Cannot create event with capacity of {max_capacity}. The organizer needs an RSVP but there is not enough space in the event.', 'error')
+                return redirect(url_for('events.create_event'))
+
+        # Validate Google Maps link if provided
+        valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']
+        if google_maps_link:
+            is_valid_maps_link = any(domain in google_maps_link.lower() for domain in valid_maps_domains)
+            if not is_valid_maps_link:
+                flash('If provided, Google Maps link must be from Google Maps (maps.google.com, www.google.com/maps, or maps.app.goo.gl).', 'error')
+                return redirect(url_for('events.create_event'))
+        
+        # Handle co-host
+        co_host = None
+        if co_host_id:
+            try:
+                co_host = User.get_by_id(co_host_id)
+                if not co_host.can_organize_events():
+                    flash('Co-host must be an organizer.', 'error')
+                    return redirect(url_for('events.create_event'))
+            except User.DoesNotExist:
+                flash('Co-host not found.', 'error')
                 return redirect(url_for('events.create_event'))
         
         # Handle event note
@@ -1169,6 +1168,39 @@ def edit_attendance(event_id):
                          not_attending_count=not_attending_count,
                          organizer_id=organizer_id,
                          co_host_id=co_host_id)
+
+
+@bp.route('/<int:event_id>/delete', methods=['POST'])
+@login_required
+def delete_event(event_id):
+    """Delete an event and all associated data"""
+    try:
+        with database.atomic():
+            event = Event.get_by_id(event_id)
+            
+            # Check permissions - only admin, organizers, or event creator can delete
+            if not current_user.role in ['admin', 'organizer']:
+                flash('You do not have permission to delete this event.', 'error')
+                return redirect(url_for('events.event_detail', event_id=event_id))
+            
+            # Delete all RSVPs associated with this event
+            RSVP.delete().where(RSVP.event == event).execute()
+            
+            # Store event title for flash message
+            event_title = event.title
+            
+            # Delete the event itself
+            event.delete_instance()
+            
+            flash(f'Event "{event_title}" has been successfully deleted.', 'success')
+            return redirect(url_for('events.events_list'))
+            
+    except Event.DoesNotExist:
+        flash('Event not found.', 'error')
+        return redirect(url_for('events.events_list'))
+    except Exception as e:
+        flash(f'An error occurred while deleting the event: {str(e)}', 'error')
+        return redirect(url_for('events.edit_event', event_id=event_id))
 
 
 # Event route implementations will be moved here from app.py
