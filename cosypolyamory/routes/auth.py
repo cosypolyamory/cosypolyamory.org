@@ -10,6 +10,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 
 from cosypolyamory.models.user import User
+from cosypolyamory.database import database
 
 bp = Blueprint('auth', __name__)
 
@@ -244,62 +245,63 @@ def oauth_callback(provider):
         
         # Store user in database and login
         try:
-            # Try to get existing user or create new one
-            try:
-                user = User.get(User.id == user_id)
-                # Update existing user info
-                if provider == 'google':
-                    user.name = user_info['name']
-                    user.avatar_url = user_info.get('picture')
-                elif provider == 'github':
-                    user.name = user_info.get('name') or user_info.get('login')
-                    user.avatar_url = user_info.get('avatar_url')
-                elif provider == 'reddit':
-                    user.name = user_info['name']
-                    user.avatar_url = user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None
-                elif provider == 'musicbrainz':
-                    user.name = username
-                    user.avatar_url = None  # MusicBrainz doesn't provide avatars
-                user.last_login = datetime.now()
-                user.save()
-            except User.DoesNotExist:
-                # Create new user
-                if provider == 'google':
-                    user = User.create(
-                        id=user_id,
-                        email=user_info['email'],
-                        name=user_info['name'],
-                        avatar_url=user_info.get('picture'),
-                        provider='google',
-                        last_login=datetime.now()
-                    )
-                elif provider == 'github':
-                    user = User.create(
-                        id=user_id,
-                        email=primary_email,
-                        name=user_info.get('name') or user_info.get('login'),
-                        avatar_url=user_info.get('avatar_url'),
-                        provider='github',
-                        last_login=datetime.now()
-                    )
-                elif provider == 'reddit':
-                    user = User.create(
-                        id=user_id,
-                        email=constructed_email,
-                        name=user_info['name'],
-                        avatar_url=user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None,
-                        provider='reddit',
-                        last_login=datetime.now()
-                    )
-                elif provider == 'musicbrainz':
-                    user = User.create(
-                        id=user_id,
-                        email=constructed_email,
-                        name=username,
-                        avatar_url=None,  # MusicBrainz doesn't provide avatars
-                        provider='musicbrainz',
-                        last_login=datetime.now()
-                    )
+            with database.atomic():
+                # Try to get existing user or create new one
+                try:
+                    user = User.get(User.id == user_id)
+                    # Update existing user info
+                    if provider == 'google':
+                        user.name = user_info['name']
+                        user.avatar_url = user_info.get('picture')
+                    elif provider == 'github':
+                        user.name = user_info.get('name') or user_info.get('login')
+                        user.avatar_url = user_info.get('avatar_url')
+                    elif provider == 'reddit':
+                        user.name = user_info['name']
+                        user.avatar_url = user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None
+                    elif provider == 'musicbrainz':
+                        user.name = username
+                        user.avatar_url = None  # MusicBrainz doesn't provide avatars
+                    user.last_login = datetime.now()
+                    user.save()
+                except User.DoesNotExist:
+                    # Create new user
+                    if provider == 'google':
+                        user = User.create(
+                            id=user_id,
+                            email=user_info['email'],
+                            name=user_info['name'],
+                            avatar_url=user_info.get('picture'),
+                            provider='google',
+                            last_login=datetime.now()
+                        )
+                    elif provider == 'github':
+                        user = User.create(
+                            id=user_id,
+                            email=primary_email,
+                            name=user_info.get('name') or user_info.get('login'),
+                            avatar_url=user_info.get('avatar_url'),
+                            provider='github',
+                            last_login=datetime.now()
+                        )
+                    elif provider == 'reddit':
+                        user = User.create(
+                            id=user_id,
+                            email=constructed_email,
+                            name=user_info['name'],
+                            avatar_url=user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None,
+                            provider='reddit',
+                            last_login=datetime.now()
+                        )
+                    elif provider == 'musicbrainz':
+                        user = User.create(
+                            id=user_id,
+                            email=constructed_email,
+                            name=username,
+                            avatar_url=None,  # MusicBrainz doesn't provide avatars
+                            provider='musicbrainz',
+                            last_login=datetime.now()
+                        )
             
             login_user(user, remember=True)
             flash(f'Successfully logged in with {provider.title()}!', 'success')
@@ -421,12 +423,13 @@ def update_profile():
         pass  # Email is available
     
     try:
-        # Update user information
-        current_user.email = email
-        current_user.name = name
-        current_user.pronoun_singular = pronoun_singular if pronoun_singular else None
-        current_user.pronoun_plural = pronoun_plural if pronoun_plural else None
-        current_user.save()
+        with database.atomic():
+            # Update user information
+            current_user.email = email
+            current_user.name = name
+            current_user.pronoun_singular = pronoun_singular if pronoun_singular else None
+            current_user.pronoun_plural = pronoun_plural if pronoun_plural else None
+            current_user.save()
         
         # Clear form data from session on successful update
         if not is_ajax:
