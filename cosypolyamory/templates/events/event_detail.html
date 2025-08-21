@@ -480,7 +480,7 @@
                                     </a>
                                 {% elif current_user.role == 'rejected' %}
                                     <p class="text-muted">Your application was not approved.</p>
-                                {% elif not current_user.application %}
+                                {% elif not current_user.application.count() %}
                                     <a href="{{ url_for('user.apply') }}" class="btn btn-primary">
                                         <i class="fas fa-edit me-2"></i>Apply to Join Community
                                     </a>

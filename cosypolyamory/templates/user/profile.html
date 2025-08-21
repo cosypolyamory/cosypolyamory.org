@@ -140,17 +140,20 @@
                         </div>
                         
                         <table class="table table-borderless">
-                            {% if user.role == 'pending' and user.application %}
+                            {% if user.role == 'pending' %}
+                                {% set application = user.application.first() if user.application else None %}
+                                {% if application %}
                                 <tr>
                                     <td><strong>Application:</strong></td>
                                     <td>
-                                        Submitted {{ user.application.submitted_at.strftime('%B %d, %Y') }}
+                                        Submitted {{ application.submitted_at.strftime('%B %d, %Y') }}
                                         <br>
                                         <a href="{{ url_for('user.application_status') }}" class="btn btn-sm btn-outline-primary mt-1">
                                             <i class="fas fa-eye me-1"></i>View Status
                                         </a>
                                     </td>
                                 </tr>
+                                {% endif %}
                             {% endif %}
                             {% if user.pronoun_singular or user.pronoun_plural %}
                             <tr>
