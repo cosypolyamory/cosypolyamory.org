@@ -41,7 +41,12 @@
                             <strong>{{ questions.question_1 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_1" name="question_1" rows="4" required 
-                                  placeholder="Please share your thoughts..."></textarea>
+                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                        <div class="form-text">
+                            <span class="char-counter" data-target="question_1">0</span> / 100 characters minimum
+                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
                     </div>
                     
                     <div class="mb-4">
@@ -49,7 +54,12 @@
                             <strong>{{ questions.question_2 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_2" name="question_2" rows="4" required 
-                                  placeholder="Please share your thoughts..."></textarea>
+                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                        <div class="form-text">
+                            <span class="char-counter" data-target="question_2">0</span> / 100 characters minimum
+                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
                     </div>
                     
                     <div class="mb-4">
@@ -57,7 +67,12 @@
                             <strong>{{ questions.question_3 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_3" name="question_3" rows="4" required 
-                                  placeholder="Please share your thoughts..."></textarea>
+                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                        <div class="form-text">
+                            <span class="char-counter" data-target="question_3">0</span> / 100 characters minimum
+                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
                     </div>
                     
                     <div class="mb-4">
@@ -65,7 +80,12 @@
                             <strong>{{ questions.question_4 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_4" name="question_4" rows="4" required 
-                                  placeholder="Please share your thoughts..."></textarea>
+                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                        <div class="form-text">
+                            <span class="char-counter" data-target="question_4">0</span> / 100 characters minimum
+                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
                     </div>
                     
                     <div class="mb-4">
@@ -73,7 +93,12 @@
                             <strong>{{ questions.question_5 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_5" name="question_5" rows="4" required
-                                  placeholder="Please share your thoughts..."></textarea>
+                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                        <div class="form-text">
+                            <span class="char-counter" data-target="question_5">0</span> / 100 characters minimum
+                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
                     </div>
                     
                     <div class="mb-4">
@@ -81,7 +106,12 @@
                             <strong>{{ questions.question_6 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_6" name="question_6" rows="4" required
-                                  placeholder="Please share your thoughts..."></textarea>
+                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                        <div class="form-text">
+                            <span class="char-counter" data-target="question_6">0</span> / 100 characters minimum
+                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
                     </div>
                     
                     <div class="mb-4">
@@ -89,7 +119,12 @@
                             <strong>{{ questions.question_7 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_7" name="question_7" rows="4" required
-                                  placeholder="Please share your thoughts..."></textarea>
+                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                        <div class="form-text">
+                            <span class="char-counter" data-target="question_7">0</span> / 100 characters minimum
+                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
                     </div>
                     
                     <div class="mb-3">
@@ -130,4 +165,136 @@
 {% block styles %}
 {{ super() }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+.char-counter {
+    font-weight: 500;
+}
+.char-counter.text-success {
+    color: #198754 !important;
+}
+.char-counter.text-danger {
+    color: #dc3545 !important;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const textareas = form.querySelectorAll('textarea[required]');
+    const minLength = 100;
+    
+    // Initialize character counters
+    textareas.forEach(textarea => {
+        const counter = document.querySelector(`[data-target="${textarea.id}"]`);
+        const parentDiv = textarea.closest('.mb-4');
+        const checkIcon = parentDiv.querySelector('.check-icon');
+        
+        // Update counter on input
+        textarea.addEventListener('input', function() {
+            updateCharacterCount(textarea, counter, checkIcon);
+            updateSubmitButton();
+        });
+        
+        // Initial count
+        updateCharacterCount(textarea, counter, checkIcon);
+    });
+    
+    // Prevent form submission if validation fails
+    form.addEventListener('submit', function(e) {
+        let hasErrors = false;
+        
+        textareas.forEach(textarea => {
+            const length = textarea.value.trim().length;
+            
+            if (length < minLength) {
+                hasErrors = true;
+            }
+        });
+        
+        if (hasErrors) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Show alert
+            showValidationAlert();
+            
+            // Scroll to first incomplete field
+            const firstIncomplete = Array.from(textareas).find(textarea => 
+                textarea.value.trim().length < minLength
+            );
+            if (firstIncomplete) {
+                firstIncomplete.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstIncomplete.focus();
+            }
+        }
+    });
+    
+    function updateCharacterCount(textarea, counter, checkIcon) {
+        const length = textarea.value.trim().length;
+        counter.textContent = length;
+        
+        // Remove previous states
+        counter.classList.remove('text-danger', 'text-success');
+        
+        if (length >= minLength) {
+            counter.classList.add('text-success');
+            checkIcon.style.display = 'inline';
+        } else {
+            counter.classList.add('text-danger');
+            checkIcon.style.display = 'none';
+        }
+    }
+    
+    function updateSubmitButton() {
+        const allValid = Array.from(textareas).every(textarea => 
+            textarea.value.trim().length >= minLength
+        );
+        
+        if (allValid) {
+            submitButton.disabled = false;
+            submitButton.classList.remove('btn-outline-primary');
+            submitButton.classList.add('btn-primary');
+        } else {
+            submitButton.disabled = true;
+            submitButton.classList.remove('btn-primary');
+            submitButton.classList.add('btn-outline-primary');
+        }
+    }
+    
+    function showValidationAlert() {
+        // Remove existing alerts
+        const existingAlert = document.querySelector('.validation-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // Create new alert
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show validation-alert';
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Please complete all fields:</strong> Each answer must be at least ${minLength} characters long to provide meaningful responses.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Insert after the Code of Conduct alert
+        const cocAlert = document.querySelector('.alert-info');
+        cocAlert.parentNode.insertBefore(alert, cocAlert.nextSibling);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Initial validation check
+    updateSubmitButton();
+});
+</script>
 {% endblock %}
