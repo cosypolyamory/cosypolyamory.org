@@ -212,8 +212,29 @@
                                         document.getElementById('end_time_minute').value = this.dataset.value;
                                         endMinuteOptions.forEach(opt => opt.classList.remove('active'));
                                         this.classList.add('active');
+                                        validateEventTimes(); // Validate after end time change
                                     });
                                 });
+                                
+                                // Add validation listeners to all time dropdowns
+                                hourOptions.forEach(function(item) {
+                                    item.addEventListener('click', function() {
+                                        setTimeout(validateEventTimes, 100); // Small delay to ensure DOM updates
+                                    });
+                                });
+                                minuteOptions.forEach(function(item) {
+                                    item.addEventListener('click', function() {
+                                        setTimeout(validateEventTimes, 100);
+                                    });
+                                });
+                                endHourOptions.forEach(function(item) {
+                                    item.addEventListener('click', function() {
+                                        setTimeout(validateEventTimes, 100);
+                                    });
+                                });
+                                
+                                // Initial validation on page load
+                                setTimeout(validateEventTimes, 500);
                             });
                             </script>
                         </div>
@@ -348,6 +369,23 @@
 {% block styles %}
 {{ super() }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+.has-error .btn {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.has-error .btn-outline-secondary {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.has-error .btn-outline-secondary:hover,
+.has-error .btn-outline-secondary:focus {
+    background-color: #dc3545;
+    color: white;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -789,6 +827,84 @@ function setupGoogleMapsValidation() {
         updateValidation();
     }
 }
+
+// Time validation function
+function validateEventTimes() {
+    const dateInput = document.getElementById('date');
+    const startHour = parseInt(document.getElementById('modern_time_hour').value);
+    const startMinute = parseInt(document.getElementById('modern_time_minute').value);
+    const endHour = parseInt(document.getElementById('end_time_hour').value);
+    const endMinute = parseInt(document.getElementById('end_time_minute').value);
+    
+    // Remove any existing time validation messages
+    const existingError = document.getElementById('time-validation-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Clear any existing validation states
+    const startTimeContainer = document.querySelector('[id*="hourDropdown"]').closest('.col-md-3');
+    const endTimeContainer = document.querySelector('[id*="endHourDropdown"]').closest('.col-md-4');
+    if (startTimeContainer) {
+        startTimeContainer.classList.remove('has-error');
+    }
+    if (endTimeContainer) {
+        endTimeContainer.classList.remove('has-error');
+    }
+    
+    // Check if all values are present
+    if (isNaN(startHour) || isNaN(startMinute) || isNaN(endHour) || isNaN(endMinute)) {
+        return true; // Not all times set yet, skip validation
+    }
+    
+    // Create time objects for comparison (using today's date for comparison)
+    const today = new Date();
+    const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startHour, startMinute);
+    const endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMinute);
+    
+    // Check if end time is after start time
+    if (endTime <= startTime) {
+        // Show error message
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'time-validation-error';
+        errorDiv.className = 'alert alert-danger mt-3';
+        errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Invalid end time:</strong> The end time must be after the start time.';
+        
+        // Insert error after the end time container
+        if (endTimeContainer) {
+            endTimeContainer.parentNode.insertBefore(errorDiv, endTimeContainer.nextSibling);
+            endTimeContainer.classList.add('has-error');
+            startTimeContainer.classList.add('has-error');
+        }
+        
+        // Focus on end time to help user correct
+        const endHourBtn = document.getElementById('endHourDropdown');
+        if (endHourBtn) {
+            endHourBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        return false;
+    }
+    
+    return true;
+}
+
+// Add form submission validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateEventTimes()) {
+                e.preventDefault();
+                
+                // Show alert to user
+                alert('Please correct the event times. The end time must be after the start time.');
+                
+                return false;
+            }
+        });
+    }
+});
 </script>
 
 <!-- Capacity Increase Modal -->
