@@ -73,6 +73,24 @@ h4 {
     text-shadow: 0 0 8px rgba(255,255,255,0.7);
 }
 
+/* Keep dropdown menu links black */
+.navbar .dropdown-menu a,
+.navbar .dropdown-menu .dropdown-item,
+.navbar-color .dropdown-menu a,
+.navbar-color .dropdown-menu .dropdown-item {
+    color: #212529 !important;
+    text-shadow: none !important;
+}
+
+.navbar .dropdown-menu a:hover,
+.navbar .dropdown-menu .dropdown-item:hover,
+.navbar-color .dropdown-menu a:hover,
+.navbar-color .dropdown-menu .dropdown-item:hover {
+    color: #1e2125 !important;
+    text-shadow: none !important;
+    background-color: #f8f9fa !important;
+}
+
 /* User Search Component Styles */
 .user-search-suggestions {
     position: absolute;
