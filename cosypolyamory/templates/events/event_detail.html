@@ -148,7 +148,12 @@
                         <div class="col-md-3">
                             <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
                             {% if can_see_details %}
-                                <p>{{ event.exact_time.strftime('%H:%M') }}
+                                <p>
+                                    {% if event.end_time %}
+                                        {{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}
+                                    {% else %}
+                                        {{ event.exact_time.strftime('%H:%M') }}
+                                    {% endif %}
                                     {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
                                     {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
                                 </p>

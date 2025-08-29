@@ -317,6 +317,54 @@ def create_sample_events(users):
         "Morning", "Afternoon", "Evening", "Late Evening"
     ]
     
+    def get_rounded_time():
+        """Generate event times rounded to 15 minutes, mostly after 19:00"""
+        # 80% chance of evening events (19:00-23:00), 20% chance of earlier times
+        if random.random() < 0.8:
+            # Evening events (19:00 - 23:00)
+            hour = random.choice([19, 19, 20, 20, 21, 21, 22])  # Weighted towards 19-21
+        else:
+            # Earlier events (10:00 - 18:00)
+            hour = random.choice([10, 11, 12, 14, 15, 16, 17, 18])
+        
+        # Round minutes to 15-minute intervals
+        minute = random.choice([0, 15, 30, 45])
+        
+        return hour, minute
+    
+    def calculate_end_time(start_hour, start_minute):
+        """Calculate end time based on event type, typically 2-3 hours duration"""
+        duration_hours = random.choice([2, 2, 2.5, 3])  # Most events 2 hours, some longer
+        
+        # Convert to minutes for easier calculation
+        start_total_minutes = start_hour * 60 + start_minute
+        duration_minutes = int(duration_hours * 60)
+        end_total_minutes = start_total_minutes + duration_minutes
+        
+        # Convert back to hours and minutes
+        end_hour = (end_total_minutes // 60) % 24  # Handle midnight wraparound
+        end_minute = end_total_minutes % 60
+        
+        # Round end time to nearest 15 minutes
+        if end_minute % 15 != 0:
+            end_minute = ((end_minute // 15) + 1) * 15
+            if end_minute >= 60:
+                end_minute = 0
+                end_hour = (end_hour + 1) % 24
+        
+        return end_hour, end_minute
+    
+    def get_time_period(hour):
+        """Get appropriate time period based on hour"""
+        if hour < 12:
+            return "Morning"
+        elif hour < 17:
+            return "Afternoon"
+        elif hour < 21:
+            return "Evening"
+        else:
+            return "Late Evening"
+    
     # Event types and descriptions
     event_templates = [
         {
@@ -365,9 +413,24 @@ def create_sample_events(users):
         
         # Mix of past and future events
         if i < 7:  # Past events
-            event_date = fake.date_time_between(start_date='-3M', end_date='-1d')
+            base_date = fake.date_between(start_date='-3M', end_date='-1d')
         else:  # Future events
-            event_date = fake.date_time_between(start_date='+1d', end_date='+3M')
+            base_date = fake.date_between(start_date='+1d', end_date='+3M')
+        
+        # Generate realistic start and end times
+        start_hour, start_minute = get_rounded_time()
+        end_hour, end_minute = calculate_end_time(start_hour, start_minute)
+        
+        # Create datetime objects for exact times
+        exact_start_time = datetime.combine(base_date, datetime.min.time().replace(hour=start_hour, minute=start_minute))
+        exact_end_time = datetime.combine(base_date, datetime.min.time().replace(hour=end_hour, minute=end_minute))
+        
+        # Handle end time going into next day
+        if end_hour < start_hour or (end_hour == start_hour and end_minute < start_minute):
+            exact_end_time += timedelta(days=1)
+        
+        # Get appropriate time period
+        time_period = get_time_period(start_hour)
         
         # Generate Google Maps link for the venue
         google_maps_link = f"https://maps.google.com/?q={venue.replace(' ', '+')},+{barrio.replace(' ', '+')},+Barcelona,+Spain"
@@ -377,9 +440,10 @@ def create_sample_events(users):
             description=template['description'],
             organizer=organizer,
             co_host=co_host,
-            date=event_date,
-            exact_time=event_date,
-            time_period=random.choice(time_periods),
+            date=exact_start_time,
+            exact_time=exact_start_time,
+            end_time=exact_end_time,  # Add end time
+            time_period=time_period,
             establishment_name=venue,
             barrio=barrio,
             google_maps_link=google_maps_link,
@@ -392,6 +456,8 @@ def create_sample_events(users):
     print(f"   ✅ Created {len(created_events)} events")
     print(f"      - 7 past events, 8 upcoming events")
     print(f"      - Mix of workshops, socials, and discussion groups")
+    print(f"      - Most events after 19:00, times rounded to 15-minute intervals")
+    print(f"      - All events have end times (typically 2-3 hours duration)")
     
     return created_events
 
