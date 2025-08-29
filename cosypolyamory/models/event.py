@@ -52,4 +52,7 @@ class Event(BaseModel):
     
     def get_full_time_display(self):
         """Get full time display for approved users"""
-        return f"{self.exact_time.strftime('%H:%M')} on {self.exact_time.strftime('%B %d, %Y')}"
+        if self.end_time:
+            return f"{self.exact_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')} on {self.exact_time.strftime('%B %d, %Y')}"
+        else:
+            return f"{self.exact_time.strftime('%H:%M')} on {self.exact_time.strftime('%B %d, %Y')}"

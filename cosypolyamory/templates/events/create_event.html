@@ -74,85 +74,153 @@
                             <h5 class="text-primary">Date & Time</h5>
                         </div>
                         
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-5 mb-3">
                             <label for="date" class="form-label">Date *</label>
-                <input type="date" class="form-control" id="date" name="date" required
-                    value="{% if event %}{{ event.date.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
+                            <input type="date" class="form-control" id="date" name="date" required
+                                value="{% if event %}{{ event.date.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
                         </div>
                         
-                        <div class="col-md-6 mb-3">
-                            <label for="time" class="form-label">Time *</label>
-                            <div class="row">
-                                <!-- Modern Bootstrap time picker -->
-                                <div class="input-group mb-2">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-clock me-1"></i><span id="selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="hourDropdown" id="hourDropdownMenu">
-                                        {% set selected_hour = event.exact_time.hour if event else default_hour|int %}
-                                        {% for hour in range(24) %}
-                                        <li><a class="dropdown-item hour-option{% if hour == selected_hour %} active selected-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
-                                        {% endfor %}
-                                    </ul>
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <span id="selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="minuteDropdown" id="minuteDropdownMenu">
-                                        {% set selected_minute = event.exact_time.minute if event else default_minute|int %}
-                                        {% for minute in [0, 15, 30, 45] %}
-                                        <li><a class="dropdown-item minute-option{% if minute == selected_minute %} active selected-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                                <input type="hidden" id="modern_time_hour" name="time_hour" value="{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}">
-                                <input type="hidden" id="modern_time_minute" name="time_minute" value="{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}">
-
-                                <script>
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    // Highlight and scroll to selected hour
-                                    const selectedHour = document.getElementById('selectedHour').textContent;
-                                    const hourOptions = document.querySelectorAll('#hourDropdownMenu .hour-option');
-                                    hourOptions.forEach(function(item) {
-                                        if (item.dataset.value === selectedHour) {
-                                            item.classList.add('active');
-                                            setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
-                                        } else {
-                                            item.classList.remove('active');
-                                        }
-                                        item.addEventListener('click', function(e) {
-                                            e.preventDefault();
-                                            document.getElementById('selectedHour').textContent = this.dataset.value;
-                                            document.getElementById('modern_time_hour').value = this.dataset.value;
-                                            hourOptions.forEach(opt => opt.classList.remove('active'));
-                                            this.classList.add('active');
-                                        });
-                                    });
-                                    // Highlight and scroll to selected minute
-                                    const selectedMinute = document.getElementById('selectedMinute').textContent;
-                                    const minuteOptions = document.querySelectorAll('#minuteDropdownMenu .minute-option');
-                                    minuteOptions.forEach(function(item) {
-                                        if (item.dataset.value === selectedMinute) {
-                                            item.classList.add('active');
-                                            setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
-                                        } else {
-                                            item.classList.remove('active');
-                                        }
-                                        item.addEventListener('click', function(e) {
-                                            e.preventDefault();
-                                            document.getElementById('selectedMinute').textContent = this.dataset.value;
-                                            document.getElementById('modern_time_minute').value = this.dataset.value;
-                                            minuteOptions.forEach(opt => opt.classList.remove('active'));
-                                            this.classList.add('active');
-                                        });
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Start Time *</label>
+                            <div class="input-group mb-2">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-clock me-1"></i><span id="selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="hourDropdown" id="hourDropdownMenu">
+                                    {% set selected_hour = event.exact_time.hour if event else default_hour|int %}
+                                    {% for hour in range(24) %}
+                                    <li><a class="dropdown-item hour-option{% if hour == selected_hour %} active selected-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="minuteDropdown" id="minuteDropdownMenu">
+                                    {% set selected_minute = event.exact_time.minute if event else default_minute|int %}
+                                    {% for minute in [0, 15, 30, 45] %}
+                                    <li><a class="dropdown-item minute-option{% if minute == selected_minute %} active selected-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <input type="hidden" id="modern_time_hour" name="time_hour" value="{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}">
+                            <input type="hidden" id="modern_time_minute" name="time_minute" value="{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">End Time *</label>
+                            <div class="input-group mb-2">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-clock me-1"></i><span id="selectedEndHour">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="endHourDropdown" id="endHourDropdownMenu">
+                                    {% set selected_end_hour = event.end_time.hour if (event and event.end_time) else (default_hour|int + 2) % 24 %}
+                                    {% for hour in range(24) %}
+                                    <li><a class="dropdown-item end-hour-option{% if hour == selected_end_hour %} active selected-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="selectedEndMinute">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="endMinuteDropdown" id="endMinuteDropdownMenu">
+                                    {% set selected_end_minute = event.end_time.minute if (event and event.end_time) else default_minute|int %}
+                                    {% for minute in [0, 15, 30, 45] %}
+                                    <li><a class="dropdown-item end-minute-option{% if minute == selected_end_minute %} active selected-end-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <input type="hidden" id="end_time_hour" name="end_time_hour" value="{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}">
+                            <input type="hidden" id="end_time_minute" name="end_time_minute" value="{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}">
+                        </div>
+                        
+                    </div> <!-- close Date & Time row -->
+                    
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <!-- Consolidated JavaScript for all time dropdowns -->
+                            <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // Start Time - Hour dropdown
+                                const selectedHour = document.getElementById('selectedHour').textContent;
+                                const hourOptions = document.querySelectorAll('#hourDropdownMenu .hour-option');
+                                hourOptions.forEach(function(item) {
+                                    if (item.dataset.value === selectedHour) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('selectedHour').textContent = this.dataset.value;
+                                        document.getElementById('modern_time_hour').value = this.dataset.value;
+                                        hourOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
                                     });
                                 });
-                                </script>
-
-                                <!-- ...existing code... -->
+                                
+                                // Start Time - Minute dropdown
+                                const selectedMinute = document.getElementById('selectedMinute').textContent;
+                                const minuteOptions = document.querySelectorAll('#minuteDropdownMenu .minute-option');
+                                minuteOptions.forEach(function(item) {
+                                    if (item.dataset.value === selectedMinute) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('selectedMinute').textContent = this.dataset.value;
+                                        document.getElementById('modern_time_minute').value = this.dataset.value;
+                                        minuteOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                    });
+                                });
+                                
+                                // End Time - Hour dropdown
+                                const selectedEndHour = document.getElementById('selectedEndHour').textContent;
+                                const endHourOptions = document.querySelectorAll('#endHourDropdownMenu .end-hour-option');
+                                endHourOptions.forEach(function(item) {
+                                    if (item.dataset.value === selectedEndHour) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('selectedEndHour').textContent = this.dataset.value;
+                                        document.getElementById('end_time_hour').value = this.dataset.value;
+                                        endHourOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                    });
+                                });
+                                
+                                // End Time - Minute dropdown
+                                const selectedEndMinute = document.getElementById('selectedEndMinute').textContent;
+                                const endMinuteOptions = document.querySelectorAll('#endMinuteDropdownMenu .end-minute-option');
+                                endMinuteOptions.forEach(function(item) {
+                                    if (item.dataset.value === selectedEndMinute) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('selectedEndMinute').textContent = this.dataset.value;
+                                        document.getElementById('end_time_minute').value = this.dataset.value;
+                                        endMinuteOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                    });
+                                });
+                            });
+                            </script>
                         </div>
                         
                     </div> <!-- close previous row -->
                     <div class="row mb-4">
+                        
                         <div class="col-12 mb-3">
                             <label for="time_period" class="form-label">Time Period (Public) *</label>
                             <input type="text" class="form-control" id="time_period" name="time_period" required 
@@ -160,9 +228,7 @@
                                    value="{% if event %}{{ event.time_period }}{% endif %}">
                             <div class="form-text">This is what non-approved members will see instead of the exact time</div>
                         </div>
-                    </div>
-                    
-                    <!-- Location -->
+                    </div>                    <!-- Location -->
                     <div class="row mb-4">
                         <div class="col-12">
                             <h5 class="text-primary">Location</h5>

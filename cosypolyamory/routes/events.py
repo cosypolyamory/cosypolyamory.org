@@ -340,6 +340,16 @@ def create_event_post():
             flash(f'Cannot create event with capacity of {max_attendees}. Minimum capacity must be at least {required_hosts} to accommodate the organizer{" and co-host" if co_host else ""}.', 'error')
             return redirect(url_for('events.create_event'))
 
+        end_time_str = request.form.get('end_time')
+        if not end_time_str:
+            flash('End time is required for all events.', 'error')
+            return redirect(url_for('events.create_event'))
+        try:
+            end_time = datetime.strptime(f"{date_str} {end_time_str}", "%Y-%m-%d %H:%M")
+        except Exception:
+            flash('Invalid end time format.', 'error')
+            return redirect(url_for('events.create_event'))
+
         # Create event and automatic RSVPs in a transaction
         with database.atomic():
             # Create event
@@ -353,6 +363,7 @@ def create_event_post():
                 google_maps_link=google_maps_link,
                 location_notes=location_notes or None,
                 exact_time=exact_time,
+                end_time=end_time,
                 organizer=organizer,
                 co_host=co_host,
                 tips_for_attendees=tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None,
@@ -421,7 +432,10 @@ def edit_event(event_id):
 
         # Get event notes for dropdown
         event_notes = list(EventNote.select().order_by(EventNote.name))
-        return render_template('events/create_event.html', event=event, is_edit=True, organizers=organizer_list, event_notes=event_notes)
+        # Provide default_hour and default_minute for time dropdowns
+        default_hour = '19'
+        default_minute = '00'
+        return render_template('events/create_event.html', event=event, is_edit=True, organizers=organizer_list, event_notes=event_notes, default_hour=default_hour, default_minute=default_minute)
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
@@ -489,6 +503,22 @@ def edit_event_post(event_id):
         # Parse dates and times
         date = dt.strptime(date_str, '%Y-%m-%d')
         exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
+        
+        # Parse end_time from form dropdowns
+        end_time_hour = request.form.get('end_time_hour')
+        end_time_minute = request.form.get('end_time_minute')
+        end_time = None
+        
+        if end_time_hour and end_time_minute:
+            try:
+                end_time_str = f"{end_time_hour}:{end_time_minute}"
+                end_time = dt.strptime(f"{date_str} {end_time_str}", "%Y-%m-%d %H:%M")
+            except Exception:
+                flash('Invalid end time format.', 'error')
+                return redirect(url_for('events.edit_event', event_id=event_id))
+        else:
+            flash('End time is required for all events.', 'error')
+            return redirect(url_for('events.edit_event', event_id=event_id))
         
         # Validate Google Maps link if provided
         valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']
@@ -624,6 +654,7 @@ def edit_event_post(event_id):
             event.google_maps_link = google_maps_link
             event.location_notes = location_notes or None
             event.exact_time = exact_time
+            event.end_time = end_time
             event.organizer = organizer
             event.co_host = co_host
             event.tips_for_attendees = tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None
