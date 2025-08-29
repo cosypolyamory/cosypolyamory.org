@@ -56,6 +56,23 @@ h4 {
     font-weight: bold;
 }
 
+/* Brighter navbar links */
+.navbar a,
+.navbar .nav-link,
+.navbar-color a,
+.navbar-color .nav-link {
+    color: #ddd3e7 !important;
+    text-shadow: 0 0 4px rgba(255,255,255,0.5);
+}
+
+.navbar a:hover,
+.navbar .nav-link:hover,
+.navbar-color a:hover,
+.navbar-color .nav-link:hover {
+    color: #ffffee !important;
+    text-shadow: 0 0 8px rgba(255,255,255,0.7);
+}
+
 /* User Search Component Styles */
 .user-search-suggestions {
     position: absolute;
