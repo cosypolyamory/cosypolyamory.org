@@ -59,11 +59,6 @@
                             Rejected <span class="badge bg-danger ms-1 tab-badge" id="rejected-count">0</span>
                         </button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="admins-tab" data-bs-toggle="tab" data-bs-target="#admins" type="button" role="tab" aria-controls="admins" aria-selected="false">
-                            Admins <span class="badge bg-orange ms-1 tab-badge" id="admins-count">0</span>
-                        </button>
-                    </li>
                 </ul>
             </div>
             <div class="card-body">
@@ -150,22 +145,6 @@
                             </div>
                         </div>
                         <div id="rejected-users" class="user-list"></div>
-                    </div>
-
-                    <!-- Admins Tab -->
-                    <div class="tab-pane fade" id="admins" role="tabpanel" aria-labelledby="admins-tab">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">System Administrators</h6>
-                            <div class="d-flex align-items-center">
-                                <span class="text-muted me-3">Showing <span id="admins-showing">0</span> of <span id="admins-total">0</span></span>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" id="admins-prev" onclick="changePage('admins', -1)">&laquo;</button>
-                                    <span class="btn btn-outline-secondary" id="admins-page">1</span>
-                                    <button class="btn btn-outline-secondary" id="admins-next" onclick="changePage('admins', 1)">&raquo;</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="admins-users" class="user-list"></div>
                     </div>
                 </div>
             </div>
@@ -329,8 +308,7 @@ let currentPages = {
     pending: 1,
     approved: 1,
     organizer: 1,
-    rejected: 1,
-    admin: 1
+    rejected: 1
 };
 
 const pageSize = 50;
@@ -345,22 +323,20 @@ document.addEventListener('DOMContentLoaded', function() {
         tab.addEventListener('shown.bs.tab', function(event) {
             const targetId = event.target.getAttribute('data-bs-target').substring(1);
             const role = targetId === 'members' ? 'approved' : 
-                        targetId === 'organizers' ? 'organizer' :
-                        targetId === 'admins' ? 'admin' : targetId;
+                        targetId === 'organizers' ? 'organizer' : targetId;
             loadUsers(role);
         });
     });
 });
 
 function loadAllUserCounts() {
-    const roles = ['pending', 'approved', 'organizer', 'rejected', 'admin'];
+    const roles = ['pending', 'approved', 'organizer', 'rejected'];
     roles.forEach(role => {
         fetch(`/api/admin/users/${role}?page=1&per_page=1`)
             .then(response => response.json())
             .then(data => {
                 const tabName = role === 'approved' ? 'members' :
-                               role === 'organizer' ? 'organizers' :
-                               role === 'admin' ? 'admins' : role;
+                               role === 'organizer' ? 'organizers' : role;
                 updateTabCount(tabName, data.pagination.total);
             })
             .catch(error => {
@@ -376,8 +352,7 @@ function loadUsers(role, page = 1) {
         .then(response => response.json())
         .then(data => {
             const tabName = role === 'approved' ? 'members' :
-                           role === 'organizer' ? 'organizers' :
-                           role === 'admin' ? 'admins' : role;
+                           role === 'organizer' ? 'organizers' : role;
             updateUserList(tabName, data.users);
             updatePagination(tabName, data.pagination);
             updateTabCount(tabName, data.pagination.total);
@@ -520,8 +495,7 @@ function updateTabCount(tabName, count) {
 
 function changePage(tabName, direction) {
     const role = tabName === 'members' ? 'approved' :
-                 tabName === 'organizers' ? 'organizer' :
-                 tabName === 'admins' ? 'admin' : tabName;
+                 tabName === 'organizers' ? 'organizer' : tabName;
     const newPage = currentPages[role] + direction;
     if (newPage >= 1) {
         loadUsers(role, newPage);
@@ -546,18 +520,16 @@ function changeRole(userId, newRole) {
             // Reload current tab
             const activeTab = document.querySelector('.nav-link.active').getAttribute('data-bs-target').substring(1);
             const activeRole = activeTab === 'members' ? 'approved' :
-                              activeTab === 'organizers' ? 'organizer' :
-                              activeTab === 'admins' ? 'admin' : activeTab;
+                              activeTab === 'organizers' ? 'organizer' : activeTab;
             loadUsers(activeRole, currentPages[activeRole]);
             // Also reload other tabs to update counts
-            ['pending', 'approved', 'organizer', 'rejected', 'admin'].forEach(role => {
+            ['pending', 'approved', 'organizer', 'rejected'].forEach(role => {
                 if (role !== activeRole) {
                     fetch(`/api/admin/users/${role}?page=1&per_page=1`)
                         .then(r => r.json())
                         .then(d => {
                             const tabName = role === 'approved' ? 'members' :
-                                           role === 'organizer' ? 'organizers' :
-                                           role === 'admin' ? 'admins' : role;
+                                           role === 'organizer' ? 'organizers' : role;
                             updateTabCount(tabName, d.pagination.total);
                         });
                 }
@@ -938,8 +910,7 @@ function deleteUser(userId, userName) {
                 showToast('User deleted successfully', 'success');
                 const activeTab = document.querySelector('.nav-link.active').getAttribute('data-bs-target').substring(1);
                 const activeRole = activeTab === 'members' ? 'approved' :
-                                  activeTab === 'organizers' ? 'organizer' :
-                                  activeTab === 'admins' ? 'admin' : activeTab;
+                                  activeTab === 'organizers' ? 'organizer' : activeTab;
                 loadUsers(activeRole, currentPages[activeRole]);
             } else {
                 if (data.hosted_events && data.hosted_events.length > 0) {
