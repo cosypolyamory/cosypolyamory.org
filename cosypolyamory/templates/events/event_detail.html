@@ -588,7 +588,7 @@
                         <textarea id="plain-text" class="form-control share-text" rows="8" readonly>{{ event.title }}
 
 Date: {{ event.exact_time.strftime('%A, %B %d, %Y') }}
-{% if can_see_details %}Time: {{ event.exact_time.strftime('%H:%M') }}
+{% if can_see_details %}Time: {% if event.end_time %}{{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}{% else %}{{ event.exact_time.strftime('%H:%M') }}{% endif %}
 Location: {{ event.establishment_name }}{% else %}Approximate time: {{ event.time_period }}
 Location: {{ event.barrio }}{% endif %}
 
@@ -608,8 +608,9 @@ Log in or join our community for more details: {{ request.url }}</textarea>
                         <textarea id="html-text" class="form-control share-text" rows="8" readonly><h2>{{ event.title | e }}</h2>
 
 <p><strong>📅 Date:</strong> {{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
-<p><strong>🕐 Approximate time:</strong> Morning</p>
-<p><strong>📍 Location:</strong> {{ event.barrio | e }}</p>
+{% if can_see_details %}<p><strong>🕐 Time:</strong> {% if event.end_time %}{{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}{% else %}{{ event.exact_time.strftime('%H:%M') }}{% endif %}</p>
+<p><strong>📍 Location:</strong> {{ event.establishment_name | e }}</p>{% else %}<p><strong>🕐 Approximate time:</strong> {{ event.time_period }}</p>
+<p><strong>📍 Location:</strong> {{ event.barrio | e }}</p>{% endif %}
 
 <div>{{ event.description | safe }}</div>
 
@@ -627,7 +628,7 @@ Log in or join our community for more details: {{ request.url }}</textarea>
                         <textarea id="markdown-text" class="form-control share-text" rows="8" readonly>## {{ event.title }}
 
 **📅 Date:** {{ event.exact_time.strftime('%A, %B %d, %Y') }}
-{% if can_see_details %}**🕐 Time:** {{ event.exact_time.strftime('%H:%M') }}
+{% if can_see_details %}**🕐 Time:** {% if event.end_time %}{{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}{% else %}{{ event.exact_time.strftime('%H:%M') }}{% endif %}
 **📍 Location:** {{ event.establishment_name }}{% else %}**🕐 Approximate time:** {{ event.time_period }}
 **📍 Location:** {{ event.barrio }}{% endif %}
 

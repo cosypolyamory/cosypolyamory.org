@@ -189,7 +189,11 @@
                                 <div class="mb-2">
                                     <i class="fas fa-clock me-2 text-muted"></i>
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] %}
-                                        {{ event.exact_time.strftime('%H:%M') }}
+                                        {% if event.end_time %}
+                                            {{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}
+                                        {% else %}
+                                            {{ event.exact_time.strftime('%H:%M') }}
+                                        {% endif %}
                                     {% else %}
                                         {{ event.time_period }}
                                     {% endif %}
