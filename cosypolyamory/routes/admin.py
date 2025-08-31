@@ -110,7 +110,7 @@ def reject_application(application_id):
             application = UserApplication.get_by_id(application_id)
             application.reviewed_at = datetime.now()
             application.reviewed_by = current_user
-            application.review_notes = request.form.get('notes', '')
+            application.review_notes = request.form.get('admin_notes', '')
             application.save()
 
             # Update user status
