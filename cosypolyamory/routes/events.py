@@ -16,6 +16,8 @@ from cosypolyamory.models.event_note import EventNote
 from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, approved_user_required
 from cosypolyamory.utils import extract_google_maps_info
+from cosypolyamory.notification import send_notification_email
+
 
 bp = Blueprint('events', __name__, url_prefix='/events')
 
@@ -710,6 +712,8 @@ def rsvp_event(event_id):
     """RSVP to an event"""
     from flask import jsonify
     
+    print("RSVP handler!")
+    
     try:
         event = Event.get_by_id(event_id)
         
@@ -761,6 +765,7 @@ def rsvp_event(event_id):
                     waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist)
                     capacity_pills_html = render_template('events/_capacity_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist)
                     header_pills_html = render_template('events/_header_pills.html', rsvp_count=rsvp_count, event=event, rsvps_waitlist=rsvps_waitlist, now=datetime.now())
+                    print("meh")
                     return jsonify({
                         'success': True,
                         'message': message,
@@ -781,6 +786,7 @@ def rsvp_event(event_id):
                 if request.headers.get('Accept') == 'application/json':
                     return jsonify({'success': False, 'message': message})
                 flash(message, 'info')
+                print("meh2")
             return redirect(url_for('events.event_detail', event_id=event_id))
         
         if status not in ['yes', 'no', 'maybe']:
@@ -788,6 +794,7 @@ def rsvp_event(event_id):
             if request.headers.get('Accept') == 'application/json':
                 return jsonify({'success': False, 'message': message})
             flash(message, 'error')
+            print("meh3")
             return redirect(url_for('events.event_detail', event_id=event_id))
         
         # Enforce event capacity and waitlist
@@ -814,7 +821,7 @@ def rsvp_event(event_id):
                 rsvp.notes = notes
                 rsvp.updated_at = datetime.now()
                 rsvp.save()
-                
+
                 # Automatic waitlist promotion when user changes from attending to not attending
                 promoted_user = None
                 if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
@@ -850,6 +857,8 @@ def rsvp_event(event_id):
                     status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
                     message = f'Attendance confirmed: {status_text}'
 
+            print("mop2")
+
         # Prepare response
         rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
         rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
@@ -881,8 +890,27 @@ def rsvp_event(event_id):
             # Add promoted user info if someone was promoted
             if 'promoted_user' in locals() and promoted_user:
                 response_data['promoted_user'] = promoted_user
+                
+            if status == 'yes':        
+                rsvp_data = {
+                    "name": current_user.name,
+                    "event_title": event.title,
+                    "date": event.date.strftime('%B %d, %Y'),
+                    "start_time": event.exact_time.strftime('%I:%M %p'),
+                    "end_time": event.end_time.strftime('%I:%M %p'),
+                    "location": event.establishment_name,
+                    "location_tips": event.tips_for_attendees or "",
+                    "event_description": event.description or "",
+                    "event_url": url_for('events.event_detail', event_id=event.id, _external=True),
+                }
+
+                print(rsvp_data)
+                send_notification_email(current_user.email, 'rsvp', **rsvp_data)
+                
             return jsonify(response_data)
+
         flash(message, 'success')
+
         return redirect(url_for('events.event_detail', event_id=event_id))
         
     except Event.DoesNotExist:
