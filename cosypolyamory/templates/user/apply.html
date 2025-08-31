@@ -41,9 +41,12 @@
                             <strong>{{ questions.question_1 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_1" name="question_1" rows="4" required 
-                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                                  minlength="{{ character_limits.question_1.min }}"
+                                  maxlength="{{ character_limits.question_1.max }}"
+                                  data-min="{{ character_limits.question_1.min }}"
+                                  data-max="{{ character_limits.question_1.max }}"></textarea>
                         <div class="form-text">
-                            <span class="char-counter" data-target="question_1">0</span> / 100 characters minimum
+                            <span class="char-counter" data-target="question_1">0</span> / {{ character_limits.question_1.min }} characters minimum (max: {{ character_limits.question_1.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
                         </div>
                         <div class="invalid-feedback"></div>
@@ -54,9 +57,12 @@
                             <strong>{{ questions.question_2 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_2" name="question_2" rows="4" required 
-                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                                  minlength="{{ character_limits.question_2.min }}"
+                                  maxlength="{{ character_limits.question_2.max }}"
+                                  data-min="{{ character_limits.question_2.min }}"
+                                  data-max="{{ character_limits.question_2.max }}"></textarea>
                         <div class="form-text">
-                            <span class="char-counter" data-target="question_2">0</span> / 100 characters minimum
+                            <span class="char-counter" data-target="question_2">0</span> / {{ character_limits.question_2.min }} characters minimum (max: {{ character_limits.question_2.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
                         </div>
                         <div class="invalid-feedback"></div>
@@ -67,9 +73,12 @@
                             <strong>{{ questions.question_3 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_3" name="question_3" rows="4" required 
-                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                                  minlength="{{ character_limits.question_3.min }}"
+                                  maxlength="{{ character_limits.question_3.max }}"
+                                  data-min="{{ character_limits.question_3.min }}"
+                                  data-max="{{ character_limits.question_3.max }}"></textarea>
                         <div class="form-text">
-                            <span class="char-counter" data-target="question_3">0</span> / 100 characters minimum
+                            <span class="char-counter" data-target="question_3">0</span> / {{ character_limits.question_3.min }} characters minimum (max: {{ character_limits.question_3.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
                         </div>
                         <div class="invalid-feedback"></div>
@@ -80,9 +89,12 @@
                             <strong>{{ questions.question_4 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_4" name="question_4" rows="4" required 
-                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                                  minlength="{{ character_limits.question_4.min }}"
+                                  maxlength="{{ character_limits.question_4.max }}"
+                                  data-min="{{ character_limits.question_4.min }}"
+                                  data-max="{{ character_limits.question_4.max }}"></textarea>
                         <div class="form-text">
-                            <span class="char-counter" data-target="question_4">0</span> / 100 characters minimum
+                            <span class="char-counter" data-target="question_4">0</span> / {{ character_limits.question_4.min }} characters minimum (max: {{ character_limits.question_4.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
                         </div>
                         <div class="invalid-feedback"></div>
@@ -93,9 +105,12 @@
                             <strong>{{ questions.question_5 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_5" name="question_5" rows="4" required
-                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                                  minlength="{{ character_limits.question_5.min }}"
+                                  maxlength="{{ character_limits.question_5.max }}"
+                                  data-min="{{ character_limits.question_5.min }}"
+                                  data-max="{{ character_limits.question_5.max }}"></textarea>
                         <div class="form-text">
-                            <span class="char-counter" data-target="question_5">0</span> / 100 characters minimum
+                            <span class="char-counter" data-target="question_5">0</span> / {{ character_limits.question_5.min }} characters minimum (max: {{ character_limits.question_5.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
                         </div>
                         <div class="invalid-feedback"></div>
@@ -106,9 +121,12 @@
                             <strong>{{ questions.question_6 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_6" name="question_6" rows="4" required
-                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                                  minlength="{{ character_limits.question_6.min }}"
+                                  maxlength="{{ character_limits.question_6.max }}"
+                                  data-min="{{ character_limits.question_6.min }}"
+                                  data-max="{{ character_limits.question_6.max }}"></textarea>
                         <div class="form-text">
-                            <span class="char-counter" data-target="question_6">0</span> / 100 characters minimum
+                            <span class="char-counter" data-target="question_6">0</span> / {{ character_limits.question_6.min }} characters minimum (max: {{ character_limits.question_6.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
                         </div>
                         <div class="invalid-feedback"></div>
@@ -119,9 +137,12 @@
                             <strong>{{ questions.question_7 }}</strong>
                         </label>
                         <textarea class="form-control" id="question_7" name="question_7" rows="4" required
-                                  placeholder="Please share your thoughts..." minlength="100"></textarea>
+                                  minlength="{{ character_limits.question_7.min }}"
+                                  maxlength="{{ character_limits.question_7.max }}"
+                                  data-min="{{ character_limits.question_7.min }}"
+                                  data-max="{{ character_limits.question_7.max }}"></textarea>
                         <div class="form-text">
-                            <span class="char-counter" data-target="question_7">0</span> / 100 characters minimum
+                            <span class="char-counter" data-target="question_7">0</span> / {{ character_limits.question_7.min }} characters minimum (max: {{ character_limits.question_7.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
                         </div>
                         <div class="invalid-feedback"></div>
@@ -175,6 +196,9 @@
 .char-counter.text-danger {
     color: #dc3545 !important;
 }
+.char-counter.text-warning {
+    color: #fd7e14 !important;
+}
 </style>
 {% endblock %}
 
@@ -185,22 +209,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     const submitButton = form.querySelector('button[type="submit"]');
     const textareas = form.querySelectorAll('textarea[required]');
-    const minLength = 100;
     
     // Initialize character counters
     textareas.forEach(textarea => {
         const counter = document.querySelector(`[data-target="${textarea.id}"]`);
         const parentDiv = textarea.closest('.mb-4');
         const checkIcon = parentDiv.querySelector('.check-icon');
+        const minLength = parseInt(textarea.getAttribute('data-min')) || 100;
+        const maxLength = parseInt(textarea.getAttribute('data-max')) || 1000;
         
         // Update counter on input
         textarea.addEventListener('input', function() {
-            updateCharacterCount(textarea, counter, checkIcon);
+            updateCharacterCount(textarea, counter, checkIcon, minLength, maxLength);
             updateSubmitButton();
         });
         
         // Initial count
-        updateCharacterCount(textarea, counter, checkIcon);
+        updateCharacterCount(textarea, counter, checkIcon, minLength, maxLength);
     });
     
     // Prevent form submission if validation fails
@@ -209,8 +234,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         textareas.forEach(textarea => {
             const length = textarea.value.trim().length;
+            const minLength = parseInt(textarea.getAttribute('data-min')) || 100;
+            const maxLength = parseInt(textarea.getAttribute('data-max')) || 1000;
             
-            if (length < minLength) {
+            if (length < minLength || length > maxLength) {
                 hasErrors = true;
             }
         });
@@ -223,9 +250,12 @@ document.addEventListener('DOMContentLoaded', function() {
             showValidationAlert();
             
             // Scroll to first incomplete field
-            const firstIncomplete = Array.from(textareas).find(textarea => 
-                textarea.value.trim().length < minLength
-            );
+            const firstIncomplete = Array.from(textareas).find(textarea => {
+                const length = textarea.value.trim().length;
+                const minLength = parseInt(textarea.getAttribute('data-min')) || 100;
+                const maxLength = parseInt(textarea.getAttribute('data-max')) || 1000;
+                return length < minLength || length > maxLength;
+            });
             if (firstIncomplete) {
                 firstIncomplete.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 firstIncomplete.focus();
@@ -233,16 +263,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    function updateCharacterCount(textarea, counter, checkIcon) {
+    function updateCharacterCount(textarea, counter, checkIcon, minLength, maxLength) {
         const length = textarea.value.trim().length;
         counter.textContent = length;
         
         // Remove previous states
-        counter.classList.remove('text-danger', 'text-success');
+        counter.classList.remove('text-danger', 'text-success', 'text-warning');
         
-        if (length >= minLength) {
+        if (length >= minLength && length <= maxLength) {
             counter.classList.add('text-success');
             checkIcon.style.display = 'inline';
+        } else if (length > maxLength) {
+            counter.classList.add('text-warning');
+            checkIcon.style.display = 'none';
         } else {
             counter.classList.add('text-danger');
             checkIcon.style.display = 'none';
@@ -250,9 +283,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateSubmitButton() {
-        const allValid = Array.from(textareas).every(textarea => 
-            textarea.value.trim().length >= minLength
-        );
+        const allValid = Array.from(textareas).every(textarea => {
+            const length = textarea.value.trim().length;
+            const minLength = parseInt(textarea.getAttribute('data-min')) || 100;
+            const maxLength = parseInt(textarea.getAttribute('data-max')) || 1000;
+            return length >= minLength && length <= maxLength;
+        });
         
         if (allValid) {
             submitButton.disabled = false;
@@ -277,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
         alert.className = 'alert alert-danger alert-dismissible fade show validation-alert';
         alert.innerHTML = `
             <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Please complete all fields:</strong> Each answer must be at least ${minLength} characters long to provide meaningful responses.
+            <strong>Please complete all fields:</strong> Each answer must meet the character requirements (minimum and maximum) to provide meaningful responses.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
         

@@ -28,16 +28,30 @@ def apply():
     
     # Get questions from environment
     questions = {
-        'question_1': os.getenv('APPLICATION_QUESTION_1', 'Question 1'),
-        'question_2': os.getenv('APPLICATION_QUESTION_2', 'Question 2'),
-        'question_3': os.getenv('APPLICATION_QUESTION_3', 'Question 3'),
-        'question_4': os.getenv('APPLICATION_QUESTION_4', 'Question 4'),
-        'question_5': os.getenv('APPLICATION_QUESTION_5', 'Question 5'),
-        'question_6': os.getenv('APPLICATION_QUESTION_6', 'Question 6'),
-        'question_7': os.getenv('APPLICATION_QUESTION_7', 'Question 7'),
+        'question_1': os.getenv('QUESTION_1', 'Question 1'),
+        'question_2': os.getenv('QUESTION_2', 'Question 2'),
+        'question_3': os.getenv('QUESTION_3', 'Question 3'),
+        'question_4': os.getenv('QUESTION_4', 'Question 4'),
+        'question_5': os.getenv('QUESTION_5', 'Question 5'),
+        'question_6': os.getenv('QUESTION_6', 'Question 6'),
+        'question_7': os.getenv('QUESTION_7', 'Question 7'),
     }
     
-    return render_template('user/apply.html', questions=questions)
+    # Get character limits from environment
+    character_limits = {}
+    for i in range(1, 8):
+        limit_config = os.getenv(f'QUESTION_{i}_MINMAX_CHARACTERS', '100_1000')
+        try:
+            min_chars, max_chars = limit_config.split('_')
+            character_limits[f'question_{i}'] = {
+                'min': int(min_chars),
+                'max': int(max_chars)
+            }
+        except (ValueError, IndexError):
+            # Default values if parsing fails
+            character_limits[f'question_{i}'] = {'min': 100, 'max': 1000}
+    
+    return render_template('user/apply.html', questions=questions, character_limits=character_limits)
 
 
 @bp.route('/apply', methods=['POST'])
@@ -52,19 +66,44 @@ def submit_application():
     except UserApplication.DoesNotExist:
         pass
     
+    # Validate character limits
+    character_limits = {}
+    for i in range(1, 8):
+        limit_config = os.getenv(f'QUESTION_{i}_MINMAX_CHARACTERS', '100_1000')
+        try:
+            min_chars, max_chars = limit_config.split('_')
+            character_limits[f'question_{i}'] = {
+                'min': int(min_chars),
+                'max': int(max_chars)
+            }
+        except (ValueError, IndexError):
+            character_limits[f'question_{i}'] = {'min': 100, 'max': 1000}
+    
+    # Validate each answer
+    validation_errors = []
+    answers = {}
+    for i in range(1, 8):
+        answer = request.form.get(f'question_{i}', '').strip()
+        answers[f'question_{i}_answer'] = answer
+        
+        limits = character_limits[f'question_{i}']
+        if len(answer) < limits['min']:
+            validation_errors.append(f'Question {i} must be at least {limits["min"]} characters long.')
+        elif len(answer) > limits['max']:
+            validation_errors.append(f'Question {i} must not exceed {limits["max"]} characters.')
+    
+    if validation_errors:
+        for error in validation_errors:
+            flash(error, 'error')
+        return redirect(url_for('user.apply'))
+    
     # Create application and update user status in a transaction
     try:
         with database.atomic():
             # Create application
             application = UserApplication.create(
                 user=current_user,
-                question_1_answer=request.form.get('question_1', ''),
-                question_2_answer=request.form.get('question_2', ''),
-                question_3_answer=request.form.get('question_3', ''),
-                question_4_answer=request.form.get('question_4', ''),
-                question_5_answer=request.form.get('question_5', ''),
-                question_6_answer=request.form.get('question_6', ''),
-                question_7_answer=request.form.get('question_7', ''),
+                **answers
             )
             # Set user role to 'pending' after application submission
             current_user.role = 'pending'

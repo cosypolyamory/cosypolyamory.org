@@ -47,13 +47,13 @@ def moderate_applications():
     
     # Get questions from environment for display
     questions = {
-        'question_1': os.getenv('APPLICATION_QUESTION_1', 'Question 1'),
-        'question_2': os.getenv('APPLICATION_QUESTION_2', 'Question 2'),
-        'question_3': os.getenv('APPLICATION_QUESTION_3', 'Question 3'),
-        'question_4': os.getenv('APPLICATION_QUESTION_4', 'Question 4'),
-        'question_5': os.getenv('APPLICATION_QUESTION_5', 'Question 5'),
-        'question_6': os.getenv('APPLICATION_QUESTION_6', 'Question 6'),
-        'question_7': os.getenv('APPLICATION_QUESTION_7', 'Question 7'),
+        'question_1': os.getenv('QUESTION_1', 'Error: question not defined'),
+        'question_2': os.getenv('QUESTION_2', 'Error: question not defined'),
+        'question_3': os.getenv('QUESTION_3', 'Error: question not defined'),
+        'question_4': os.getenv('QUESTION_4', 'Error: question not defined'),
+        'question_5': os.getenv('QUESTION_5', 'Error: question not defined'),
+        'question_6': os.getenv('QUESTION_6', 'Error: question not defined'),
+        'question_7': os.getenv('QUESTION_7', 'Error: question not defined'),
     }
     
     return render_template('admin/moderate.html',
