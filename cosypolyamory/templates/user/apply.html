@@ -42,9 +42,8 @@
                         </label>
                         <textarea class="form-control" id="question_1" name="question_1" rows="4" required 
                                   minlength="{{ character_limits.question_1.min }}"
-                                  maxlength="{{ character_limits.question_1.max }}"
                                   data-min="{{ character_limits.question_1.min }}"
-                                  data-max="{{ character_limits.question_1.max }}"></textarea>
+                                  data-max="{{ character_limits.question_1.max }}">{{ form_data.question_1 if form_data else '' }}</textarea>
                         <div class="form-text">
                             <span class="char-counter" data-target="question_1">0</span> / {{ character_limits.question_1.min }} characters minimum (max: {{ character_limits.question_1.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
@@ -58,9 +57,8 @@
                         </label>
                         <textarea class="form-control" id="question_2" name="question_2" rows="4" required 
                                   minlength="{{ character_limits.question_2.min }}"
-                                  maxlength="{{ character_limits.question_2.max }}"
                                   data-min="{{ character_limits.question_2.min }}"
-                                  data-max="{{ character_limits.question_2.max }}"></textarea>
+                                  data-max="{{ character_limits.question_2.max }}">{{ form_data.question_2 if form_data else '' }}</textarea>
                         <div class="form-text">
                             <span class="char-counter" data-target="question_2">0</span> / {{ character_limits.question_2.min }} characters minimum (max: {{ character_limits.question_2.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
@@ -74,9 +72,8 @@
                         </label>
                         <textarea class="form-control" id="question_3" name="question_3" rows="4" required 
                                   minlength="{{ character_limits.question_3.min }}"
-                                  maxlength="{{ character_limits.question_3.max }}"
                                   data-min="{{ character_limits.question_3.min }}"
-                                  data-max="{{ character_limits.question_3.max }}"></textarea>
+                                  data-max="{{ character_limits.question_3.max }}">{{ form_data.question_3 if form_data else '' }}</textarea>
                         <div class="form-text">
                             <span class="char-counter" data-target="question_3">0</span> / {{ character_limits.question_3.min }} characters minimum (max: {{ character_limits.question_3.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
@@ -90,9 +87,8 @@
                         </label>
                         <textarea class="form-control" id="question_4" name="question_4" rows="4" required 
                                   minlength="{{ character_limits.question_4.min }}"
-                                  maxlength="{{ character_limits.question_4.max }}"
                                   data-min="{{ character_limits.question_4.min }}"
-                                  data-max="{{ character_limits.question_4.max }}"></textarea>
+                                  data-max="{{ character_limits.question_4.max }}">{{ form_data.question_4 if form_data else '' }}</textarea>
                         <div class="form-text">
                             <span class="char-counter" data-target="question_4">0</span> / {{ character_limits.question_4.min }} characters minimum (max: {{ character_limits.question_4.max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
@@ -159,6 +155,10 @@
                     </div>
                     
                     <div class="d-grid gap-2">
+                        <div id="submit-error-message" class="alert alert-warning d-none" style="margin-bottom: 1rem;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Please fix the validation errors above before submitting your application.
+                        </div>
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="fas fa-paper-plane me-2"></i>
                             Submit Application
@@ -199,6 +199,9 @@
 .char-counter.text-warning {
     color: #fd7e14 !important;
 }
+.form-control.border-danger {
+    border-width: 1px !important;
+}
 </style>
 {% endblock %}
 
@@ -208,6 +211,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     const submitButton = form.querySelector('button[type="submit"]');
+    const submitErrorMessage = document.getElementById('submit-error-message');
     const textareas = form.querySelectorAll('textarea[required]');
     
     // Initialize character counters
@@ -269,15 +273,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Remove previous states
         counter.classList.remove('text-danger', 'text-success', 'text-warning');
+        textarea.classList.remove('border-danger', 'border-success');
         
         if (length >= minLength && length <= maxLength) {
             counter.classList.add('text-success');
+            textarea.classList.add('border-success');
             checkIcon.style.display = 'inline';
         } else if (length > maxLength) {
             counter.classList.add('text-warning');
+            textarea.classList.add('border-danger');
             checkIcon.style.display = 'none';
         } else {
             counter.classList.add('text-danger');
+            textarea.classList.add('border-danger');
             checkIcon.style.display = 'none';
         }
     }
@@ -294,10 +302,12 @@ document.addEventListener('DOMContentLoaded', function() {
             submitButton.disabled = false;
             submitButton.classList.remove('btn-outline-primary');
             submitButton.classList.add('btn-primary');
+            submitErrorMessage.classList.add('d-none');
         } else {
             submitButton.disabled = true;
             submitButton.classList.remove('btn-primary');
             submitButton.classList.add('btn-outline-primary');
+            submitErrorMessage.classList.remove('d-none');
         }
     }
     

@@ -95,7 +95,27 @@ def submit_application():
     if validation_errors:
         for error in validation_errors:
             flash(error, 'error')
-        return redirect(url_for('user.apply'))
+        # Preserve form data on validation error
+        form_data = {
+            'question_1': request.form.get('question_1', ''),
+            'question_2': request.form.get('question_2', ''),
+            'question_3': request.form.get('question_3', ''),
+            'question_4': request.form.get('question_4', ''),
+            'question_5': request.form.get('question_5', ''),
+            'question_6': request.form.get('question_6', ''),
+            'question_7': request.form.get('question_7', ''),
+        }
+        # Get questions for the template
+        questions = {
+            'question_1': os.getenv('QUESTION_1', 'Question 1'),
+            'question_2': os.getenv('QUESTION_2', 'Question 2'),
+            'question_3': os.getenv('QUESTION_3', 'Question 3'),
+            'question_4': os.getenv('QUESTION_4', 'Question 4'),
+            'question_5': os.getenv('QUESTION_5', 'Question 5'),
+            'question_6': os.getenv('QUESTION_6', 'Question 6'),
+            'question_7': os.getenv('QUESTION_7', 'Question 7'),
+        }
+        return render_template('user/apply.html', questions=questions, character_limits=character_limits, form_data=form_data)
     
     # Create application and update user status in a transaction
     try:
@@ -113,7 +133,17 @@ def submit_application():
         return redirect(url_for('user.application_status'))
     except Exception as e:
         flash(f'Error submitting application: {str(e)}', 'error')
-        return redirect(url_for('user.apply'))
+        # Preserve form data on error
+        form_data = {
+            'question_1': request.form.get('question_1', ''),
+            'question_2': request.form.get('question_2', ''),
+            'question_3': request.form.get('question_3', ''),
+            'question_4': request.form.get('question_4', ''),
+            'question_5': request.form.get('question_5', ''),
+            'question_6': request.form.get('question_6', ''),
+            'question_7': request.form.get('question_7', ''),
+        }
+        return render_template('user/apply.html', character_limits=character_limits, form_data=form_data)
 
 
 @bp.route('/application-status')
