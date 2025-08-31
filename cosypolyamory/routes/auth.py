@@ -436,6 +436,11 @@ def update_profile():
             current_user.pronoun_singular = pronoun_singular if pronoun_singular else None
             current_user.pronoun_plural = pronoun_plural if pronoun_plural else None
             current_user.save()
+            
+            # Refresh the current user session to ensure updated data is reflected
+            # This is important because Flask-Login caches the user object
+            from flask_login import login_user
+            login_user(current_user, remember=True)
         
         # Clear form data from session on successful update
         if not is_ajax:
