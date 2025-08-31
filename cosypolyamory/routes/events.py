@@ -406,8 +406,7 @@ def create_event_post():
         # Send host assignment notifications for new event
         try:
             # Notify the organizer (host)
-            if organizer.id != current_user.id:  # Don't notify if they created their own event
-                notify_host_assigned(organizer, event, role="host")
+            notify_host_assigned(organizer, event, role="host")
             
             # Notify co-host if assigned
             if co_host and co_host.id != current_user.id:
@@ -570,7 +569,6 @@ def edit_event_post(event_id):
                 except RSVP.DoesNotExist:
                     pass
         
-        # Check if we're adding a new co-host 
         event_note_id = request.form.get('event_note_id')
         event_note = None
         if event_note_id:
@@ -758,9 +756,8 @@ def edit_event_post(event_id):
         try:
             # Check for organizer changes
             if old_organizer.id != organizer.id:
-                # Notify new organizer (if not the person making the change)
-                if organizer.id != current_user.id:
-                    notify_host_assigned(organizer, event, role="host")
+                # Notify new organizer 
+                notify_host_assigned(organizer, event, role="host")
                 
                 # Optionally notify old organizer about removal (if not the person making the change)
                 if old_organizer.id != current_user.id:
