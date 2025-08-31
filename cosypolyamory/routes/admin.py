@@ -15,6 +15,7 @@ from cosypolyamory.models.event_note import EventNote
 from cosypolyamory.models.event import Event
 from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, admin_or_organizer_required
+from cosypolyamory.notification import notify_application_approved, notify_application_rejected
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -88,7 +89,13 @@ def approve_application(application_id):
             user.is_approved = True
             user.save()
             
-        flash(f'Application for {user.name} has been approved.', 'success')
+        # Send approval email notification
+        try:
+            notify_application_approved(user)
+            flash(f'Application for {user.name} has been approved and notification email sent.', 'success')
+        except Exception as email_error:
+            flash(f'Application for {user.name} has been approved, but email notification failed: {str(email_error)}', 'warning')
+            
     except Exception as e:
         flash(f'Error approving application: {str(e)}', 'error')
     
@@ -112,7 +119,13 @@ def reject_application(application_id):
             user.is_approved = False
             user.save()
             
-        flash(f'Application for {application.user.name} has been rejected.', 'info')
+        # Send rejection email notification with reason
+        try:
+            notify_application_rejected(user, rejection_reason=application.review_notes)
+            flash(f'Application for {application.user.name} has been rejected and notification email sent.', 'info')
+        except Exception as email_error:
+            flash(f'Application for {application.user.name} has been rejected, but email notification failed: {str(email_error)}', 'warning')
+            
     except UserApplication.DoesNotExist:
         flash('Application not found.', 'error')
     except Exception as e:

@@ -1,0 +1,43 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}RSVP Update: {{ event_title }}{% endblock %}
+
+{% block content %}
+<h2>RSVP Status Update</h2>
+<p>Hello {{ name }},</p>
+
+{% if status == "removed" %}
+<p>Your RSVP for the following event has been removed:</p>
+
+<div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #721c24;">📅 {{ event_title }}</h3>
+    <p><strong>When:</strong> {{ event_date }} at {{ event_time }}</p>
+    <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #721c24;">Google Maps</a>){% endif %}</p>
+</div>
+
+{% if reason %}
+<p><strong>Reason:</strong> {{ reason }}</p>
+{% endif %}
+
+<p>You can view the event and RSVP again if you'd like: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
+
+{% elif status == "waitlisted" %}
+<p>Your RSVP status for the following event has been changed to <strong>waitlisted</strong>:</p>
+
+<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #856404;">📅 {{ event_title }}</h3>
+    <p><strong>When:</strong> {{ event_date }} at {{ event_time }}</p>
+    <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #856404;">Google Maps</a>){% endif %}</p>
+</div>
+
+<p>You're currently on the waitlist for this event. We'll notify you if a spot becomes available!</p>
+
+{% if reason %}
+<p><strong>Reason:</strong> {{ reason }}</p>
+{% endif %}
+
+<p>You can view your waitlist status here: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
+{% endif %}
+
+<p>If you have any questions about this change, please don't hesitate to contact the event organizers.</p>
+{% endblock %}

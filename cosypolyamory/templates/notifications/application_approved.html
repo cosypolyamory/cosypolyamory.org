@@ -1,0 +1,22 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Welcome to Cosy Polyamory Community! 🎉{% endblock %}
+
+{% block content %}
+<h2>Congratulations! Your application has been approved</h2>
+<p>Hello {{ name }},</p>
+<p>We're excited to welcome you to the Cosy Polyamory Community! Your application has been reviewed and approved.</p>
+
+<div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #155724;">🎉 You now have full access to:</h3>
+    <ul style="margin-bottom: 0;">
+        <li>All community events and their details</li>
+        <li>RSVP functionality for events</li>
+        <li>Event locations and detailed information</li>
+    </ul>
+</div>
+
+<p>Visit <a href="{{ base_url }}/events" style="color: #007bff;">our events page</a> to see what's coming up!</p>
+
+<p><strong>Welcome to the community!</strong></p>
+{% endblock %}

@@ -16,7 +16,7 @@ from cosypolyamory.models.event_note import EventNote
 from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, approved_user_required
 from cosypolyamory.utils import extract_google_maps_info
-from cosypolyamory.notification import send_notification_email
+from cosypolyamory.notification import send_notification_email, send_rsvp_confirmation
 
 
 bp = Blueprint('events', __name__, url_prefix='/events')
@@ -892,20 +892,8 @@ def rsvp_event(event_id):
                 response_data['promoted_user'] = promoted_user
                 
             if status == 'yes':        
-                rsvp_data = {
-                    "name": current_user.name,
-                    "event_title": event.title,
-                    "date": event.date.strftime('%B %d, %Y'),
-                    "start_time": event.exact_time.strftime('%I:%M %p'),
-                    "end_time": event.end_time.strftime('%I:%M %p'),
-                    "location": event.establishment_name,
-                    "location_tips": event.tips_for_attendees or "",
-                    "event_description": event.description or "",
-                    "event_url": url_for('events.event_detail', event_id=event.id, _external=True),
-                }
-
-                print(rsvp_data)
-                send_notification_email(current_user.email, 'rsvp', **rsvp_data)
+                # Send RSVP confirmation email
+                send_rsvp_confirmation(current_user, event, rsvp)
                 
             return jsonify(response_data)
 

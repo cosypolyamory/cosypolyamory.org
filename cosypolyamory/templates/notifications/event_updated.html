@@ -1,0 +1,39 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Event Updated: {{ event_title }}{% endblock %}
+
+{% block content %}
+<h2>Event Update</h2>
+<p>Hello {{ name }},</p>
+<p>An event you're attending has been updated:</p>
+
+<div style="background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #0c5460;">📅 {{ event_title }}</h3>
+    <p><strong>When:</strong> {{ event_date }} at {{ event_time }}</p>
+    <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #0c5460;">Google Maps</a>){% endif %}</p>
+</div>
+
+{% if changes %}
+<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h4 style="margin-top: 0; color: #856404;">📝 What changed:</h4>
+    <ul style="margin-bottom: 0;">
+        {% for change in changes %}
+        <li>{{ change }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if update_message %}
+<div style="margin: 20px 0;">
+    <h4>Message from the organizers:</h4>
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #6f42c1; border-radius: 0 5px 5px 0;">
+        {{ update_message | replace('\n', '<br>') | safe }}
+    </div>
+</div>
+{% endif %}
+
+<p>Please review the updated event details: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
+
+<p>We look forward to seeing you at the event!</p>
+{% endblock %}
