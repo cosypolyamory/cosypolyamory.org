@@ -117,6 +117,7 @@ def get_template_info() -> dict:
         'application_rejected': 'Notification email for rejected applications',
         'event_reminder': 'Reminder email for upcoming events',
         'host_assigned': 'Notification when user is made host/co-host of an event',
+        'host_removed': 'Notification when user is removed as host/co-host of an event',
         'rsvp_updated': 'Notification when RSVP is removed or waitlisted', 
         'event_updated': 'Notification when an attended event is updated',
         'event_cancelled': 'Notification when an attended event is cancelled'
@@ -278,6 +279,38 @@ def notify_host_assigned(user, event, role="host"):
         
     except EmailError as e:
         current_app.logger.error(f"Error sending host assignment notification to {user.email}: {e}")
+        return False
+
+
+def notify_host_removed(user, event, role="host"):
+    """
+    Send notification when user is removed as host/co-host of an event
+    
+    Args:
+        user: User model instance
+        event: Event model instance
+        role: Role removed from ("host" or "co-host")
+    """
+    try:
+        success = send_notification_email(
+            to_email=user.email,
+            template_name="host_removed",
+            name=user.name,
+            role=role,
+            event_title=event.title,
+            event_date=event.date.strftime('%A, %B %d, %Y'),
+            event_time=event.exact_time.strftime('%I:%M %p') if event.exact_time else "TBD",
+            event_location=event.establishment_name or "Location TBD",
+            event_url=url_for('events.event_detail', event_id=event.id, _external=True)
+        )
+        
+        if success:
+            current_app.logger.info(f"Host removal notification sent to {user.email} for event: {event.title}")
+        
+        return success
+        
+    except EmailError as e:
+        current_app.logger.error(f"Error sending host removal notification to {user.email}: {e}")
         return False
 
 

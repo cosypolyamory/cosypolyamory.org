@@ -16,7 +16,7 @@ from cosypolyamory.models.event_note import EventNote
 from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, approved_user_required
 from cosypolyamory.utils import extract_google_maps_info
-from cosypolyamory.notification import send_notification_email, send_rsvp_confirmation, notify_event_updated, notify_event_cancelled
+from cosypolyamory.notification import send_notification_email, send_rsvp_confirmation, notify_event_updated, notify_event_cancelled, notify_host_assigned, notify_host_removed
 
 
 bp = Blueprint('events', __name__, url_prefix='/events')
@@ -397,6 +397,19 @@ def create_event_post():
                     cohost_rsvp.updated_at = datetime.now()
                     cohost_rsvp.save()
         
+        # Send host assignment notifications for new event
+        try:
+            # Notify the organizer (host)
+            if organizer.id != current_user.id:  # Don't notify if they created their own event
+                notify_host_assigned(organizer, event, role="host")
+            
+            # Notify co-host if assigned
+            if co_host and co_host.id != current_user.id:
+                notify_host_assigned(co_host, event, role="co-host")
+                
+        except Exception as e:
+            current_app.logger.error(f"Failed to send host assignment notifications for event {event.id}: {e}")
+        
         flash(f'Event "{title}" has been created successfully!', 'success')
         return redirect(url_for('events.event_detail', event_id=event.id))
         
@@ -652,6 +665,8 @@ def edit_event_post(event_id):
             old_exact_time = event.exact_time
             old_end_time = event.end_time
             old_date = event.date
+            old_organizer = event.organizer
+            old_co_host = event.co_host
             
             # Update event
             event.title = title
@@ -732,6 +747,41 @@ def edit_event_post(event_id):
                 change_count = len(changes)
                 attendee_count = rsvped_users.count()
                 current_app.logger.info(f"Sent event update notifications for {change_count} changes to {attendee_count} attendees")
+        
+        # Send host assignment/removal notifications
+        try:
+            # Check for organizer changes
+            if old_organizer.id != organizer.id:
+                # Notify new organizer (if not the person making the change)
+                if organizer.id != current_user.id:
+                    notify_host_assigned(organizer, event, role="host")
+                
+                # Optionally notify old organizer about removal (if not the person making the change)
+                if old_organizer.id != current_user.id:
+                    # Send notification about host role removal
+                    notify_host_removed(old_organizer, event, "host")
+            
+            # Check for co-host changes
+            if old_co_host != co_host:
+                # If co-host was added
+                if co_host and not old_co_host:
+                    if co_host.id != current_user.id:
+                        notify_host_assigned(co_host, event, role="co-host")
+                # If co-host was changed
+                elif co_host and old_co_host and co_host.id != old_co_host.id:
+                    # Notify new co-host
+                    if co_host.id != current_user.id:
+                        notify_host_assigned(co_host, event, role="co-host")
+                    # Notify old co-host about removal
+                    if old_co_host.id != current_user.id:
+                        notify_host_removed(old_co_host, event, "co-host")
+                # If co-host was removed
+                elif not co_host and old_co_host:
+                    if old_co_host.id != current_user.id:
+                        notify_host_removed(old_co_host, event, "co-host")
+                        
+        except Exception as e:
+            current_app.logger.error(f"Failed to send host change notifications for event {event.id}: {e}")
         
         success_message = f'Event "{title}" has been updated successfully!'
         if 'promotion_message' in locals():
