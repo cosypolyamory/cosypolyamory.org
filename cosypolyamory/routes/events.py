@@ -6,7 +6,7 @@ Handles event listing, creation, editing, and RSVP functionality.
 
 import os
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_required, current_user
 
 from cosypolyamory.models.user import User
@@ -16,7 +16,7 @@ from cosypolyamory.models.event_note import EventNote
 from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, approved_user_required
 from cosypolyamory.utils import extract_google_maps_info
-from cosypolyamory.notification import send_notification_email, send_rsvp_confirmation
+from cosypolyamory.notification import send_notification_email, send_rsvp_confirmation, notify_event_updated, notify_event_cancelled
 
 
 bp = Blueprint('events', __name__, url_prefix='/events')
@@ -646,6 +646,13 @@ def edit_event_post(event_id):
 
         # Update event and RSVPs in a transaction
         with database.atomic():
+            # Track changes for notifications
+            changes = []
+            old_establishment_name = event.establishment_name
+            old_exact_time = event.exact_time
+            old_end_time = event.end_time
+            old_date = event.date
+            
             # Update event
             event.title = title
             event.description = description
@@ -663,6 +670,25 @@ def edit_event_post(event_id):
             event.max_attendees = int(max_attendees) if max_attendees else None
             event.event_note = event_note
             event.save()
+            
+            # Check for significant changes that warrant notifications
+            if old_establishment_name != establishment_name:
+                changes.append(f"Location changed from '{old_establishment_name}' to '{establishment_name}'")
+            
+            if old_exact_time != exact_time:
+                old_time_str = old_exact_time.strftime('%I:%M %p')
+                new_time_str = exact_time.strftime('%I:%M %p')
+                changes.append(f"Start time changed from {old_time_str} to {new_time_str}")
+            
+            if old_end_time != end_time:
+                old_end_str = old_end_time.strftime('%I:%M %p') if old_end_time else "No end time"
+                new_end_str = end_time.strftime('%I:%M %p') if end_time else "No end time"
+                changes.append(f"End time changed from {old_end_str} to {new_end_str}")
+            
+            if old_date.date() != date.date():
+                old_date_str = old_date.strftime('%A, %B %d, %Y')
+                new_date_str = date.strftime('%A, %B %d, %Y')
+                changes.append(f"Date changed from {old_date_str} to {new_date_str}")
             
             # Automatically create/update RSVPs for organizer and co-host
             # Create or update organizer RSVP
@@ -687,6 +713,25 @@ def edit_event_post(event_id):
                     cohost_rsvp.status = 'yes'
                     cohost_rsvp.updated_at = datetime.now()
                     cohost_rsvp.save()
+        
+        # Send notifications for significant changes
+        if changes:
+            # Get all RSVPed users
+            rsvped_users = (User.select()
+                          .join(RSVP)
+                          .where((RSVP.event == event) & (RSVP.status == 'yes')))
+            
+            # Send update notifications to all attendees
+            for user in rsvped_users:
+                try:
+                    notify_event_updated(user, event, changes=changes)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send event update notification to {user.email}: {e}")
+            
+            if len(changes) > 0:
+                change_count = len(changes)
+                attendee_count = rsvped_users.count()
+                current_app.logger.info(f"Sent event update notifications for {change_count} changes to {attendee_count} attendees")
         
         success_message = f'Event "{title}" has been updated successfully!'
         if 'promotion_message' in locals():
@@ -1239,17 +1284,48 @@ def delete_event(event_id):
                 flash('You do not have permission to delete this event.', 'error')
                 return redirect(url_for('events.event_detail', event_id=event_id))
             
+            # Get all RSVPed users (both attending and waitlisted) before deleting the event
+            rsvped_users = list(User.select()
+                              .join(RSVP)
+                              .where((RSVP.event == event) & (RSVP.status.in_(['yes', 'waitlist']))))
+            
+            # Store event info for notifications
+            event_title = event.title
+            event_date = event.date
+            event_time = event.exact_time
+            event_location = event.establishment_name
+            
             # Delete all RSVPs associated with this event
             RSVP.delete().where(RSVP.event == event).execute()
             
-            # Store event title for flash message
-            event_title = event.title
-            
             # Delete the event itself
             event.delete_instance()
-            
-            flash(f'Event "{event_title}" has been successfully deleted.', 'success')
-            return redirect(url_for('events.events_list'))
+        
+        # Send cancellation notifications to all attendees (after transaction completes)
+        for user in rsvped_users:
+            try:
+                # Use send_notification_email directly with the stored event data
+                from cosypolyamory.notification import send_notification_email
+                send_notification_email(
+                    to_email=user.email,
+                    template_name="event_cancelled",
+                    name=user.name,
+                    event_title=event_title,
+                    event_date=event_date.strftime('%A, %B %d, %Y'),
+                    event_time=event_time.strftime('%I:%M %p') if event_time else "TBD",
+                    event_location=event_location,
+                    cancellation_reason="This event has been cancelled by the organizers.",
+                    base_url=current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
+                )
+            except Exception as e:
+                current_app.logger.error(f"Failed to send event cancellation notification to {user.email}: {e}")
+        
+        attendee_count = len(rsvped_users)
+        if attendee_count > 0:
+            current_app.logger.info(f"Sent event cancellation notifications to {attendee_count} attendees")
+        
+        flash(f'Event "{event_title}" has been successfully deleted.', 'success')
+        return redirect(url_for('events.events_list'))
             
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
