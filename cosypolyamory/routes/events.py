@@ -342,14 +342,20 @@ def create_event_post():
             flash(f'Cannot create event with capacity of {max_attendees}. Minimum capacity must be at least {required_hosts} to accommodate the organizer{" and co-host" if co_host else ""}.', 'error')
             return redirect(url_for('events.create_event'))
 
-        end_time_str = request.form.get('end_time')
-        if not end_time_str:
+        # Handle end time from hour/minute dropdowns
+        end_time_hour = request.form.get('end_time_hour')
+        end_time_minute = request.form.get('end_time_minute')
+        end_time = None
+        
+        if end_time_hour and end_time_minute:
+            try:
+                end_time_str = f"{end_time_hour}:{end_time_minute}"
+                end_time = datetime.strptime(f"{date_str} {end_time_str}", "%Y-%m-%d %H:%M")
+            except Exception:
+                flash('Invalid end time format.', 'error')
+                return redirect(url_for('events.create_event'))
+        else:
             flash('End time is required for all events.', 'error')
-            return redirect(url_for('events.create_event'))
-        try:
-            end_time = datetime.strptime(f"{date_str} {end_time_str}", "%Y-%m-%d %H:%M")
-        except Exception:
-            flash('Invalid end time format.', 'error')
             return redirect(url_for('events.create_event'))
 
         # Create event and automatic RSVPs in a transaction
