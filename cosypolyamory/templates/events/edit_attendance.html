@@ -308,6 +308,12 @@
             </div>
             <div class="modal-body">
                 <p id="confirmMoveText"></p>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="skipMoveNotification">
+                    <label class="form-check-label" for="skipMoveNotification">
+                        Do not send the member a notification
+                    </label>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -330,6 +336,12 @@
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     <strong>Warning:</strong> This action cannot be undone.
+                </div>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="skipRemoveNotification">
+                    <label class="form-check-label" for="skipRemoveNotification">
+                        Do not send the member a notification
+                    </label>
                 </div>
             </div>
             <div class="modal-footer">
@@ -354,6 +366,9 @@ function moveRSVP(eventId, userId, newStatus, userName) {
     
     document.getElementById('confirmMoveText').textContent = `Move ${userName} to ${statusText}?`;
     
+    // Reset the notification checkbox to unchecked
+    document.getElementById('skipMoveNotification').checked = false;
+    
     // Store the action to execute if confirmed
     pendingMoveAction = () => {
         executeMoveRSVP(eventId, userId, newStatus, userName);
@@ -365,13 +380,15 @@ function moveRSVP(eventId, userId, newStatus, userName) {
 }
 
 function executeMoveRSVP(eventId, userId, newStatus, userName) {
+    const skipNotification = document.getElementById('skipMoveNotification').checked;
+    
     fetch(`/events/${eventId}/admin/rsvp/${userId}/move`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json'
         },
-        body: `status=${encodeURIComponent(newStatus)}`
+        body: `status=${encodeURIComponent(newStatus)}&skip_notification=${skipNotification}`
     })
     .then(response => response.json())
     .then(data => {
@@ -396,6 +413,9 @@ function removeRSVP(eventId, userId, userName) {
     // Set up the confirmation modal
     document.getElementById('confirmRemoveText').textContent = `Remove ${userName}'s RSVP entirely?`;
     
+    // Reset the notification checkbox to unchecked
+    document.getElementById('skipRemoveNotification').checked = false;
+    
     // Store the action to execute if confirmed
     pendingRemoveAction = () => {
         executeRemoveRSVP(eventId, userId, userName);
@@ -407,11 +427,15 @@ function removeRSVP(eventId, userId, userName) {
 }
 
 function executeRemoveRSVP(eventId, userId, userName) {
+    const skipNotification = document.getElementById('skipRemoveNotification').checked;
+    
     fetch(`/events/${eventId}/admin/rsvp/${userId}/remove`, {
         method: 'POST',
         headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json'
-        }
+        },
+        body: `skip_notification=${skipNotification}`
     })
     .then(response => response.json())
     .then(data => {
