@@ -16,7 +16,7 @@ from cosypolyamory.models.event_note import EventNote
 from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, approved_user_required
 from cosypolyamory.utils import extract_google_maps_info
-from cosypolyamory.notification import send_notification_email, send_rsvp_confirmation, notify_event_updated, notify_event_cancelled, notify_host_assigned, notify_host_removed
+from cosypolyamory.notification import send_notification_email, send_rsvp_confirmation, notify_event_updated, notify_event_cancelled, notify_host_assigned, notify_host_removed, send_waitlist_promotion_notification
 
 
 bp = Blueprint('events', __name__, url_prefix='/events')
@@ -643,6 +643,8 @@ def edit_event_post(event_id):
                             rsvp.updated_at = datetime.now()
                             rsvp.save()
                             promoted_users.append(rsvp.user.name)
+                            # Send notification to promoted user
+                            send_waitlist_promotion_notification(rsvp.user, event)
                         
                         # Continue with normal event save
                         promotion_message = f" {len(promoted_users)} people were promoted from waitlist: {', '.join(promoted_users)}"
@@ -845,6 +847,8 @@ def rsvp_event(event_id):
                             next_waitlisted.updated_at = datetime.now()
                             next_waitlisted.save()
                             promoted_user = next_waitlisted.user.name
+                            # Send notification to promoted user
+                            send_waitlist_promotion_notification(next_waitlisted.user, event)
                         
                 message = 'Attendance cancelled'
                 if promoted_user:
@@ -933,6 +937,8 @@ def rsvp_event(event_id):
                             next_waitlisted.updated_at = datetime.now()
                             next_waitlisted.save()
                             promoted_user = next_waitlisted.user.name
+                            # Send notification to promoted user
+                            send_waitlist_promotion_notification(next_waitlisted.user, event)
                             message += f' {promoted_user} has been moved from waitlist to attending.'
         except RSVP.DoesNotExist:
             # New RSVP

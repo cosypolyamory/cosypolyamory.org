@@ -250,6 +250,39 @@ def send_event_reminder(user, event):
         return False
 
 
+def send_waitlist_promotion_notification(user, event):
+    """
+    Send waitlist promotion notification email to a user
+    
+    Args:
+        user: User model instance
+        event: Event model instance
+    """
+    try:
+        success = send_notification_email(
+            to_email=user.email,
+            template_name="waitlist_promoted",
+            name=user.name,
+            event_title=event.title,
+            event_date=event.date.strftime('%A, %B %d, %Y'),
+            event_time=event.exact_time.strftime('%I:%M %p') if event.exact_time else "TBD",
+            event_location=event.establishment_name or "Location will be provided to attendees",
+            event_description=event.description or "",
+            event_url=url_for('events.event_detail', event_id=event.id, _external=True)
+        )
+        
+        if success:
+            current_app.logger.info(f"Waitlist promotion notification sent to {user.email} for event: {event.title}")
+        else:
+            current_app.logger.warning(f"Failed to send waitlist promotion notification to {user.email} for event: {event.title}")
+        
+        return success
+        
+    except EmailError as e:
+        current_app.logger.error(f"Error sending waitlist promotion notification to {user.email} for event {event.title}: {e}")
+        return False
+
+
 def notify_host_assigned(user, event, role="host"):
     """
     Send notification when user is assigned as host/co-host of an event
