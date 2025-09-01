@@ -219,13 +219,68 @@ def oauth_callback(provider):
             
             # Generate a user-friendly temporary username if we couldn't get the real one
             if not username:
-                import hashlib
-                # Use a more stable hash based on the token to ensure consistency
-                token_str = str(token.get('access_token', token))
-                token_hash = hashlib.md5(token_str.encode()).hexdigest()[:8]
-                username = f"mb_user_{token_hash}"
-                print(f"Generated temporary MusicBrainz username: {username}")
-                print("Note: MusicBrainz OAuth doesn't provide usernames. User can update profile later.")
+                # Try to get a stable user identifier from MusicBrainz
+                user_id_from_mb = None
+                
+                # Try to get user profile/whoami to get a stable user ID
+                try:
+                    resp = oauth.musicbrainz.get('oauth2/userinfo', token=token, headers={
+                        'User-Agent': 'CozyPolyamory/1.0 (https://cosypolyamory.org)',
+                        'Accept': 'application/json'
+                    })
+                    
+                    if resp.status_code == 200:
+                        user_data = resp.json()
+                        print(f"MusicBrainz userinfo response: {user_data}")
+                        user_id_from_mb = user_data.get('sub') or user_data.get('id') or user_data.get('user_id')
+                        if user_id_from_mb:
+                            username = f"mb_{user_id_from_mb}"
+                            print(f"Found stable MusicBrainz user ID: {user_id_from_mb}")
+                except Exception as e:
+                    print(f"Error getting MusicBrainz userinfo: {e}")
+                
+                # If we still don't have a stable ID, check if we can get it from the token payload
+                if not username and token.get('access_token'):
+                    try:
+                        import base64
+                        import json
+                        
+                        access_token = token.get('access_token', '')
+                        if '.' in access_token:  # JWT token
+                            parts = access_token.split('.')
+                            if len(parts) >= 2:
+                                payload = parts[1]
+                                payload += '=' * (4 - len(payload) % 4)
+                                
+                                try:
+                                    decoded_bytes = base64.urlsafe_b64decode(payload)
+                                    decoded_str = decoded_bytes.decode('utf-8')
+                                    payload_data = json.loads(decoded_str)
+                                    
+                                    # Look for a stable user ID in the JWT
+                                    stable_id = (payload_data.get('sub') or 
+                                               payload_data.get('user_id') or
+                                               payload_data.get('id'))
+                                    
+                                    if stable_id:
+                                        username = f"mb_{stable_id}"
+                                        print(f"Found stable MusicBrainz ID in JWT: {stable_id}")
+                                except Exception as decode_error:
+                                    print(f"JWT decode error: {decode_error}")
+                    except Exception as token_error:
+                        print(f"Token parsing error: {token_error}")
+                
+                # Last resort: use a hash of the refresh token or other stable data
+                if not username:
+                    import hashlib
+                    # Use refresh token if available (more stable than access token)
+                    stable_data = token.get('refresh_token') or token.get('access_token', str(token))
+                    token_hash = hashlib.md5(stable_data.encode()).hexdigest()[:12]  # Longer hash for uniqueness
+                    username = f"mb_user_{token_hash}"
+                    print(f"Generated fallback MusicBrainz username: {username}")
+                    print("Warning: Could not get stable MusicBrainz user ID. Using fallback identifier.")
+                    
+                print("Note: MusicBrainz OAuth has limited user identification. User can update profile later.")
             else:
                 print(f"Successfully extracted MusicBrainz username: {username}")
             
@@ -247,24 +302,71 @@ def oauth_callback(provider):
         try:
             with database.atomic():
                 # Try to get existing user or create new one
+                user_found = False
                 try:
                     user = User.get(User.id == user_id)
-                    # Update existing user info
+                    user_found = True
+                except User.DoesNotExist:
+                    # For MusicBrainz, also try to find by email in case the user_id changed
+                    # due to improved identification methods
+                    if provider == 'musicbrainz':
+                        try:
+                            # Look for existing MusicBrainz user with the same email
+                            existing_user = User.get(
+                                (User.email == constructed_email) & 
+                                (User.provider == 'musicbrainz')
+                            )
+                            # If we found a user with the same email but different ID,
+                            # this might be the same user with an improved identifier
+                            print(f"Found existing MusicBrainz user with same email: {existing_user.id}")
+                            print(f"New identifier would be: {user_id}")
+                            
+                            # Update the user's ID to the new, more stable identifier
+                            # But first check if the new ID is actually different and more stable
+                            old_id = existing_user.id
+                            if (old_id.startswith('musicbrainz_mb_user_') and 
+                                (user_id.startswith('musicbrainz_mb_') and not user_id.startswith('musicbrainz_mb_user_'))):
+                                print(f"Upgrading MusicBrainz user ID from {old_id} to {user_id}")
+                                # Create new user record with the better ID
+                                existing_user.id = user_id
+                                existing_user.save()
+                                user = existing_user
+                                user_found = True
+                            else:
+                                user = existing_user
+                                user_found = True
+                        except User.DoesNotExist:
+                            pass  # Will create new user below
+                
+                if user_found:
+                    # Update existing user info, but preserve custom names
                     if provider == 'google':
-                        user.name = user_info['name']
+                        oauth_name = user_info['name']
+                        # Only update name if user hasn't customized it or if it still matches the OAuth default
+                        if user.name == f"google_user_{user_id.split('_')[1]}" or user.name == oauth_name:
+                            user.name = oauth_name
                         user.avatar_url = user_info.get('picture')
                     elif provider == 'github':
-                        user.name = user_info.get('name') or user_info.get('login')
+                        oauth_name = user_info.get('name') or user_info.get('login')
+                        # Only update name if user hasn't customized it or if it still matches the OAuth default
+                        if user.name == user_info.get('login') or user.name == oauth_name:
+                            user.name = oauth_name
                         user.avatar_url = user_info.get('avatar_url')
                     elif provider == 'reddit':
-                        user.name = user_info['name']
+                        oauth_name = user_info['name']
+                        # Only update name if user hasn't customized it or if it still matches the OAuth default
+                        if user.name == oauth_name:
+                            user.name = oauth_name
                         user.avatar_url = user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None
                     elif provider == 'musicbrainz':
-                        user.name = username
+                        # For MusicBrainz, only update name if it's still the auto-generated username
+                        # Don't overwrite if user has customized their display name
+                        if user.name.startswith('mb_user_') or user.name.startswith('musicbrainz_user_') or user.name == username:
+                            user.name = username
                         user.avatar_url = None  # MusicBrainz doesn't provide avatars
                     user.last_login = datetime.now()
                     user.save()
-                except User.DoesNotExist:
+                else:
                     # Create new user
                     if provider == 'google':
                         user = User.create(

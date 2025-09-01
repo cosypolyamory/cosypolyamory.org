@@ -19,7 +19,7 @@
                 </div>
             {% endif %}
         {% endwith %}
-        
+
         <!-- Profile Update Form for Reddit/MusicBrainz users -->
         {% if needs_info %}
             <div class="card mt-4 border-warning">
@@ -88,6 +88,49 @@
                 </div>
             </div>
         {% endif %}
+        
+        <!-- Join Community Call-to-Action for new users -->
+        {% if not user.role or user.role not in ['approved', 'pending', 'organizer', 'admin'] %}
+            <div class="card mt-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Join Our Community
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>Ready to become a community member?</h5>
+                            <p class="mb-3">
+                                To access full event details, RSVP to events, and participate in our community, 
+                                you'll need to complete a brief application. This helps us maintain a safe and 
+                                welcoming space for everyone.
+                            </p>
+                            <ul class="list-unstyled mb-0">
+                                <li><i class="fas fa-check text-success me-2"></i>Access full event details and locations</li>
+                                <li><i class="fas fa-check text-success me-2"></i>RSVP to community events</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Connect with other community members</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Participate in community discussions</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-center justify-content-center">
+                            <div class="text-center">
+                                <i class="fas fa-heart fa-4x text-primary mb-3"></i>
+                                <div class="d-grid">
+                                    <a href="{{ url_for('user.apply') }}" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-user-plus me-2"></i>
+                                        Apply Now
+                                    </a>
+                                </div>
+                                <small class="text-muted mt-2 d-block">Takes about 5 minutes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
         
         <!-- Edit Profile Section for all users -->
         <div class="card mt-4">
@@ -205,48 +248,6 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Join Community Call-to-Action for new users -->
-        {% if not user.role or user.role not in ['approved', 'pending', 'organizer', 'admin'] %}
-            <div class="card mt-4 border-primary">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="card-title mb-0">
-                        <i class="fas fa-users me-2"></i>
-                        Join Our Community
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <h5>Ready to become a community member?</h5>
-                            <p class="mb-3">
-                                To access full event details, RSVP to events, and participate in our community, 
-                                you'll need to complete a brief application. This helps us maintain a safe and 
-                                welcoming space for everyone.
-                            </p>
-                            <ul class="list-unstyled mb-0">
-                                <li><i class="fas fa-check text-success me-2"></i>Access full event details and locations</li>
-                                <li><i class="fas fa-check text-success me-2"></i>RSVP to community events</li>
-                                <li><i class="fas fa-check text-success me-2"></i>Connect with other community members</li>
-                                <li><i class="fas fa-check text-success me-2"></i>Participate in community discussions</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4 d-flex align-items-center justify-content-center">
-                            <div class="text-center">
-                                <i class="fas fa-heart fa-4x text-primary mb-3"></i>
-                                <div class="d-grid">
-                                    <a href="{{ url_for('user.apply') }}" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-user-plus me-2"></i>
-                                        Apply Now
-                                    </a>
-                                </div>
-                                <small class="text-muted mt-2 d-block">Takes about 5 minutes</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
         
         <div class="card mt-4">
             <div class="card-body">
