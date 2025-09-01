@@ -4,7 +4,7 @@ Admin API endpoints
 Handles admin-specific API operations like user management, role changes, etc.
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, current_user
 
 from cosypolyamory.models.user import User
@@ -12,6 +12,8 @@ from cosypolyamory.models.user_application import UserApplication
 from cosypolyamory.models.event import Event
 from cosypolyamory.models.rsvp import RSVP
 from cosypolyamory.database import database
+from cosypolyamory.notification import send_notification_email
+from cosypolyamory.email import EmailError
 
 bp = Blueprint('admin', __name__)
 
@@ -197,6 +199,45 @@ def api_change_user_role():
             user.is_organizer = (user.role == 'organizer')
             user.is_approved = (user.role in ['admin', 'organizer', 'approved'])
             user.save()
+        
+        # Send notifications for role changes
+        try:
+            # Member becoming organizer
+            if old_role == 'approved' and user.role == 'organizer':
+                send_notification_email(
+                    user.email,
+                    'role_change_organizer',
+                    user=user,
+                    old_role='Member',
+                    new_role='Organizer'
+                )
+            
+            # Organizer becoming regular member  
+            elif old_role == 'organizer' and user.role == 'approved':
+                send_notification_email(
+                    user.email,
+                    'role_change_member',
+                    user=user,
+                    old_role='Organizer',
+                    new_role='Member'
+                )
+            
+            # User marked as new (with application data removed)
+            elif user.role == 'new' and old_role in ['rejected', 'pending', 'approved', 'organizer']:
+                send_notification_email(
+                    user.email,
+                    'role_change_new',
+                    user=user,
+                    old_role=old_role.title(),
+                    application_removed=True
+                )
+                
+        except EmailError as e:
+            # Log the error but don't fail the role change
+            current_app.logger.error(f"Failed to send role change notification to {user.email}: {str(e)}")
+        except Exception as e:
+            # Log any other email errors but don't fail the role change
+            current_app.logger.error(f"Unexpected error sending role change notification to {user.email}: {str(e)}")
         
         return jsonify({
             'success': True, 

@@ -443,6 +443,9 @@ function createUserCard(user) {
                                     options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'organizer')">
                                         <i class="fas fa-calendar me-2" style="color: #6f42c1;"></i>Make organizer
                                     </button></li>`);
+                                    options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'new')">
+                                        <i class="fas fa-clock text-warning me-2"></i>Mark new (force user to reapply)
+                                    </button></li>`);
                                 }
                                 
                                 // Standard role changes for users without pending applications
