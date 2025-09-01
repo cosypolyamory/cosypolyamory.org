@@ -25,9 +25,6 @@ class User(UserMixin, BaseModel):
     is_approved = BooleanField(default=False)  # Whether user passed community approval
     role = CharField(default='new')  # 'admin', 'organizer', 'approved', 'pending', 'new'
     
-    # Event attendance tracking
-    no_show_count = IntegerField(default=0)  # Track number of no-shows for events
-    
     class Meta:
         table_name = 'users'
     

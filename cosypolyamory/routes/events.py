@@ -13,6 +13,7 @@ from cosypolyamory.models.user import User
 from cosypolyamory.models.event import Event
 from cosypolyamory.models.rsvp import RSVP
 from cosypolyamory.models.event_note import EventNote
+from cosypolyamory.models.no_show import NoShow
 from cosypolyamory.database import database
 from cosypolyamory.decorators import organizer_required, approved_user_required
 from cosypolyamory.utils import extract_google_maps_info
@@ -1384,6 +1385,13 @@ def edit_attendance(event_id):
     event_end_time = event.end_time if event.end_time else event.exact_time
     event_has_passed = current_time > event_end_time
 
+    # Get no-show data for this event
+    no_shows = {}
+    if event_has_passed:
+        # Get all no-show records for this event
+        no_show_records = NoShow.select().where(NoShow.event == event)
+        no_shows = {no_show.user.id: no_show for no_show in no_show_records}
+
     return render_template('events/edit_attendance.html',
                            event=event,
                            rsvps_attending=rsvps_attending,
@@ -1395,6 +1403,7 @@ def edit_attendance(event_id):
                            organizer_id=organizer_id,
                            co_host_id=co_host_id,
                            event_has_passed=event_has_passed,
+                           no_shows=no_shows,
                            now=current_time)
 
 

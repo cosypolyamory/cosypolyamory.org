@@ -109,6 +109,11 @@
                                                     <i class="fas fa-user-friends me-1"></i>Co-Host
                                                 </span>
                                             {% endif %}
+                                            {% if event_has_passed and rsvp.user.id in no_shows %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-user-times me-1"></i>No Show
+                                                </span>
+                                            {% endif %}
                                         </div>
                                         <small class="text-muted">
                                             RSVP'd {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
@@ -118,19 +123,27 @@
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
                                                 data-bs-toggle="dropdown" aria-expanded="false">
-                                            Manage
+                                                Manage
                                         </button>
                                         <ul class="dropdown-menu">
                                             {% if event_has_passed %}
-                                            <li>
-                                                <button class="dropdown-item text-warning" onclick="markNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
-                                                    <i class="fas fa-user-times me-2"></i>Mark as No Show
-                                                </button>
-                                            </li>
+                                                {% if rsvp.user.id in no_shows %}
+                                                <li>
+                                                    <button class="dropdown-item text-default" onclick="removeNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                        <i class="fas fa-user-check me-2"></i>Remove No Show
+                                                    </button>
+                                                </li>
+                                                {% else %}
+                                                <li>
+                                                    <button class="dropdown-item text-default" onclick="markNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                        <i class="fas fa-user-times me-2"></i>Mark as No Show
+                                                    </button>
+                                                </li>
+                                                {% endif %}
                                             {% else %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
-                                                    <i class="fas fa-hourglass-half me-2 text-warning"></i>Move to Waitlist
+                                                    <i class="fas fa-hourglass-half me-2 text-default"></i>Move to Waitlist
                                                 </button>
                                             </li>
                                             <li>
@@ -375,35 +388,6 @@
     </div>
 </div>
 
-<!-- Mark No Show Modal -->
-<div class="modal fade" id="confirmNoShowModal" tabindex="-1" aria-labelledby="confirmNoShowModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmNoShowModalLabel">Mark as No Show</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p id="confirmNoShowText"></p>
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Warning:</strong> This will increment the user's no-show count and cannot be undone.
-                </div>
-                <div class="form-check mt-3">
-                    <input class="form-check-input" type="checkbox" id="skipNoShowNotification">
-                    <label class="form-check-label" for="skipNoShowNotification">
-                        Do not send the member a notification
-                    </label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" id="confirmNoShowBtn">Mark No Show</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
 // Global variables for modal confirmation
 let pendingMoveAction = null;
@@ -509,27 +493,14 @@ function executeRemoveRSVP(eventId, userId, userName) {
 }
 
 // Mark user as no-show
-let pendingNoShowAction = null;
-
 function markNoShow(eventId, userId, userName) {
-    // Set up the modal text
-    document.getElementById('confirmNoShowText').innerHTML = 
-        `Are you sure you want to mark <strong>${userName}</strong> as a no-show for this event?<br><br>` +
-        `This will:<br>` +
-        `• Increment their no-show count<br>` +
-        `• Keep them in the attending list for record purposes<br>` +
-        `• This action cannot be undone`;
-    
-    // Set up the pending action
-    pendingNoShowAction = () => performNoShow(eventId, userId, userName);
-    
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('confirmNoShowModal'));
-    modal.show();
+    // Call performNoShow directly - no modal needed since action is easily reversible
+    performNoShow(eventId, userId, userName);
 }
 
 function performNoShow(eventId, userId, userName) {
-    const skipNotification = document.getElementById('skipNoShowNotification').checked;
+    // Default to sending notifications since action is now immediate and reversible
+    const skipNotification = false;
     
     fetch(`/api/admin/events/${eventId}/mark-no-show`, {
         method: 'POST',
@@ -567,6 +538,46 @@ function performNoShow(eventId, userId, userName) {
     .catch(error => {
         console.error('Error:', error);
         showToast('Error', `An error occurred while marking the no-show: ${error.message}`, 'error');
+    });
+}
+
+function removeNoShow(eventId, userId, userName) {
+    fetch(`/api/admin/events/${eventId}/remove-no-show`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `user_id=${userId}`
+    })
+    .then(response => {
+        // Check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Response is not JSON');
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message briefly before reload
+            showToast('Success', data.message || `No-show removed for ${userName}`, 'success');
+            // Reload the page to show updated attendance
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error', `An error occurred while removing the no-show: ${error.message}`, 'error');
     });
 }
 
@@ -623,14 +634,6 @@ document.addEventListener('DOMContentLoaded', function() {
             pendingRemoveAction = null;
         }
         bootstrap.Modal.getInstance(document.getElementById('confirmRemoveModal')).hide();
-    });
-    
-    document.getElementById('confirmNoShowBtn').addEventListener('click', function() {
-        if (pendingNoShowAction) {
-            pendingNoShowAction();
-            pendingNoShowAction = null;
-        }
-        bootstrap.Modal.getInstance(document.getElementById('confirmNoShowModal')).hide();
     });
 });
 </script>

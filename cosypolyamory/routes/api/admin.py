@@ -11,6 +11,7 @@ from cosypolyamory.models.user import User
 from cosypolyamory.models.user_application import UserApplication
 from cosypolyamory.models.event import Event
 from cosypolyamory.models.rsvp import RSVP
+from cosypolyamory.models.no_show import NoShow
 from cosypolyamory.database import database
 from cosypolyamory.notification import send_notification_email
 from cosypolyamory.email import EmailError
@@ -401,20 +402,32 @@ def api_mark_no_show(event_id):
     except RSVP.DoesNotExist:
         return jsonify({'success': False, 'message': 'User is not marked as attending this event'}), 400
 
-    # Increment user's no-show count
+    # Check if user is already marked as no-show for this event
+    try:
+        existing_no_show = NoShow.get((NoShow.user == user) & (NoShow.event == event))
+        return jsonify({'success': False, 'message': 'User is already marked as no-show for this event'}), 400
+    except NoShow.DoesNotExist:
+        # Good, no existing no-show record
+        pass
+
+    # Create no-show record
     try:
         with database.atomic():
-            user.no_show_count = (user.no_show_count or 0) + 1
-            user.save()
+            no_show = NoShow.create(
+                user=user,
+                event=event,
+                marked_by=current_user,
+                notes=request.form.get('notes', '')
+            )
             
-            # Optionally, we could also mark the RSVP with a no-show flag
-            # For now, we'll just increment the counter and keep them in attending list
-            
-            current_app.logger.info(f"User {user.name} ({user.id}) marked as no-show for event {event.title} ({event.id}). New no-show count: {user.no_show_count}")
+            current_app.logger.info(f"User {user.name} ({user.id}) marked as no-show for event {event.title} ({event.id}) by {current_user.name}")
             
     except Exception as e:
         current_app.logger.error(f"Error marking no-show for user {user_id} at event {event_id}: {e}")
         return jsonify({'success': False, 'message': 'Database error occurred'}), 500
+
+    # Get total no-show count for this user
+    total_no_shows = NoShow.select().where(NoShow.user == user).count()
 
     # Send notification if not skipped
     if not skip_notification:
@@ -424,7 +437,7 @@ def api_mark_no_show(event_id):
                 template_name="event_no_show",
                 user=user,
                 event=event,
-                no_show_count=user.no_show_count,
+                no_show_count=total_no_shows,
                 base_url=current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
             )
         except Exception as e:
@@ -433,5 +446,45 @@ def api_mark_no_show(event_id):
 
     return jsonify({
         'success': True, 
-        'message': f'{user.name} has been marked as a no-show. Total no-shows: {user.no_show_count}'
+        'message': f'{user.name} has been marked as a no-show. Total no-shows: {total_no_shows}'
     })
+
+
+@bp.route('/admin/events/<int:event_id>/remove-no-show', methods=['POST'])
+@admin_required
+def api_remove_no_show(event_id):
+    """Remove a no-show record for a user and event (admin/organizer only)"""
+    try:
+        event = Event.get_by_id(event_id)
+    except Event.DoesNotExist:
+        return jsonify({'success': False, 'message': 'Event not found'}), 404
+
+    user_id = request.form.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is required'}), 400
+
+    try:
+        user = User.get_by_id(user_id)
+    except User.DoesNotExist:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+
+    # Find and remove the no-show record
+    try:
+        no_show = NoShow.get((NoShow.user == user) & (NoShow.event == event))
+        no_show.delete_instance()
+        
+        current_app.logger.info(f"No-show record removed for {user.name} ({user.id}) at event {event.title} ({event.id}) by {current_user.name}")
+        
+        # Get updated total no-show count
+        total_no_shows = NoShow.select().where(NoShow.user == user).count()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'No-show record removed for {user.name}. Total no-shows: {total_no_shows}'
+        })
+        
+    except NoShow.DoesNotExist:
+        return jsonify({'success': False, 'message': 'No-show record not found for this user and event'}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error removing no-show for user {user_id} at event {event_id}: {e}")
+        return jsonify({'success': False, 'message': 'Database error occurred'}), 500
