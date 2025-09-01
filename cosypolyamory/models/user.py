@@ -3,7 +3,7 @@ User model for OAuth authentication
 """
 
 from datetime import datetime
-from peewee import CharField, DateTimeField, BooleanField
+from peewee import CharField, DateTimeField, BooleanField, IntegerField
 from flask_login import UserMixin
 from cosypolyamory.models import BaseModel
 
@@ -24,6 +24,9 @@ class User(UserMixin, BaseModel):
     is_organizer = BooleanField(default=False)
     is_approved = BooleanField(default=False)  # Whether user passed community approval
     role = CharField(default='new')  # 'admin', 'organizer', 'approved', 'pending', 'new'
+    
+    # Event attendance tracking
+    no_show_count = IntegerField(default=0)  # Track number of no-shows for events
     
     class Meta:
         table_name = 'users'
