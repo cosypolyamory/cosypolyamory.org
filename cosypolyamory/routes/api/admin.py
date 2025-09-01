@@ -366,3 +366,72 @@ def check_event_note_usage(note_id):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/admin/events/<int:event_id>/mark-no-show', methods=['POST'])
+@admin_required
+def api_mark_no_show(event_id):
+    """Mark a user as no-show for an event (admin/organizer only)"""
+    try:
+        event = Event.get_by_id(event_id)
+    except Event.DoesNotExist:
+        return jsonify({'success': False, 'message': 'Event not found'}), 404
+
+    # Check if event has passed
+    from datetime import datetime
+    current_time = datetime.now()
+    event_end_time = event.end_time if event.end_time else event.exact_time
+    if current_time <= event_end_time:
+        return jsonify({'success': False, 'message': 'Cannot mark no-show for future events'}), 400
+
+    user_id = request.form.get('user_id')
+    skip_notification = request.form.get('skip_notification') == 'true'
+
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is required'}), 400
+
+    try:
+        user = User.get_by_id(user_id)
+    except User.DoesNotExist:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+
+    # Check if user is actually attending this event
+    try:
+        rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user) & (RSVP.status == 'yes'))
+    except RSVP.DoesNotExist:
+        return jsonify({'success': False, 'message': 'User is not marked as attending this event'}), 400
+
+    # Increment user's no-show count
+    try:
+        with database.atomic():
+            user.no_show_count = (user.no_show_count or 0) + 1
+            user.save()
+            
+            # Optionally, we could also mark the RSVP with a no-show flag
+            # For now, we'll just increment the counter and keep them in attending list
+            
+            current_app.logger.info(f"User {user.name} ({user.id}) marked as no-show for event {event.title} ({event.id}). New no-show count: {user.no_show_count}")
+            
+    except Exception as e:
+        current_app.logger.error(f"Error marking no-show for user {user_id} at event {event_id}: {e}")
+        return jsonify({'success': False, 'message': 'Database error occurred'}), 500
+
+    # Send notification if not skipped
+    if not skip_notification:
+        try:
+            send_notification_email(
+                to_email=user.email,
+                template_name="event_no_show",
+                user=user,
+                event=event,
+                no_show_count=user.no_show_count,
+                base_url=current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
+            )
+        except Exception as e:
+            current_app.logger.error(f"Failed to send no-show notification to {user.email}: {e}")
+            # Don't fail the request if notification fails
+
+    return jsonify({
+        'success': True, 
+        'message': f'{user.name} has been marked as a no-show. Total no-shows: {user.no_show_count}'
+    })

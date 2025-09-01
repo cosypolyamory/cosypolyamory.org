@@ -1,0 +1,30 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}No-Show Recorded - {{ event.title }}{% endblock %}
+
+{% block content %}
+<h2>Hello {{ user.name }},</h2>
+
+<p>We wanted to let you know that you were marked as a no-show for the following event:</p>
+
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0;">{{ event.title }}</h3>
+    <p style="margin-bottom: 5px;"><strong>Date:</strong> {{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
+    <p style="margin-bottom: 0;"><strong>Time:</strong> {{ event.exact_time.strftime('%I:%M %p') }}</p>
+</div>
+
+<p>Your current no-show count is now <strong>{{ no_show_count }}</strong>.</p>
+
+<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p style="margin: 0;"><strong>What this means:</strong></p>
+    <ul style="margin-bottom: 0; padding-left: 20px;">
+        <li>This helps organizers track attendance patterns</li>
+        <li>Please make sure to update your RSVP if you can't attend future events</li>
+        <li>High no-show counts may affect your ability to RSVP to future events</li>
+    </ul>
+</div>
+
+<p>If you believe this was recorded in error, please contact the event organizer or admin team.</p>
+
+<p>Thank you for understanding, and we hope to see you at future events!</p>
+{% endblock %}

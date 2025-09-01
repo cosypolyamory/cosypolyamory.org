@@ -1377,6 +1377,12 @@ def edit_attendance(event_id):
     co_host_id = None
     if event.co_host:
         co_host_id = event.co_host.id
+    
+    # Check if event has passed (current time > event end time, or exact_time if no end_time)
+    from datetime import datetime
+    current_time = datetime.now()
+    event_end_time = event.end_time if event.end_time else event.exact_time
+    event_has_passed = current_time > event_end_time
 
     return render_template('events/edit_attendance.html',
                            event=event,
@@ -1387,7 +1393,9 @@ def edit_attendance(event_id):
                            waitlist_count=waitlist_count,
                            not_attending_count=not_attending_count,
                            organizer_id=organizer_id,
-                           co_host_id=co_host_id)
+                           co_host_id=co_host_id,
+                           event_has_passed=event_has_passed,
+                           now=current_time)
 
 
 @bp.route('/<int:event_id>/delete', methods=['POST'])
@@ -1448,3 +1456,6 @@ def delete_event(event_id):
     except Exception as e:
         flash(f'An error occurred while deleting the event: {str(e)}', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
+
+
+

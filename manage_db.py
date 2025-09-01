@@ -67,7 +67,6 @@ def main():
     parser.add_argument('command', choices=['init', 'list', 'make-admin', 'remove-admin', 'migrate'], 
                        help='Command to execute')
     parser.add_argument('email', nargs='?', help='User email for admin operations')
-    parser.add_argument('--migration', help='Migration to run (e.g., add-no-show-count)')
     
     args = parser.parse_args()
     
@@ -87,16 +86,6 @@ def main():
             print("Usage: python manage_db.py remove-admin <email>")
             sys.exit(1)
         remove_admin(args.email)
-    elif args.command == 'migrate':
-        if args.migration == 'add-no-show-count':
-            print("🔄 Running migration to add no_show_count field...")
-            print("💡 You can also run: python migrate_add_no_show_count.py")
-            import subprocess
-            subprocess.run([sys.executable, 'migrate_add_no_show_count.py'])
-        else:
-            print("❌ Unknown migration. Available migrations:")
-            print("  --migration add-no-show-count")
-            sys.exit(1)
 
 if __name__ == '__main__':
     main()

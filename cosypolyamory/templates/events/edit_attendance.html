@@ -47,7 +47,24 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <h4 class="card-title">{{ event.title }}</h4>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h4 class="card-title mb-0">{{ event.title }}</h4>
+                        <div class="d-flex align-items-center gap-2">
+                            <span id="header-pills">
+                            {% if event.exact_time < now %}
+                                <span class="badge bg-secondary fs-6">Past Event</span>
+                            {% else %}
+                                {% if event.max_attendees and rsvp_count >= event.max_attendees %}
+                                    <span class="badge bg-warning text-dark align-middle">Full</span>
+                                {% endif %}
+                                {% if waitlist_count > 0 %}
+                                    <span class="badge bg-secondary align-middle ms-2">{{ waitlist_count }} Waitlisted</span>
+                                {% endif %}
+                                <span class="badge bg-primary fs-6 ms-2">Upcoming</span>
+                            {% endif %}
+                            </span>
+                        </div>
+                    </div>
                     <p class="text-muted mb-2">
                         <i class="fas fa-calendar me-2"></i>
                         {{ event.exact_time.strftime('%A, %B %d, %Y at %I:%M %p') }}
@@ -56,12 +73,6 @@
                     <p class="mb-0">
                         <i class="fas fa-users me-2"></i>
                         Capacity: {{ rsvp_count }}/{{ event.max_attendees }} attendees
-                        {% if rsvp_count >= event.max_attendees %}
-                            <span class="badge bg-warning text-dark ms-2">Full</span>
-                        {% endif %}
-                        {% if waitlist_count > 0 %}
-                            <span class="badge bg-secondary ms-2">{{ waitlist_count }} waitlisted</span>
-                        {% endif %}
                     </p>
                     {% endif %}
                 </div>
@@ -110,6 +121,13 @@
                                             Manage
                                         </button>
                                         <ul class="dropdown-menu">
+                                            {% if event_has_passed %}
+                                            <li>
+                                                <button class="dropdown-item text-warning" onclick="markNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-user-times me-2"></i>Mark as No Show
+                                                </button>
+                                            </li>
+                                            {% else %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-hourglass-half me-2 text-warning"></i>Move to Waitlist
@@ -126,6 +144,7 @@
                                                     <i class="fas fa-trash me-2"></i>Remove RSVP
                                                 </button>
                                             </li>
+                                            {% endif %}
                                         </ul>
                                     </div>
                                     {% endif %}
@@ -174,6 +193,7 @@
                                         </small>
                                     </div>
                                     {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
+                                    {% if not event_has_passed %}
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
                                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -200,6 +220,7 @@
                                             </li>
                                         </ul>
                                     </div>
+                                    {% endif %}
                                     {% else %}
                                     <div class="text-muted small">
                                         <i class="fas fa-lock me-1"></i>Protected
@@ -250,6 +271,7 @@
                                         </small>
                                     </div>
                                     {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
+                                    {% if not event_has_passed %}
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
                                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -276,6 +298,7 @@
                                             </li>
                                         </ul>
                                     </div>
+                                    {% endif %}
                                     {% else %}
                                     <div class="text-muted small">
                                         <i class="fas fa-lock me-1"></i>Protected
@@ -347,6 +370,35 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark No Show Modal -->
+<div class="modal fade" id="confirmNoShowModal" tabindex="-1" aria-labelledby="confirmNoShowModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmNoShowModalLabel">Mark as No Show</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmNoShowText"></p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This will increment the user's no-show count and cannot be undone.
+                </div>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="skipNoShowNotification">
+                    <label class="form-check-label" for="skipNoShowNotification">
+                        Do not send the member a notification
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmNoShowBtn">Mark No Show</button>
             </div>
         </div>
     </div>
@@ -456,6 +508,68 @@ function executeRemoveRSVP(eventId, userId, userName) {
     });
 }
 
+// Mark user as no-show
+let pendingNoShowAction = null;
+
+function markNoShow(eventId, userId, userName) {
+    // Set up the modal text
+    document.getElementById('confirmNoShowText').innerHTML = 
+        `Are you sure you want to mark <strong>${userName}</strong> as a no-show for this event?<br><br>` +
+        `This will:<br>` +
+        `• Increment their no-show count<br>` +
+        `• Keep them in the attending list for record purposes<br>` +
+        `• This action cannot be undone`;
+    
+    // Set up the pending action
+    pendingNoShowAction = () => performNoShow(eventId, userId, userName);
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmNoShowModal'));
+    modal.show();
+}
+
+function performNoShow(eventId, userId, userName) {
+    const skipNotification = document.getElementById('skipNoShowNotification').checked;
+    
+    fetch(`/api/admin/events/${eventId}/mark-no-show`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `user_id=${userId}&skip_notification=${skipNotification}`
+    })
+    .then(response => {
+        // Check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Response is not JSON');
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message briefly before reload
+            showToast('Success', data.message || `${userName} marked as no-show`, 'success');
+            // Reload the page to show updated attendance
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error', `An error occurred while marking the no-show: ${error.message}`, 'error');
+    });
+}
+
 // Toast notification function
 function showToast(title, message, type) {
     const toastClass = type === 'success' ? 'text-bg-success' : 'text-bg-danger';
@@ -509,6 +623,14 @@ document.addEventListener('DOMContentLoaded', function() {
             pendingRemoveAction = null;
         }
         bootstrap.Modal.getInstance(document.getElementById('confirmRemoveModal')).hide();
+    });
+    
+    document.getElementById('confirmNoShowBtn').addEventListener('click', function() {
+        if (pendingNoShowAction) {
+            pendingNoShowAction();
+            pendingNoShowAction = null;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('confirmNoShowModal')).hide();
     });
 });
 </script>
