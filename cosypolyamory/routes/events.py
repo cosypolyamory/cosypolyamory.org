@@ -1392,6 +1392,20 @@ def edit_attendance(event_id):
         no_show_records = NoShow.select().where(NoShow.event == event)
         no_shows = {no_show.user.id: no_show for no_show in no_show_records}
 
+    # Get total no-show counts for all users (for upcoming events only)
+    user_no_show_counts = {}
+    if not event_has_passed:
+        # Collect all unique user IDs from RSVPs
+        all_user_ids = set()
+        for rsvp in rsvps_attending + rsvps_waitlist + rsvps_not_attending:
+            all_user_ids.add(rsvp.user.id)
+        
+        # Get no-show counts for each user
+        for user_id in all_user_ids:
+            count = NoShow.select().where(NoShow.user == user_id).count()
+            if count > 0:
+                user_no_show_counts[user_id] = count
+
     return render_template('events/edit_attendance.html',
                            event=event,
                            rsvps_attending=rsvps_attending,
@@ -1404,6 +1418,7 @@ def edit_attendance(event_id):
                            co_host_id=co_host_id,
                            event_has_passed=event_has_passed,
                            no_shows=no_shows,
+                           user_no_show_counts=user_no_show_counts,
                            now=current_time)
 
 

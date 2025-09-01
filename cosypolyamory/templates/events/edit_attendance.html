@@ -114,6 +114,11 @@
                                                     <i class="fas fa-user-times me-1"></i>No Show
                                                 </span>
                                             {% endif %}
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-danger text-light">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
                                         </div>
                                         <small class="text-muted">
                                             RSVP'd {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
@@ -200,6 +205,11 @@
                                                     <i class="fas fa-user-friends me-1"></i>Co-Host
                                                 </span>
                                             {% endif %}
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
                                         </div>
                                         <small class="text-muted">
                                             Waitlisted {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
@@ -276,6 +286,11 @@
                                             {% elif rsvp.user.id == co_host_id %}
                                                 <span class="badge bg-info">
                                                     <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
                                                 </span>
                                             {% endif %}
                                         </div>
