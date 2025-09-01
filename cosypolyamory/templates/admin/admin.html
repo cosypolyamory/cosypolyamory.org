@@ -452,8 +452,8 @@ function createUserCard(user) {
                                     </button></li>`);
                                 }
                                 if (user.role === 'rejected') {
-                                    options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'pending')">
-                                        <i class="fas fa-clock text-warning me-2"></i>Make new/pending
+                                    options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'new')">
+                                        <i class="fas fa-clock text-warning me-2"></i>Mark new (force user to reapply)
                                     </button></li>`);
                                 }
                                 

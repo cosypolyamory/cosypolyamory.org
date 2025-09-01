@@ -161,7 +161,7 @@ def api_change_user_role():
         if not user_id or not new_role:
             return jsonify({'success': False, 'error': 'Missing user_id or role'})
         
-        if new_role not in ['admin', 'organizer', 'approved', 'pending', 'rejected']:
+        if new_role not in ['admin', 'organizer', 'approved', 'new', 'rejected']:
             return jsonify({'success': False, 'error': 'Invalid role'})
         
         # Check if trying to make admin and current user is not admin
@@ -174,19 +174,35 @@ def api_change_user_role():
         except User.DoesNotExist:
             return jsonify({'success': False, 'error': 'User not found'})
         
+        # Special handling for users being marked as pending/new - clear their application data
+        old_role = user.role
+        
         # Update user role and corresponding boolean flags
         with database.atomic():
-            user.role = new_role
-            user.is_admin = (new_role == 'admin')
-            user.is_organizer = (new_role == 'organizer')
-            user.is_approved = (new_role in ['admin', 'organizer', 'approved'])
+            # If changing to pending, clear their application data and mark as "new"
+            if new_role == 'new':
+                # Delete any existing application
+                try:
+                    application = UserApplication.get(UserApplication.user == user)
+                    application.delete_instance()
+                except UserApplication.DoesNotExist:
+                    pass  # No application to delete
+                
+                # Set role to 'new' instead of 'pending' to indicate fresh start
+                user.role = 'new'
+            else:
+                user.role = new_role
+            
+            user.is_admin = (user.role == 'admin')
+            user.is_organizer = (user.role == 'organizer')
+            user.is_approved = (user.role in ['admin', 'organizer', 'approved'])
             user.save()
         
         return jsonify({
             'success': True, 
-            'message': f'User role changed to {new_role}',
+            'message': f'User role changed to {user.role}',
             'user_id': user_id,
-            'new_role': new_role
+            'new_role': user.role
         })
         
     except Exception as e:
