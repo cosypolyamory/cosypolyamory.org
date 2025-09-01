@@ -666,6 +666,15 @@ function viewUser(userId) {
                                         minute: '2-digit' 
                                     }) : 'Never'}</td>
                                 </tr>
+                                <tr>
+                                    <td><strong>No-Show Count:</strong></td>
+                                    <td>
+                                        <span class="badge ${userData.no_show_count > 0 ? 'bg-warning' : 'bg-success'}">
+                                            <i class="fas ${userData.no_show_count > 0 ? 'fa-exclamation-triangle' : 'fa-check'} me-1"></i>
+                                            ${userData.no_show_count || 0}
+                                        </span>
+                                    </td>
+                                </tr>
                             </table>
                 `;
                 
@@ -794,6 +803,15 @@ function viewUser(userId) {
                                         hour: '2-digit', 
                                         minute: '2-digit' 
                                     }) : 'Never'}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>No-Show Count:</strong></td>
+                                    <td>
+                                        <span class="badge ${userData.no_show_count > 0 ? 'bg-warning' : 'bg-success'}">
+                                            <i class="fas ${userData.no_show_count > 0 ? 'fa-exclamation-triangle' : 'fa-check'} me-1"></i>
+                                            ${userData.no_show_count || 0}
+                                        </span>
+                                    </td>
                                 </tr>
                             </table>
                             

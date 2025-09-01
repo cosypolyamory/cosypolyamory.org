@@ -134,6 +134,10 @@ def api_user_details(user_id):
     """Return detailed user information"""
     try:
         user = User.get_by_id(user_id)
+        
+        # Get total no-show count for this user
+        no_show_count = NoShow.select().where(NoShow.user == user).count()
+        
         return jsonify({
             'id': user.id,
             'name': user.name,
@@ -144,7 +148,8 @@ def api_user_details(user_id):
             'pronoun_singular': user.pronoun_singular,
             'pronoun_plural': user.pronoun_plural,
             'created_at': user.created_at.isoformat(),
-            'last_login': user.last_login.isoformat() if user.last_login else None
+            'last_login': user.last_login.isoformat() if user.last_login else None,
+            'no_show_count': no_show_count
         })
     except User.DoesNotExist:
         return jsonify({'error': 'User not found'}), 404
