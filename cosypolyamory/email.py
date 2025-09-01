@@ -31,6 +31,10 @@ def send_email(to_email: str, subject: str, body: str, from_email: Optional[str]
     Raises:
         EmailError: If there's an error with email configuration or sending
     """
+
+    # Don't send testing emails 
+    if to_email.lower().endswith("example.net") or to_email.lower().endswith("example.com"):
+        return True
     
     # Get Mailtrap configuration from environment variables
     api_token = os.getenv('MAILTRAP_API_TOKEN')

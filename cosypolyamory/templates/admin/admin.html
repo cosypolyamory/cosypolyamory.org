@@ -435,6 +435,8 @@ function createUserCard(user) {
                             ${(() => {
                                 let options = [];
                                 const currentUserRole = window.getCurrentUserRole();
+                                console.log(currentUserRole);
+                                console.log(user.role);
                                 
                                 // Organizer option (available to all admins/organizers)
                                 if (user.role === 'approved') {
@@ -451,12 +453,12 @@ function createUserCard(user) {
                                 }
                                 if (user.role === 'rejected') {
                                     options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'pending')">
-                                        <i class="fas fa-clock text-warning me-2"></i>Mark pending
+                                        <i class="fas fa-clock text-warning me-2"></i>Make new/pending
                                     </button></li>`);
                                 }
                                 
-                                // Delete option (not for admins)
-                                if (user.role !== 'admin') {
+                                // Delete option (only for admins)
+                                if (currentUserRole === "Admin" || (currentUserRole === "Organizer" && user.role === "new")) {
                                     if (options.length > 0) {
                                         options.push(`<li><hr class="dropdown-divider"></li>`);
                                     }
