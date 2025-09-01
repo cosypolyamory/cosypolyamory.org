@@ -35,8 +35,6 @@
                   <span class="badge bg-orange ms-1 flex-shrink-0">Admin</span>
                 {% elif current_user.role == 'organizer' %}
                   <span class="badge bg-purple ms-1 flex-shrink-0">Org</span>
-                {% elif current_user.role == 'approved' %}
-                  <span class="badge bg-success ms-1 flex-shrink-0">Member</span>
                 {% elif current_user.role == 'pending' %}
                   <span class="badge bg-warning ms-1 flex-shrink-0">Pending</span>
                 {% endif %}
