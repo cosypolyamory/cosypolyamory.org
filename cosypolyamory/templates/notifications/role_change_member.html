@@ -1,0 +1,21 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Role Update: Community Member{% endblock %}
+
+{% block content %}
+<h2>Hello {{ user.name }},</h2>
+
+<p>We wanted to let you know that your role in the Cosy Polyamory community has been updated to <strong>Community Member</strong>.</p>
+
+<p>This means you continue to have full access to all community events and features as an approved member. You can:</p>
+<ul>
+    <li>RSVP to community events</li>
+    <li>Participate in all community activities</li>
+    <li>Connect with other members</li>
+    <li>Access member-only content and discussions</li>
+</ul>
+
+<p>Thank you for being part of our community. We appreciate your continued participation and look forward to seeing you at upcoming events!</p>
+
+<p>If you have any questions about this change or need assistance with anything, please feel free to contact the admin team.</p>
+{% endblock %}
