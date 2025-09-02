@@ -88,7 +88,7 @@
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="hourDropdown" id="hourDropdownMenu">
                                     {% set selected_hour = event.exact_time.hour if event else default_hour|int %}
-                                    {% for hour in range(24) %}
+                                    {% for hour in range(23, -1, -1) %}
                                     <li><a class="dropdown-item hour-option{% if hour == selected_hour %} active selected-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                     {% endfor %}
                                 </ul>
@@ -114,7 +114,7 @@
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="endHourDropdown" id="endHourDropdownMenu">
                                     {% set selected_end_hour = event.end_time.hour if (event and event.end_time) else (default_hour|int + 2) % 24 %}
-                                    {% for hour in range(24) %}
+                                    {% for hour in range(23, -1, -1) %}
                                     <li><a class="dropdown-item end-hour-option{% if hour == selected_end_hour %} active selected-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                     {% endfor %}
                                 </ul>
