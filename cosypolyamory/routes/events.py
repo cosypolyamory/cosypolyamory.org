@@ -423,6 +423,13 @@ def create_event_post():
         except Exception as e:
             current_app.logger.error(f"Failed to send host assignment notifications for event {event.id}: {e}")
 
+        # Send Telegram announcement for new event
+        try:
+            from cosypolyamory.telegram_integration import notify_event_created
+            notify_event_created(event)
+        except Exception as e:
+            current_app.logger.error(f"Failed to send Telegram announcement for new event {event.id}: {e}")
+
         flash(f'Event "{title}" has been created successfully!', 'success')
         return redirect(url_for('events.event_detail', event_id=event.id))
 
@@ -718,22 +725,19 @@ def edit_event_post(event_id):
 
             # Check for significant changes that warrant notifications
             if old_establishment_name != establishment_name:
-                changes.append(f"Location changed from '{old_establishment_name}' to '{establishment_name}'")
+                changes.append(f"Location updated to '{establishment_name}'")
 
             if old_exact_time != exact_time:
-                old_time_str = old_exact_time.strftime('%I:%M %p')
                 new_time_str = exact_time.strftime('%I:%M %p')
-                changes.append(f"Start time changed from {old_time_str} to {new_time_str}")
+                changes.append(f"Start time updated to {new_time_str}")
 
             if old_end_time != end_time:
-                old_end_str = old_end_time.strftime('%I:%M %p') if old_end_time else "No end time"
                 new_end_str = end_time.strftime('%I:%M %p') if end_time else "No end time"
-                changes.append(f"End time changed from {old_end_str} to {new_end_str}")
+                changes.append(f"End time updated to {new_end_str}")
 
             if old_date.date() != date.date():
-                old_date_str = old_date.strftime('%A, %B %d, %Y')
                 new_date_str = date.strftime('%A, %B %d, %Y')
-                changes.append(f"Date changed from {old_date_str} to {new_date_str}")
+                changes.append(f"Date updated to {new_date_str}")
 
             # Automatically create/update RSVPs for organizer and co-host
             # Create or update organizer RSVP
@@ -813,6 +817,16 @@ def edit_event_post(event_id):
 
         except Exception as e:
             current_app.logger.error(f"Failed to send host change notifications for event {event.id}: {e}")
+
+        # Send Telegram announcement for event updates if there were significant changes
+        if changes:
+            try:
+                from cosypolyamory.telegram_integration import notify_event_updated
+                # Convert changes list to formatted string
+                change_details = "\n".join([f"• {change}" for change in changes])
+                notify_event_updated(event, change_details)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send Telegram update announcement for event {event.id}: {e}")
 
         success_message = f'Event "{title}" has been updated successfully!'
         if 'promotion_message' in locals():
@@ -1470,6 +1484,22 @@ def delete_event(event_id):
         attendee_count = len(rsvped_users)
         if attendee_count > 0:
             current_app.logger.info(f"Sent event cancellation notifications to {attendee_count} attendees")
+
+        # Send Telegram announcement for event cancellation
+        try:
+            from cosypolyamory.telegram_integration import notify_event_cancelled
+            # Create a temporary event object for the notification
+            class TempEvent:
+                def __init__(self, title, date, exact_time, establishment_name):
+                    self.title = title
+                    self.date = date
+                    self.exact_time = exact_time
+                    self.establishment_name = establishment_name
+            
+            temp_event = TempEvent(event_title, event_date, event_time, event_location)
+            notify_event_cancelled(temp_event)
+        except Exception as e:
+            current_app.logger.error(f"Failed to send Telegram cancellation announcement for event '{event_title}': {e}")
 
         flash(f'Event "{event_title}" has been successfully deleted.', 'success')
         return redirect(url_for('events.events_list'))

@@ -7,3 +7,4 @@ authlib
 requests
 python-dotenv
 faker
+python-telegram-bot
