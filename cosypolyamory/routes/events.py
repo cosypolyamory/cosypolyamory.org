@@ -728,11 +728,11 @@ def edit_event_post(event_id):
                 changes.append(f"Location updated to '{establishment_name}'")
 
             if old_exact_time != exact_time:
-                new_time_str = exact_time.strftime('%I:%M %p')
+                new_time_str = exact_time.strftime('%H:%M')
                 changes.append(f"Start time updated to {new_time_str}")
 
             if old_end_time != end_time:
-                new_end_str = end_time.strftime('%I:%M %p') if end_time else "No end time"
+                new_end_str = end_time.strftime('%H:%M') if end_time else "No end time"
                 changes.append(f"End time updated to {new_end_str}")
 
             if old_date.date() != date.date():
@@ -1474,7 +1474,7 @@ def delete_event(event_id):
                                         name=user.name,
                                         event_title=event_title,
                                         event_date=event_date.strftime('%A, %B %d, %Y'),
-                                        event_time=event_time.strftime('%I:%M %p') if event_time else "TBD",
+                                        event_time=event_time.strftime('%H:%M') if event_time else "TBD",
                                         event_location=event_location,
                                         cancellation_reason="This event has been cancelled by the organizers.",
                                         base_url=current_app.config.get('BASE_URL', 'https://cosypolyamory.org'))

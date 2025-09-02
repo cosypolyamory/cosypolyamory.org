@@ -54,7 +54,7 @@ class TelegramNotificationService:
             success = await bot.send_event_notification(
                 event_title=event.title,
                 event_date=event.date.strftime('%A, %B %d, %Y'),
-                event_time=event.exact_time.strftime('%I:%M %p') if event.exact_time else "TBD",
+                event_time=event.exact_time.strftime('%H:%M') if event.exact_time else "TBD",
                 event_location=event.establishment_name or event.barrio,
                 event_url=event_url
             )
@@ -159,7 +159,7 @@ class TelegramNotificationService:
             details = (
                 f"Don't forget! This event is happening in {time_text}.\n\n"
                 f"📅 {event.date.strftime('%A, %B %d, %Y')}\n"
-                f"🕐 {event.exact_time.strftime('%I:%M %p') if event.exact_time else 'TBD'}\n"
+                f"🕐 {event.exact_time.strftime('%H:%M') if event.exact_time else 'TBD'}\n"
                 f"📍 {event.establishment_name or event.barrio}\n\n"
                 "See you there! 💕"
             )
