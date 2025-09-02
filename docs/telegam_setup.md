@@ -31,7 +31,7 @@ This module provides a Telegram bot for the Cosy Polyamory community that can se
 
 or make a call to:
 
-https://api.telegram.org/bot8324344769:AAGf7fNZPRlSf9aFRZf-edt4uuyGVpJZXrU/getUpdates
+https://api.telegram.org/bot<token>/getUpdates
 
 And then find chat id in the JSON data.
 
