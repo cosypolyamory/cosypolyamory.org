@@ -10,6 +10,8 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 
 from cosypolyamory.models.user import User
+from cosypolyamory.models.rsvp import RSVP
+from cosypolyamory.models.event import Event
 from cosypolyamory.database import database
 
 bp = Blueprint('auth', __name__)
@@ -474,11 +476,27 @@ def profile():
     if form_data:
         session.pop('profile_form_data', None)
     
+    # Get user's RSVPs for approved users
+    user_rsvps = []
+    if current_user.role not in ("new", "pending"):
+        try:
+            user_rsvps = (RSVP
+                         .select(RSVP, Event)
+                         .join(Event)
+                         .where(RSVP.user == current_user)
+                         .order_by(Event.exact_time.desc())
+                         .limit(10))  # Show last 10 RSVPs
+        except Exception as e:
+            print(f"Error fetching user RSVPs: {e}")
+            user_rsvps = []
+    
     return render_template('user/profile.html', 
                          user=current_user, 
                          needs_info=needs_info,
                          form_data=form_data,
-                         show_edit_modal=show_edit_modal)
+                         show_edit_modal=show_edit_modal,
+                         user_rsvps=user_rsvps,
+                         now=datetime.now())
 
 
 @bp.route('/profile/update', methods=['POST'])
