@@ -452,17 +452,25 @@ def profile():
     """User profile page"""
     # Show welcome message for new users
     user_role = getattr(current_user, 'role', None)
-    if user_role not in ['approved', 'pending', 'organizer', 'admin']:
-        flash('Welcome! Ready to join our community? Complete the application below to get started.', 'info')
     
-    # Check if user needs to provide email/name (for Reddit/MusicBrainz users)
+    # Check if user needs to provide required profile information
     needs_info = False
-    if current_user.provider in ['reddit', 'musicbrainz']:
-        if (current_user.email.endswith('@reddit.local') or 
-            current_user.email.endswith('@musicbrainz.local') or
-            current_user.name.startswith('mb_user_') or
-            current_user.name.startswith('musicbrainz_user_')):
-            needs_info = True
+    
+    # Check for missing or placeholder email
+    if (not current_user.email or 
+        current_user.email.endswith('@reddit.local') or 
+        current_user.email.endswith('@musicbrainz.local')):
+        needs_info = True
+    
+    # Check for missing or placeholder name
+    if (not current_user.name or 
+        current_user.name.startswith('mb_user_') or
+        current_user.name.startswith('musicbrainz_user_')):
+        needs_info = True
+    
+    # Check for missing pronouns
+    if not current_user.pronoun_singular or not current_user.pronoun_plural:
+        needs_info = True
     
     # Get stored form data from session (for retaining values after errors)
     form_data = session.get('profile_form_data', {})
@@ -510,6 +518,14 @@ def update_profile():
         flash(error_msg, 'error')
         return redirect(url_for('auth.profile'))
     
+    # Validate pronouns are provided
+    if not pronoun_singular or not pronoun_plural:
+        error_msg = 'Both singular and plural pronouns are required.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
     # Basic email validation
     if '@' not in email or '.' not in email:
         error_msg = 'Please enter a valid email address.'
@@ -535,8 +551,8 @@ def update_profile():
             # Update user information
             current_user.email = email
             current_user.name = name
-            current_user.pronoun_singular = pronoun_singular if pronoun_singular else None
-            current_user.pronoun_plural = pronoun_plural if pronoun_plural else None
+            current_user.pronoun_singular = pronoun_singular
+            current_user.pronoun_plural = pronoun_plural
             current_user.save()
             
             # Refresh the current user session to ensure updated data is reflected

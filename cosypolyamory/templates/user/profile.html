@@ -20,7 +20,7 @@
             {% endif %}
         {% endwith %}
 
-        <!-- Profile Update Form for Reddit/MusicBrainz users -->
+        <!-- Profile Update Form for users with incomplete data -->
         {% if needs_info %}
             <div class="card mt-4 border-warning">
                 <div class="card-header bg-warning text-dark">
@@ -30,7 +30,14 @@
                 </div>
                 <div class="card-body">
                     <p class="mb-3">
-                        <strong>{{ user.provider|title }}</strong> doesn't provide email addresses, so we need you to enter your information:
+                        Please complete the required information below to finish setting up your profile.
+                    </p>
+                    <p class="mb-3">
+                        Please enter the email
+                        address where you would like to receive notifcations about events that you've joined. Also, please give us
+                        the name that you would like to use on the site; ideally the name you give us here is the name you'd like
+                        other members to call you during our events. Finally, please enter your pronouns so that other community
+                        members can address you appropriately.
                     </p>
                     <form method="POST" action="{{ url_for('auth.update_profile') }}">
                         <div class="row">
@@ -61,33 +68,34 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="pronoun_singular" class="form-label">
-                                        <i class="fas fa-user-tag me-1"></i>Pronouns (Singular)
+                                        <i class="fas fa-user-tag me-1"></i>Pronouns (Singular) <span class="text-danger">*</span>
                                     </label>
                                     <input type="text" class="form-control" id="pronoun_singular" name="pronoun_singular" 
                                            value="{% if form_data and form_data.pronoun_singular %}{{ form_data.pronoun_singular }}{% else %}{{ user.pronoun_singular or '' }}{% endif %}" 
-                                           placeholder="they, she, he">
+                                           required placeholder="they, she, he">
                                     <div class="form-text">e.g., they, she, he</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="pronoun_plural" class="form-label">
-                                        <i class="fas fa-user-tag me-1"></i>Pronouns (Plural)
+                                        <i class="fas fa-user-tag me-1"></i>Pronouns (Plural) <span class="text-danger">*</span>
                                     </label>
                                     <input type="text" class="form-control" id="pronoun_plural" name="pronoun_plural" 
                                            value="{% if form_data and form_data.pronoun_plural %}{{ form_data.pronoun_plural }}{% else %}{{ user.pronoun_plural or '' }}{% endif %}" 
-                                           placeholder="them, her, him">
+                                           required placeholder="them, her, him">
                                     <div class="form-text">e.g., them, her, him</div>
                                 </div>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-save me-2"></i>Update Profile
+                            <i class="fas fa-save me-2"></i>Complete Profile
                         </button>
                     </form>
                 </div>
             </div>
-        {% endif %}
+        {% else %}
+            <!-- Full profile content only shown when profile is complete -->
         
         <!-- Join Community Call-to-Action for new users -->
         {% if not user.role or user.role not in ['approved', 'pending', 'organizer', 'admin'] %}
@@ -99,33 +107,20 @@
                     </h4>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <h5>Ready to become a community member?</h5>
-                            <p class="mb-3">
-                                To access full event details, RSVP to events, and participate in our community, 
-                                you'll need to complete a brief application. This helps us maintain a safe and 
-                                welcoming space for everyone.
-                            </p>
-                            <ul class="list-unstyled mb-0">
-                                <li><i class="fas fa-check text-success me-2"></i>Access full event details and locations</li>
-                                <li><i class="fas fa-check text-success me-2"></i>RSVP to community events</li>
-                                <li><i class="fas fa-check text-success me-2"></i>Connect with other community members</li>
-                                <li><i class="fas fa-check text-success me-2"></i>Participate in community discussions</li>
-                            </ul>
+                    <h5>Ready to become a community member?</h5>
+                    <p class="mb-3">
+                        To access full event details, RSVP to events, and participate in our community, 
+                        you'll need to complete a brief application. This helps us maintain a safe and 
+                        welcoming space for everyone.
+                    </p>
+                    <div class="text-center">
+                        <div class="d-grid gap-2 d-md-block">
+                            <a href="{{ url_for('user.apply') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Apply Now
+                            </a>
                         </div>
-                        <div class="col-md-4 d-flex align-items-center justify-content-center">
-                            <div class="text-center">
-                                <i class="fas fa-heart fa-4x text-primary mb-3"></i>
-                                <div class="d-grid">
-                                    <a href="{{ url_for('user.apply') }}" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-user-plus me-2"></i>
-                                        Apply Now
-                                    </a>
-                                </div>
-                                <small class="text-muted mt-2 d-block">Takes about 5 minutes</small>
-                            </div>
-                        </div>
+                        <small class="text-muted mt-2 d-block">Takes about 5 minutes</small>
                     </div>
                 </div>
             </div>
@@ -436,6 +431,7 @@
         </div>
     </div>
 </div>
+        {% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -478,10 +474,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData(form);
             const email = formData.get('email').trim();
             const name = formData.get('name').trim();
+            const pronoun_singular = formData.get('pronoun_singular').trim();
+            const pronoun_plural = formData.get('pronoun_plural').trim();
             
             // Basic validation
             if (!email || !name) {
                 showError('Both email and name are required.');
+                return;
+            }
+            
+            if (!pronoun_singular || !pronoun_plural) {
+                showError('Both singular and plural pronouns are required.');
                 return;
             }
             
