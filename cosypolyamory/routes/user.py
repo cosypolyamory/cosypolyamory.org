@@ -22,7 +22,7 @@ def apply():
     # Check if user already has an application
     try:
         application = UserApplication.get(UserApplication.user == current_user)
-        return redirect(url_for('user.application_status'))
+        return redirect(url_for('auth.profile'))
     except UserApplication.DoesNotExist:
         pass
     
@@ -62,7 +62,7 @@ def submit_application():
     try:
         application = UserApplication.get(UserApplication.user == current_user)
         flash('You have already submitted an application.', 'info')
-        return redirect(url_for('user.application_status'))
+        return redirect(url_for('auth.profile'))
     except UserApplication.DoesNotExist:
         pass
     
@@ -130,7 +130,7 @@ def submit_application():
             current_user.save()
             
         flash('Your application has been submitted! You will be notified once it has been reviewed.', 'success')
-        return redirect(url_for('user.application_status'))
+        return redirect(url_for('auth.profile'))
     except Exception as e:
         flash(f'Error submitting application: {str(e)}', 'error')
         # Preserve form data on error
@@ -144,14 +144,3 @@ def submit_application():
             'question_7': request.form.get('question_7', ''),
         }
         return render_template('user/apply.html', character_limits=character_limits, form_data=form_data)
-
-
-@bp.route('/application-status')
-@login_required
-def application_status():
-    """Show user's application status"""
-    try:
-        application = UserApplication.get(UserApplication.user == current_user)
-        return render_template('user/application_status.html', application=application)
-    except UserApplication.DoesNotExist:
-        return redirect(url_for('user.apply'))

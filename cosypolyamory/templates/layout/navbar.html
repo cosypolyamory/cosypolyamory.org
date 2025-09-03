@@ -44,15 +44,8 @@
                   <i class="fas fa-user me-2"></i>My Profile
                 </a></li>
                 
-                <!-- Application status for pending users -->
-                {% if current_user.role == 'pending' %}
-                  <li><a class="dropdown-item" href="{{ url_for('user.application_status') }}">
-                    <i class="fas fa-clock me-2"></i>Application Status
-                  </a></li>
-                {% endif %}
                 
                 <!-- Admin/Organizer tools -->
-
                 {% if current_user.role in ['admin', 'organizer'] %}
                   <li><hr class="dropdown-divider"></li>
                   <li><h6 class="dropdown-header">Organizer Tools</h6></li>

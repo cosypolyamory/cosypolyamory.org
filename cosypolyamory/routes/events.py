@@ -49,7 +49,7 @@ def approved_user_required(f):
         if current_user.role not in ['approved', 'admin', 'organizer']:
             message = 'Community approval required to access this feature.'
             flash(message, 'info')
-            return redirect(url_for('user.application_status'))
+            return redirect(url_for('auth.profile'))
         return f(*args, **kwargs)
 
     return decorated_function

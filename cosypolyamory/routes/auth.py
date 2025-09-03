@@ -423,13 +423,7 @@ def oauth_callback(provider):
         if next_page:
             return redirect(next_page)
         
-        # For new users without applications, redirect to profile to see "Join Community"
-        user_role = getattr(user, 'role', None)
-        if user_role not in ['approved', 'pending', 'organizer', 'admin']:
-            return redirect(url_for('auth.profile'))
-        
-        # For existing users, redirect to home
-        return redirect(url_for('pages.index'))
+        return redirect(url_for('auth.profile'))
         
     except Exception as e:
         print(f"OAuth error for {provider}: {str(e)}")

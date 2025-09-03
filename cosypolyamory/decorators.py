@@ -62,6 +62,6 @@ def approved_user_required(f):
             if request.headers.get('Accept') == 'application/json':
                 return jsonify({'success': False, 'message': message})
             flash(message, 'info')
-            return redirect(url_for('user.application_status'))
+            return redirect(url_for('auth.profile'))
         return f(*args, **kwargs)
     return decorated_function

@@ -98,7 +98,7 @@
             <!-- Full profile content only shown when profile is complete -->
         
         <!-- Join Community Call-to-Action for new users -->
-        {% if not user.role or user.role not in ['approved', 'pending', 'organizer', 'admin'] %}
+        {% if not user.role or user.role == "new" %}
             <div class="card mt-4 border-primary">
                 <div class="card-header bg-primary text-white">
                     <h4 class="card-title mb-0">
@@ -155,7 +155,7 @@
                             </h3>
                             <!-- Role Badge -->
                             {% if user.role == 'admin' %}
-                                <span class="badge bg-danger fs-6">
+                                <span class="badge bg-orange fs-6">
                                     <i class="fas fa-shield-alt me-1"></i>Administrator
                                 </span>
                             {% elif user.role == 'organizer' %}
@@ -185,10 +185,6 @@
                                     <td><strong>Application:</strong></td>
                                     <td>
                                         Submitted {{ application.submitted_at.strftime('%B %d, %Y') }}
-                                        <br>
-                                        <a href="{{ url_for('user.application_status') }}" class="btn btn-sm btn-outline-primary mt-1">
-                                            <i class="fas fa-eye me-1"></i>View Status
-                                        </a>
                                     </td>
                                 </tr>
                                 {% endif %}
@@ -258,10 +254,9 @@
                     </div>
                     <p class="card-text">As an approved member, you have access to:</p>
                     <ul>
-                        <li><i class="fas fa-calendar-check me-2 text-success"></i>Full event details and RSVP functionality</li>
+                        <li><i class="fas fa-calendar-check me-2 text-success"></i>Register your attendance to events</li>
                         <li><i class="fas fa-map-marker-alt me-2 text-success"></i>Exact event locations and times</li>
-                        <li><i class="fas fa-users me-2 text-success"></i>Attendee lists for events you're attending</li>
-                        <li><i class="fas fa-comments me-2 text-success"></i>Community discussions and forums</li>
+                        <li><i class="fas fa-comments me-2 text-success"></i> Access to our community Telegram chat.</li>
                     </ul>
                     <div class="mt-3">
                         <a href="{{ url_for('events.events_list') }}" class="btn btn-primary">
@@ -282,9 +277,6 @@
                     </ul>
                     <div class="mt-3">
                         <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                            <a href="{{ url_for('user.application_status') }}" class="btn btn-warning">
-                                <i class="fas fa-clock me-2"></i>Check Application Status
-                            </a>
                             <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
                                 <i class="fas fa-calendar-alt me-2"></i>Browse Events
                             </a>
@@ -299,12 +291,13 @@
                     <p class="card-text">As {{ 'an administrator' if user.role == 'admin' else 'a community organizer' }}, you can:</p>
                     <ul>
                         <li><i class="fas fa-calendar-plus me-2 text-primary"></i>Create and manage community events</li>
-                        <li><i class="fas fa-users me-2 text-primary"></i>View all attendee information</li>
-                        {% if user.role == 'admin' %}
-                            <li><i class="fas fa-gavel me-2 text-danger"></i>Review and approve community applications</li>
-                            <li><i class="fas fa-cog me-2 text-danger"></i>Access admin panel and site settings</li>
-                        {% endif %}
+                        <li><i class="fas fa-users me-2 text-primary"></i>View/edit all attendee information</li>
+                        <li><i class="fas fa-gavel me-2 text-danger"></i>Review and approve community applications</li>
+                        <li><i class="fas fa-cog me-2 text-danger"></i>Access admin panel and site settings</li>
                         <li><i class="fas fa-check-circle me-2 text-success"></i>All approved member privileges</li>
+                        {% if user.role == 'admin' %}
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Delete other users</li>
+                        {% endif %}
                     </ul>
                     <div class="mt-3">
                         <div class="d-grid gap-2 d-md-flex justify-content-md-start">
