@@ -28,51 +28,6 @@
     </h1>
     <p class="text-muted mb-4">Demographics and statistics for all approved community members</p>
 
-    <!-- Community Statistics Overview -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title mb-0">
-                        <i class="fas fa-users me-2"></i>Community Overview
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="text-center p-3 border rounded bg-light">
-                                <div class="display-6 text-success">{{ community_stats.total_community_members or 0 }}</div>
-                                <div class="text-muted">Total Members</div>
-                                <small class="text-muted">Approved + Organizers + Admins</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="text-center p-3 border rounded bg-light">
-                                <div class="display-6 text-primary">{{ community_stats.total_approved or 0 }}</div>
-                                <div class="text-muted">Approved Members</div>
-                                <small class="text-muted">Regular community members</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="text-center p-3 border rounded bg-light">
-                                <div class="display-6 text-info">{{ community_stats.total_organizers or 0 }}</div>
-                                <div class="text-muted">Organizers</div>
-                                <small class="text-muted">Community organizers</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="text-center p-3 border rounded bg-light">
-                                <div class="display-6 text-warning">{{ community_stats.total_pending or 0 }}</div>
-                                <div class="text-muted">Pending Applications</div>
-                                <small class="text-muted">Awaiting approval</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Pronoun Statistics -->
     {% if community_stats.total_users_with_pronouns > 0 and (pronoun_stats.singular or pronoun_stats.plural) %}
     <div class="row mb-4">
@@ -259,6 +214,51 @@
                         <small class="text-muted">Great community attendance!</small>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Community Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Community Overview
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="text-center p-3 border rounded bg-light">
+                                <div class="display-6 text-success">{{ community_stats.total_community_members or 0 }}</div>
+                                <div class="text-muted">Total Members</div>
+                                <small class="text-muted">Approved + Organizers + Admins</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="text-center p-3 border rounded bg-light">
+                                <div class="display-6 text-primary">{{ community_stats.total_approved or 0 }}</div>
+                                <div class="text-muted">Approved Members</div>
+                                <small class="text-muted">Regular community members</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="text-center p-3 border rounded bg-light">
+                                <div class="display-6 text-info">{{ community_stats.total_organizers or 0 }}</div>
+                                <div class="text-muted">Organizers</div>
+                                <small class="text-muted">Community organizers</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="text-center p-3 border rounded bg-light">
+                                <div class="display-6 text-warning">{{ community_stats.total_pending or 0 }}</div>
+                                <div class="text-muted">Pending Applications</div>
+                                <small class="text-muted">Awaiting approval</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
