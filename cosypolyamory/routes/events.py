@@ -1419,6 +1419,43 @@ def edit_attendance(event_id):
             count = NoShow.select().where(NoShow.user == user_id).count()
             if count > 0:
                 user_no_show_counts[user_id] = count
+                
+    # Calculate pronoun statistics for attending users
+    pronoun_stats = {'singular': {}, 'plural': {}}
+    try:
+        from cosypolyamory.models.user import User
+        
+        # Get users who are attending and have pronouns
+        attending_user_ids = [rsvp.user.id for rsvp in rsvps_attending]
+        attending_users = (User
+                          .select()
+                          .where(
+                              (User.id.in_(attending_user_ids)) &
+                              (User.pronoun_singular.is_null(False)) &
+                              (User.pronoun_plural.is_null(False))
+                          ))
+        
+        # Count pronouns
+        singular_counts = {}
+        plural_counts = {}
+        
+        for user in attending_users:
+            if user.pronoun_singular:
+                singular = user.pronoun_singular.lower().strip()
+                singular_counts[singular] = singular_counts.get(singular, 0) + 1
+                
+            if user.pronoun_plural:
+                plural = user.pronoun_plural.lower().strip()
+                plural_counts[plural] = plural_counts.get(plural, 0) + 1
+        
+        pronoun_stats = {
+            'singular': singular_counts,
+            'plural': plural_counts
+        }
+        
+    except Exception as e:
+        print(f"Error calculating pronoun statistics: {e}")
+        pronoun_stats = {'singular': {}, 'plural': {}}
 
     return render_template('events/edit_attendance.html',
                            event=event,
@@ -1433,6 +1470,7 @@ def edit_attendance(event_id):
                            event_has_passed=event_has_passed,
                            no_shows=no_shows,
                            user_no_show_counts=user_no_show_counts,
+                           pronoun_stats=pronoun_stats,
                            now=current_time)
 
 
