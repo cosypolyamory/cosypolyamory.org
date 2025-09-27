@@ -235,3 +235,63 @@ def delete_event_note(note_id):
         flash(f'Error deleting event note: {str(e)}', 'error')
         
     return redirect(url_for('admin.event_notes'))
+
+@bp.route('/community-insights')
+@organizer_required
+def community_insights():
+    """Community statistics and insights for organizers/admins"""
+    try:
+        from cosypolyamory.models.user import User
+        
+        # Get all approved users with pronouns
+        approved_users = (User
+                         .select()
+                         .where(
+                             (User.role.in_(['approved', 'admin', 'organizer'])) &
+                             (User.pronoun_singular.is_null(False)) &
+                             (User.pronoun_plural.is_null(False))
+                         ))
+        
+        # Calculate pronoun statistics for all approved users
+        pronoun_stats = {'singular': {}, 'plural': {}}
+        singular_counts = {}
+        plural_counts = {}
+        
+        for user in approved_users:
+            if user.pronoun_singular:
+                singular = user.pronoun_singular.lower().strip()
+                singular_counts[singular] = singular_counts.get(singular, 0) + 1
+                
+            if user.pronoun_plural:
+                plural = user.pronoun_plural.lower().strip()
+                plural_counts[plural] = plural_counts.get(plural, 0) + 1
+        
+        pronoun_stats = {
+            'singular': singular_counts,
+            'plural': plural_counts
+        }
+        
+        # Get total user counts by role
+        total_approved = User.select().where(User.role == 'approved').count()
+        total_organizers = User.select().where(User.role == 'organizer').count()
+        total_admins = User.select().where(User.role == 'admin').count()
+        total_pending = User.select().where(User.role == 'pending').count()
+        total_users_with_pronouns = approved_users.count()
+        
+        community_stats = {
+            'total_approved': total_approved,
+            'total_organizers': total_organizers, 
+            'total_admins': total_admins,
+            'total_pending': total_pending,
+            'total_users_with_pronouns': total_users_with_pronouns,
+            'total_community_members': total_approved + total_organizers + total_admins
+        }
+        
+    except Exception as e:
+        print(f"Error calculating community statistics: {e}")
+        pronoun_stats = {'singular': {}, 'plural': {}}
+        community_stats = {}
+    
+    return render_template('admin/community_insights.html',
+                           pronoun_stats=pronoun_stats,
+                           community_stats=community_stats)
