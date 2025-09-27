@@ -287,11 +287,120 @@ def community_insights():
             'total_community_members': total_approved + total_organizers + total_admins
         }
         
+        # Calculate attendance and hosting statistics
+        from cosypolyamory.models.rsvp import RSVP
+        from cosypolyamory.models.no_show import NoShow
+        from peewee import fn
+        
+        # Top Attendees: Users with most "yes" RSVPs to past events (excluding events they hosted/co-hosted)
+        top_attendees_query = (User
+            .select(User, fn.COUNT(RSVP.id).alias('attendance_count'))
+            .join(RSVP, on=(User.id == RSVP.user))
+            .join(Event, on=(RSVP.event == Event.id))
+            .where(
+                (User.role.in_(['approved', 'admin', 'organizer'])) &
+                (RSVP.status == 'yes') &
+                (Event.exact_time < datetime.now()) &  # Only count past events
+                (Event.organizer != User.id) &  # Exclude events they organized
+                ((Event.co_host.is_null(True)) | (Event.co_host != User.id))  # Exclude events they co-hosted
+            )
+            .group_by(User.id)
+            .order_by(fn.COUNT(RSVP.id).desc())
+            .limit(10))
+        
+        top_attendees = []
+        try:
+            for user_data in top_attendees_query:
+                top_attendees.append({
+                    'name': user_data.name,
+                    'count': user_data.attendance_count,
+                    'role': user_data.role
+                })
+        except Exception as e:
+            print(f"Error calculating top attendees: {e}")
+        
+        # Top Organizers: Users who have hosted/co-hosted the most past events
+        # Count both organizing and co-hosting as equal
+        from peewee import Case, JOIN
+        
+        # Query for organizers (main hosts)
+        organizer_counts = (User
+            .select(User.id, User.name, User.role, fn.COUNT(Event.id).alias('host_count'))
+            .join(Event, on=(User.id == Event.organizer))
+            .where(Event.exact_time < datetime.now())  # Only past events
+            .group_by(User.id, User.name, User.role))
+        
+        # Query for co-hosts  
+        cohost_counts = (User
+            .select(User.id, User.name, User.role, fn.COUNT(Event.id).alias('host_count'))
+            .join(Event, on=(User.id == Event.co_host))
+            .where(Event.exact_time < datetime.now())  # Only past events
+            .group_by(User.id, User.name, User.role))
+        
+        # Combine and sum the counts
+        top_organizers = []
+        try:
+            # Build a dictionary to combine organizer and co-host counts
+            host_stats = {}
+            
+            # Add organizer counts
+            for user_data in organizer_counts:
+                user_id = user_data.id
+                if user_id not in host_stats:
+                    host_stats[user_id] = {
+                        'name': user_data.name,
+                        'role': user_data.role,
+                        'count': 0
+                    }
+                host_stats[user_id]['count'] += user_data.host_count
+            
+            # Add co-host counts
+            for user_data in cohost_counts:
+                user_id = user_data.id
+                if user_id not in host_stats:
+                    host_stats[user_id] = {
+                        'name': user_data.name,
+                        'role': user_data.role,
+                        'count': 0
+                    }
+                host_stats[user_id]['count'] += user_data.host_count
+            
+            # Sort and limit to top 10
+            top_organizers = sorted(host_stats.values(), key=lambda x: x['count'], reverse=True)[:10]
+        except Exception as e:
+            print(f"Error calculating top organizers: {e}")
+        
+        # Top Flakes: Users with most no-shows (unchanged)
+        top_flakes_query = (User
+            .select(User, fn.COUNT(NoShow.id).alias('noshow_count'))
+            .join(NoShow, on=(User.id == NoShow.user))
+            .where(User.role.in_(['approved', 'admin', 'organizer']))
+            .group_by(User.id)
+            .order_by(fn.COUNT(NoShow.id).desc())
+            .limit(10))
+        
+        top_flakes = []
+        try:
+            for user_data in top_flakes_query:
+                top_flakes.append({
+                    'name': user_data.name,
+                    'count': user_data.noshow_count,
+                    'role': user_data.role
+                })
+        except Exception as e:
+            print(f"Error calculating top flakes: {e}")
+        
     except Exception as e:
         print(f"Error calculating community statistics: {e}")
         pronoun_stats = {'singular': {}, 'plural': {}}
         community_stats = {}
+        top_attendees = []
+        top_organizers = []
+        top_flakes = []
     
     return render_template('admin/community_insights.html',
                            pronoun_stats=pronoun_stats,
-                           community_stats=community_stats)
+                           community_stats=community_stats,
+                           top_attendees=top_attendees,
+                           top_organizers=top_organizers,
+                           top_flakes=top_flakes)

@@ -131,6 +131,139 @@
     </div>
     {% endif %}
 
+    <!-- Top Attendees and Top Organizers -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-star me-2 text-success"></i>Top Attendees
+                    </h4>
+                    <p class="text-muted mb-0 small">Most attended past events (excluding hosted events)</p>
+                </div>
+                <div class="card-body">
+                    {% if top_attendees %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th class="text-center">Events Attended</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attendee in top_attendees %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ attendee.name }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark fs-6">{{ attendee.count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No attendance data available yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-calendar-plus me-2 text-primary"></i>Top Organizers
+                    </h4>
+                    <p class="text-muted mb-0 small">Most hosted/co-hosted past events</p>
+                </div>
+                <div class="card-body">
+                    {% if top_organizers %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th class="text-center">Events Hosted</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for organizer in top_organizers %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ organizer.name }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark fs-6">{{ organizer.count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No hosting data available yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Flakes -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mx-auto mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-user-times me-2 text-warning"></i>Top Flakes
+                    </h4>
+                    <p class="text-muted mb-0 small">Most no-shows recorded</p>
+                </div>
+                <div class="card-body">
+                    {% if top_flakes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th class="text-center">No-Shows</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for flake in top_flakes %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ flake.name }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark fs-6">{{ flake.count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-check fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No no-show data available yet.</p>
+                        <small class="text-muted">Great community attendance!</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -262,6 +395,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .border {
     border-color: #dee2e6 !important;
+}
+
+/* Top attendees/flakes table styling */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.025);
+}
+
+.table th {
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75em;
 }
 </style>
 
