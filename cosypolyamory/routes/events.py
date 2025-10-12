@@ -1431,31 +1431,24 @@ def edit_attendance(event_id):
                           .select()
                           .where(
                               (User.id.in_(attending_user_ids)) &
-                              (User.pronoun_singular.is_null(False)) &
-                              (User.pronoun_plural.is_null(False))
+                              (User.pronouns.is_null(False))
                           ))
         
-        # Count pronouns
-        singular_counts = {}
-        plural_counts = {}
+        # Count pronouns - parse combined format like "they/them", "she/her"
+        pronoun_counts = {}
         
         for user in attending_users:
-            if user.pronoun_singular:
-                singular = user.pronoun_singular.lower().strip()
-                singular_counts[singular] = singular_counts.get(singular, 0) + 1
-                
-            if user.pronoun_plural:
-                plural = user.pronoun_plural.lower().strip()
-                plural_counts[plural] = plural_counts.get(plural, 0) + 1
+            if user.pronouns:
+                pronouns = user.pronouns.strip()
+                pronoun_counts[pronouns] = pronoun_counts.get(pronouns, 0) + 1
         
         pronoun_stats = {
-            'singular': singular_counts,
-            'plural': plural_counts
+            'pronouns': pronoun_counts
         }
         
     except Exception as e:
         print(f"Error calculating pronoun statistics: {e}")
-        pronoun_stats = {'singular': {}, 'plural': {}}
+        pronoun_stats = {'pronouns': {}}
 
     return render_template('events/edit_attendance.html',
                            event=event,

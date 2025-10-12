@@ -14,8 +14,7 @@ class User(UserMixin, BaseModel):
     name = CharField()
     avatar_url = CharField(null=True)
     provider = CharField()  # 'google' or 'github'
-    pronoun_singular = CharField(null=True)  # e.g., "they", "she", "he"
-    pronoun_plural = CharField(null=True)    # e.g., "them", "her", "him"
+    pronouns = CharField(null=True)  # e.g., "they/them", "she/her", "he/him"
     created_at = DateTimeField(default=datetime.now)
     last_login = DateTimeField(default=datetime.now)
     
@@ -24,6 +23,7 @@ class User(UserMixin, BaseModel):
     is_organizer = BooleanField(default=False)
     is_approved = BooleanField(default=False)  # Whether user passed community approval
     role = CharField(default='new')  # 'admin', 'organizer', 'approved', 'pending', 'new'
+    no_show_count = IntegerField(default=0)  # Track no-shows for community management
     
     class Meta:
         table_name = 'users'

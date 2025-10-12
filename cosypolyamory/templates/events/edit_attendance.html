@@ -348,7 +348,7 @@
     </div>
 
     <!-- Pronoun Statistics Section -->
-    {% if rsvp_count > 0 and (pronoun_stats.singular or pronoun_stats.plural) %}
+    {% if rsvp_count > 0 and pronoun_stats.pronouns %}
     <div class="row">
         <div class="col-12">
             <div class="card mt-4">
@@ -360,36 +360,19 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        {% if pronoun_stats.singular %}
-                        <div class="col-md-6">
-                            <h6 class="text-center mb-3">Singular Pronouns</h6>
-                            <div class="chart-container" style="position: relative; height: 250px;">
-                                <canvas id="singularPronounChart"></canvas>
+                        <div class="col-12">
+                            <div class="chart-container" style="position: relative; height: 350px;">
+                                <canvas id="pronounChart"></canvas>
                             </div>
                             <div class="mt-2 text-center">
                                 <small class="text-muted">
-                                    Total: {{ pronoun_stats.singular.values() | sum }} people
+                                    Total: {{ pronoun_stats.pronouns.values() | sum }} people with pronouns provided
                                 </small>
                             </div>
                         </div>
-                        {% endif %}
-                        
-                        {% if pronoun_stats.plural %}
-                        <div class="col-md-6">
-                            <h6 class="text-center mb-3">Plural Pronouns</h6>
-                            <div class="chart-container" style="position: relative; height: 250px;">
-                                <canvas id="pluralPronounChart"></canvas>
-                            </div>
-                            <div class="mt-2 text-center">
-                                <small class="text-muted">
-                                    Total: {{ pronoun_stats.plural.values() | sum }} people
-                                </small>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
                     
-                    {% if not pronoun_stats.singular and not pronoun_stats.plural %}
+                    {% if not pronoun_stats.pronouns %}
                     <div class="text-center text-muted py-4">
                         <i class="fas fa-info-circle me-2"></i>
                         Pronoun data will appear here when attendees provide their pronouns.
@@ -706,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Initialize pronoun charts
-    {% if rsvp_count > 0 and (pronoun_stats.singular or pronoun_stats.plural) %}
+    {% if rsvp_count > 0 and pronoun_stats.pronouns %}
     // Color palette for charts
     const colors = [
         '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
@@ -714,22 +697,21 @@ document.addEventListener('DOMContentLoaded', function() {
         '#45B7D1', '#96CEB4'
     ];
     
-    {% if pronoun_stats.singular %}
-    // Singular pronouns chart
-    const singularCtx = document.getElementById('singularPronounChart').getContext('2d');
-    const singularData = {
-        labels: {{ pronoun_stats.singular.keys() | list | tojson }},
+    // Combined pronouns chart
+    const pronounCtx = document.getElementById('pronounChart').getContext('2d');
+    const pronounData = {
+        labels: {{ pronoun_stats.pronouns.keys() | list | tojson }},
         datasets: [{
-            data: {{ pronoun_stats.singular.values() | list | tojson }},
-            backgroundColor: colors.slice(0, {{ pronoun_stats.singular | length }}),
+            data: {{ pronoun_stats.pronouns.values() | list | tojson }},
+            backgroundColor: colors.slice(0, {{ pronoun_stats.pronouns | length }}),
             borderColor: '#fff',
             borderWidth: 2
         }]
     };
     
-    new Chart(singularCtx, {
+    new Chart(pronounCtx, {
         type: 'pie',
-        data: singularData,
+        data: pronounData,
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -753,48 +735,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    {% endif %}
-    
-    {% if pronoun_stats.plural %}
-    // Plural pronouns chart
-    const pluralCtx = document.getElementById('pluralPronounChart').getContext('2d');
-    const pluralData = {
-        labels: {{ pronoun_stats.plural.keys() | list | tojson }},
-        datasets: [{
-            data: {{ pronoun_stats.plural.values() | list | tojson }},
-            backgroundColor: colors.slice(0, {{ pronoun_stats.plural | length }}),
-            borderColor: '#fff',
-            borderWidth: 2
-        }]
-    };
-    
-    new Chart(pluralCtx, {
-        type: 'pie',
-        data: pluralData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((context.parsed / total) * 100);
-                            return `${context.label}: ${context.parsed} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-    {% endif %}
     {% endif %}
 });
 </script>

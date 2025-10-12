@@ -248,27 +248,19 @@ def community_insights():
                          .select()
                          .where(
                              (User.role.in_(['approved', 'admin', 'organizer'])) &
-                             (User.pronoun_singular.is_null(False)) &
-                             (User.pronoun_plural.is_null(False))
+                             (User.pronouns.is_null(False))
                          ))
         
         # Calculate pronoun statistics for all approved users
-        pronoun_stats = {'singular': {}, 'plural': {}}
-        singular_counts = {}
-        plural_counts = {}
+        pronoun_counts = {}
         
         for user in approved_users:
-            if user.pronoun_singular:
-                singular = user.pronoun_singular.lower().strip()
-                singular_counts[singular] = singular_counts.get(singular, 0) + 1
-                
-            if user.pronoun_plural:
-                plural = user.pronoun_plural.lower().strip()
-                plural_counts[plural] = plural_counts.get(plural, 0) + 1
+            if user.pronouns:
+                pronouns = user.pronouns.strip()
+                pronoun_counts[pronouns] = pronoun_counts.get(pronouns, 0) + 1
         
         pronoun_stats = {
-            'singular': singular_counts,
-            'plural': plural_counts
+            'pronouns': pronoun_counts
         }
         
         # Get total user counts by role
@@ -392,7 +384,7 @@ def community_insights():
         
     except Exception as e:
         print(f"Error calculating community statistics: {e}")
-        pronoun_stats = {'singular': {}, 'plural': {}}
+        pronoun_stats = {'pronouns': {}}
         community_stats = {}
         top_attendees = []
         top_organizers = []

@@ -8,9 +8,9 @@
                 </div>
                 <div>
                     <strong>{{ rsvp.user.name }}</strong>
-                    {% if rsvp.user.pronoun_singular or rsvp.user.pronoun_plural %}
+                    {% if rsvp.user.pronouns %}
                         <span class="text-muted">
-                            ({% if rsvp.user.pronoun_singular and rsvp.user.pronoun_plural %}{{ rsvp.user.pronoun_singular }}/{{ rsvp.user.pronoun_plural }}{% elif rsvp.user.pronoun_singular %}{{ rsvp.user.pronoun_singular }}{% else %}{{ rsvp.user.pronoun_plural }}{% endif %})
+                            ({{ rsvp.user.pronouns }})
                         </span>
                     {% endif %}
                     <br>

@@ -611,10 +611,7 @@ function viewUser(userId) {
                     </div>`;
                 
                 // Format pronouns
-                const pronounsText = userData.pronoun_singular || userData.pronoun_plural ? 
-                    (userData.pronoun_singular && userData.pronoun_plural ? 
-                        `${userData.pronoun_singular}/${userData.pronoun_plural}` :
-                        userData.pronoun_singular || userData.pronoun_plural) : '';
+                const pronounsText = userData.pronouns || '';
                 
                 // Create basic profile content
                 let profileContent = `
@@ -756,10 +753,7 @@ function viewUser(userId) {
                         <i class="fas fa-user fa-2x text-white"></i>
                     </div>`;
                 
-                const pronounsText = userData.pronoun_singular || userData.pronoun_plural ? 
-                    (userData.pronoun_singular && userData.pronoun_plural ? 
-                        `${userData.pronoun_singular}/${userData.pronoun_plural}` :
-                        userData.pronoun_singular || userData.pronoun_plural) : '';
+                const pronounsText = userData.pronouns || '';
                 
                 modalBody.innerHTML = `
                     <div class="row">

@@ -145,8 +145,7 @@ def api_user_details(user_id):
             'avatar_url': user.avatar_url,
             'provider': user.provider,
             'role': user.role,
-            'pronoun_singular': user.pronoun_singular,
-            'pronoun_plural': user.pronoun_plural,
+            'pronouns': user.pronouns,
             'created_at': user.created_at.isoformat(),
             'last_login': user.last_login.isoformat() if user.last_login else None,
             'no_show_count': no_show_count

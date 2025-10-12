@@ -465,7 +465,7 @@ def profile():
         needs_info = True
     
     # Check for missing pronouns
-    if not current_user.pronoun_singular or not current_user.pronoun_plural:
+    if not current_user.pronouns:
         needs_info = True
     
     # Get stored form data from session (for retaining values after errors)
@@ -505,8 +505,7 @@ def update_profile():
     """Update user profile information"""
     email = request.form.get('email', '').strip()
     name = request.form.get('name', '').strip()
-    pronoun_singular = request.form.get('pronoun_singular', '').strip()
-    pronoun_plural = request.form.get('pronoun_plural', '').strip()
+    pronouns = request.form.get('pronoun_singular', '').strip()  # Keep old field name for backwards compatibility
     
     # Check if this is an AJAX request by looking at Accept header or explicit parameter
     is_ajax = ('application/json' in request.headers.get('Accept', '')) or \
@@ -518,8 +517,7 @@ def update_profile():
         session['profile_form_data'] = {
             'email': email,
             'name': name,
-            'pronoun_singular': pronoun_singular,
-            'pronoun_plural': pronoun_plural
+            'pronoun_singular': pronouns,  # Keep old field name for template compatibility
         }
     
     # Validation
@@ -531,8 +529,8 @@ def update_profile():
         return redirect(url_for('auth.profile'))
     
     # Validate pronouns are provided
-    if not pronoun_singular or not pronoun_plural:
-        error_msg = 'Both singular and plural pronouns are required.'
+    if not pronouns:
+        error_msg = 'Pronouns are required.'
         if is_ajax:
             return jsonify({'success': False, 'error': error_msg})
         flash(error_msg, 'error')
@@ -563,8 +561,7 @@ def update_profile():
             # Update user information
             current_user.email = email
             current_user.name = name
-            current_user.pronoun_singular = pronoun_singular
-            current_user.pronoun_plural = pronoun_plural
+            current_user.pronouns = pronouns
             current_user.save()
             
             # Refresh the current user session to ensure updated data is reflected

@@ -131,8 +131,7 @@ def create_sample_users():
             'role': 'approved',
             'has_application': True,
             'application_status': 'approved',
-            'pronoun_singular': pronouns[0],
-            'pronoun_plural': pronouns[1]
+            'pronouns': f'{pronouns[0]}/{pronouns[1]}'
         })
     
     # Generate organizers (3)
@@ -145,8 +144,7 @@ def create_sample_users():
             'role': 'organizer',
             'has_application': True,
             'application_status': 'approved',
-            'pronoun_singular': pronouns[0],
-            'pronoun_plural': pronouns[1]
+            'pronouns': f'{pronouns[0]}/{pronouns[1]}'
         })
     
     # Generate pending applications (5)
@@ -158,8 +156,7 @@ def create_sample_users():
             'role': 'pending',
             'has_application': True,
             'application_status': 'pending',
-            'pronoun_singular': pronouns[0],
-            'pronoun_plural': pronouns[1]
+            'pronouns': f'{pronouns[0]}/{pronouns[1]}'
         })
     
     # Generate users who logged in but never applied (3)
@@ -171,8 +168,7 @@ def create_sample_users():
             'role': 'new',
             'has_application': False,
             'application_status': None,
-            'pronoun_singular': pronouns[0],
-            'pronoun_plural': pronouns[1]
+            'pronouns': f'{pronouns[0]}/{pronouns[1]}'
         })
     
     created_users = []
@@ -187,8 +183,7 @@ def create_sample_users():
             provider='test',
             avatar_url=f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_data['name'].replace(' ', '')}",
             last_login=fake.date_time_between(start_date='-3M', end_date='now'),
-            pronoun_singular=user_data['pronoun_singular'],
-            pronoun_plural=user_data['pronoun_plural']
+            pronouns=user_data['pronouns']
         )
         
         created_users.append(user)
