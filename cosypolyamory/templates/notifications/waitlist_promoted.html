@@ -3,10 +3,10 @@
 {% block subject %}Great News! You're now attending: {{ event_title }}{% endblock %}
 
 {% block content %}
-<h2>🎉 You've been moved from the waitlist!</h2>
+<h2>🎉 We've moved you from the waitlist!</h2>
 <p>Hello {{ name }},</p>
 
-<p>Great news! A spot has opened up and you've been automatically moved from the waitlist to attending the following event:</p>
+<p>Great news! A spot has opened up and we've confirmed you for attending the following event:</p>
 
 <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #155724;">📅 {{ event_title }}</h3>
@@ -19,9 +19,9 @@
 
 <p><strong>You're now confirmed to attend this event!</strong> 🎊</p>
 
-<p>You can view the full event details and see other attendees here: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
+<p>If you can no longer attend, please update your attendance confirmation as soon as possible so that someone else from the waitlist can take your place.</p>
 
-<p>If you can no longer attend, please update your RSVP as soon as possible so that someone else from the waitlist can take your place.</p>
+<p>You can view the full event details and see other attendees here: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
 
 <p>Looking forward to seeing you there!</p>
 {% endblock %}

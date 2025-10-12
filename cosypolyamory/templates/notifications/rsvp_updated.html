@@ -22,7 +22,7 @@
 <p>You can view the event and confirm your attendance again if you'd like: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
 
 {% elif status == "waitlist" %}
-<p>Your attendance confirmation for the following event has been changed to <strong>waitlisted</strong>:</p>
+<p>We've changed your attendance confirmation for the following event to <strong>waitlisted</strong>:</p>
 
 <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #856404;">📅 {{ event_title }}</h3>
@@ -30,7 +30,8 @@
     <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #856404;">Google Maps</a>){% endif %}</p>
 </div>
 
-<p>You're currently on the waitlist for this event. We'll notify you if a spot becomes available!</p>
+<p>You're currently on the waitlist for this event. We'll automatically move you to the attendees list if
+   a space becomes available for you.</p>
 
 {% if reason %}
 <p><strong>Reason:</strong> {{ reason }}</p>
@@ -39,7 +40,7 @@
 <p>You can view your waitlist status here: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
 
 {% elif status == "yes" %}
-<p>Great news! Your attendance confirmation for the following event has been changed to <strong>attending</strong>:</p>
+<p>Great news! We've changed your attendance confirmation for the following event to <strong>attending</strong>:</p>
 
 <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #155724;">📅 {{ event_title }}</h3>
@@ -56,7 +57,7 @@
 <p>You can view the full event details here: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
 
 {% elif status == "no" %}
-<p>Your attendance confirmation for the following event has been changed to <strong>not attending</strong>:</p>
+<p>We've changed your attendance confirmation for the following event to <strong>not attending</strong>:</p>
 
 <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #721c24;">📅 {{ event_title }}</h3>
@@ -67,25 +68,6 @@
 {% if reason %}
 <p><strong>Reason:</strong> {{ reason }}</p>
 {% endif %}
-
-<p>If you change your mind, you can update your attendance confirmation: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
-
-{% elif status == "maybe" %}
-<p>Your attendance confirmation for the following event has been changed to <strong>maybe attending</strong>:</p>
-
-<div style="background-color: #e2e3e5; border: 1px solid #d6d8db; color: #383d41; padding: 15px; border-radius: 5px; margin: 20px 0;">
-    <h3 style="margin-top: 0; color: #383d41;">📅 {{ event_title }}</h3>
-    <p><strong>When:</strong> {{ event_date }} at {{ event_time }}</p>
-    <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #383d41;">Google Maps</a>){% endif %}</p>
-</div>
-
-<p>Please update your attendance confirmation you know for sure if you can attend.</p>
-
-{% if reason %}
-<p><strong>Reason:</strong> {{ reason }}</p>
-{% endif %}
-
-<p>You can view the event and update your attendance confirmation: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
 
 {% endif %}
 
