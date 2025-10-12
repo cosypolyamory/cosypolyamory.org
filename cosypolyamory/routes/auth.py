@@ -5,6 +5,7 @@ Handles OAuth login, logout, and profile management.
 """
 
 import os
+import re
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
@@ -476,16 +477,19 @@ def profile():
     if form_data:
         session.pop('profile_form_data', None)
     
-    # Get user's RSVPs for approved users
+    # Get user's RSVPs for approved users (upcoming events only)
     user_rsvps = []
     if current_user.role not in ("new", "pending"):
         try:
             user_rsvps = (RSVP
                          .select(RSVP, Event)
                          .join(Event)
-                         .where(RSVP.user == current_user)
-                         .order_by(Event.exact_time.desc())
-                         .limit(10))  # Show last 10 RSVPs
+                         .where(
+                             (RSVP.user == current_user) &
+                             (Event.exact_time >= datetime.now())  # Only upcoming events
+                         )
+                         .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
+                         .limit(10))  # Show next 10 upcoming RSVPs
         except Exception as e:
             print(f"Error fetching user RSVPs: {e}")
             user_rsvps = []
@@ -531,6 +535,15 @@ def update_profile():
     # Validate pronouns are provided
     if not pronouns:
         error_msg = 'Pronouns are required.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
+    # Validate pronouns format: 2-15 alphanumeric characters, slash, 2-15 alphanumeric characters
+    pronoun_pattern = r'^[a-zA-Z0-9]{2,15}/[a-zA-Z0-9]{2,15}$'
+    if not re.match(pronoun_pattern, pronouns):
+        error_msg = 'Pronouns must be in format: word/word (e.g., they/them, she/her, he/him). Each part should be 2-15 alphanumeric characters.'
         if is_ajax:
             return jsonify({'success': False, 'error': error_msg})
         flash(error_msg, 'error')
