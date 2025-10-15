@@ -27,11 +27,14 @@ pip install -r requirements.txt
 ### Configuration
 
 1. Copy `.env.example` to `.env`
-2. Configure OAuth credentials (see `OAUTH_SETUP.md`)
-3. Configure Google Maps API key (see `GOOGLE_MAPS_SETUP.md`)
+2. Configure OAuth credentials (see `DOCS/OAUTH_SETUP.md`)
+3. Configure Google Maps API key (see `GOOGLE_MAPS_SETUP.md`) # TO IMPLEMENT
+4. Make admins by running `python manage_db.py make-admin user@email.xxx`
 
 ### Running
 
+1. Generate sample data by running `python generate_sameple_data.py`
+2. Run:
 ```bash
 flask --app server --debug run
 ```
