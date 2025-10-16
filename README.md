@@ -33,7 +33,7 @@ pip install -r requirements.txt
 
 ### Running
 
-1. Generate sample data by running `python generate_sameple_data.py`
+1. Generate sample data by running `python generate_sample_data.py`
 2. Run:
 ```bash
 flask --app server --debug run
@@ -41,5 +41,5 @@ flask --app server --debug run
 
 ## Documentation
 
-- [OAuth Setup Guide](OAUTH_SETUP.md) - Configure Google and GitHub authentication
-- [Google Maps Setup](GOOGLE_MAPS_SETUP.md) - Configure embedded maps for events
+- [OAuth Setup Guide](docs/OAUTH_SETUP.md) - Configure Google and GitHub authentication
+- [Google Maps Setup](GOOGLE_MAPS_SETUP.md) - Configure embedded maps for events # TO IMPLEMENT
