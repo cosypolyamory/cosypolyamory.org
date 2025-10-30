@@ -6,6 +6,7 @@ services:
   web:
     build: .
     image: new.cosypolyamory.org
+    restart: unless-stopped
     expose:
       - "3031"
     volumes:
