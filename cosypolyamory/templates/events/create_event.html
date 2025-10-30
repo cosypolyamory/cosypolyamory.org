@@ -18,7 +18,7 @@
                             <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-dark btn-sm">
                                 <i class="fas fa-list me-2"></i>All Events
                             </a>
-                            {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
+                            {% if (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) and event.exact_time > now %}
                             <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
                                 <i class="fas fa-users-cog me-2"></i>Edit Attendance
                             </a>

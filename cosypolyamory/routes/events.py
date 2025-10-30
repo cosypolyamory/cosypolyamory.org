@@ -206,7 +206,8 @@ def create_event():
                            event_notes=event_notes,
                            default_date=default_date,
                            default_hour=default_hour,
-                           default_minute=default_minute)
+                           default_minute=default_minute,
+                           now=datetime.now())
 
 
 @bp.route('/create', methods=['POST'])
@@ -476,7 +477,8 @@ def edit_event(event_id):
                                organizers=organizer_list,
                                event_notes=event_notes,
                                default_hour=default_hour,
-                               default_minute=default_minute)
+                               default_minute=default_minute,
+                               now=datetime.now())
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
