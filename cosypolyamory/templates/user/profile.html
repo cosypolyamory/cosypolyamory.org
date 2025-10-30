@@ -19,6 +19,7 @@
         {% endif %}
     {% endwith %}
 
+    {% if user.role in ("approved", "organizer", "admin") %}
         <!-- User's RSVP Events Section (for approved users only) -->
         <div class="card mt-4">
             <div class="card-header">
@@ -85,206 +86,88 @@
                 {% endif %}
             </div>
         </div>
+    {% endif %}
+
 
         <!-- Profile Update Form for users with incomplete data -->
-        {% if needs_info %}
-            <div class="card mt-4 border-warning">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Complete Your Profile
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="mb-3">
-                        Please complete the required information below to finish setting up your profile.
-                    </p>
-                    <p class="mb-3">
-                        Please enter the email
-                        address where you would like to receive notifcations about events that you've joined. Also, please give us
-                        the name that you would like to use on the site; ideally the name you give us here is the name you'd like
-                        other members to call you during our events. Finally, please enter your pronouns so that other community
-                        members can address you appropriately.
-                    </p>
-                    <form method="POST" action="{{ url_for('auth.update_profile') }}">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">
-                                        <i class="fas fa-envelope me-1"></i>Email Address <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="email" class="form-control" id="email" name="email" 
-                                           value="{% if form_data and form_data.email %}{{ form_data.email }}{% elif not user.email.endswith('@reddit.local') and not user.email.endswith('@musicbrainz.local') %}{{ user.email }}{% endif %}" 
-                                           required placeholder="your-email@example.com">
-                                    <div class="form-text">This will be used for community communications</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="name" class="form-label">
-                                        <i class="fas fa-user me-1"></i>Display Name <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" class="form-control" id="name" name="name" 
-                                           value="{% if form_data and form_data.name %}{{ form_data.name }}{% elif not user.name.startswith('mb_user_') and not user.name.startswith('musicbrainz_user_') %}{{ user.name }}{% endif %}" 
-                                           required placeholder="Your preferred name">
-                                    <div class="form-text">How you'd like to be known in the community</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="pronoun_singular" class="form-label">
-                                <i class="fas fa-user-tag me-1"></i>Preferred Pronouns<span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="pronoun_singular" name="pronoun_singular" 
-                                   value="{% if form_data and form_data.pronoun_singular %}{{ form_data.pronoun_singular }}{% else %}{{ user.pronouns or '' }}{% endif %}" 
-                                   required placeholder="they/them, she/her, he/him"
-                                   pattern="^[a-zA-Z0-9]{2,15}/[a-zA-Z0-9]{2,15}$"
-                                   title="Pronouns must be in format: 2-15 alphanumeric characters, slash, 2-15 alphanumeric characters (e.g., they/them)">
-                            <div class="form-text">e.g., they/them, she/her, he/him (format: word/word)</div>
-                        </div>
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-save me-2"></i>Complete Profile
-                        </button>
-                    </form>
-                </div>
-            </div>
-        {% else %}
-            <!-- Full profile content only shown when profile is complete -->
-        
-        <!-- Join Community Call-to-Action for new users -->
-        {% if not user.role or user.role == "new" %}
-            <div class="card mt-4 border-primary">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="card-title mb-0">
-                        <i class="fas fa-users me-2"></i>
-                        Join Our Community
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <h5>Ready to become a community member?</h5>
-                    <p class="mb-3">
-                        To access full event details, RSVP to events, and participate in our community, 
-                        you'll need to complete a brief application. This helps us maintain a safe and 
-                        welcoming space for everyone.
-                    </p>
-                    <div class="text-center">
-                        <div class="d-grid gap-2 d-md-block">
-                            <a href="{{ url_for('user.apply') }}" class="btn btn-primary btn-lg">
-                                <i class="fas fa-user-plus me-2"></i>
-                                Apply Now
-                            </a>
-                        </div>
-                        <small class="text-muted mt-2 d-block">Takes about 5 minutes</small>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-        
-        
-        <!-- Edit Profile Section for all users -->
-        <div class="card mt-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Profile Information</h5>
-                {% if not needs_info %}
-                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                        <i class="fas fa-edit me-1"></i>Edit Profile
-                    </button>
-                {% endif %}
+    {% if needs_info %}
+        <div class="card mt-4 border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Complete Your Profile
+                </h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        {% if user.avatar_url %}
-                            <img src="{{ user.avatar_url }}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 150px;">
-                        {% else %}
-                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
-                                <i class="fas fa-user fa-2x text-white"></i>
+                <p class="mb-3">
+                    Please complete the required information below to finish setting up your profile.
+                </p>
+                <p class="mb-3">
+                    Please enter the email
+                    address where you would like to receive notifcations about events that you've joined. Also, please give us
+                    the name that you would like to use on the site; ideally the name you give us here is the name you'd like
+                    other members to call you during our events. Finally, please enter your pronouns so that other community
+                    members can address you appropriately.
+                </p>
+                <form method="POST" action="{{ url_for('auth.update_profile') }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i>Email Address <span class="text-danger">*</span>
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{% if form_data and form_data.email %}{{ form_data.email }}{% elif not user.email.endswith('@reddit.local') and not user.email.endswith('@musicbrainz.local') %}{{ user.email }}{% endif %}" 
+                                       required placeholder="your-email@example.com">
+                                <div class="form-text">This will be used for community communications</div>
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-9">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h3 class="mb-0">
-                                {{ user.name }}
-                            </h3>
-                            <!-- Role Badge -->
-                            {% if user.role == 'admin' %}
-                                <span class="badge bg-orange fs-6">
-                                    <i class="fas fa-shield-alt me-1"></i>Administrator
-                                </span>
-                            {% elif user.role == 'organizer' %}
-                                <span class="badge bg-primary fs-6">
-                                    <i class="fas fa-star me-1"></i>Community Organizer
-                                </span>
-                            {% elif user.role == 'approved' %}
-                                <span class="badge bg-success fs-6">
-                                    <i class="fas fa-check-circle me-1"></i>Approved Member
-                                </span>
-                            {% elif user.role == 'pending' %}
-                                <span class="badge bg-warning fs-6">
-                                    <i class="fas fa-clock me-1"></i>Application Pending
-                                </span>
-                            {% else %}
-                                <span class="badge bg-secondary fs-6">
-                                    <i class="fas fa-user me-1"></i>New User
-                                </span>
-                            {% endif %}
                         </div>
-                        
-                        <table class="table table-borderless">
-                            {% if user.role == 'pending' %}
-                                {% set application = user.application.first() if user.application else None %}
-                                {% if application %}
-                                <tr>
-                                    <td><strong>Application:</strong></td>
-                                    <td>
-                                        Submitted {{ application.submitted_at.strftime('%B %d, %Y') }}
-                                    </td>
-                                </tr>
-                                {% endif %}
-                            {% endif %}
-                            {% if user.pronouns %}
-                            <tr>
-                                <td><strong>Pronouns:</strong></td>
-                                <td>{{ user.pronouns }}</td>
-                            </tr>
-                            {% endif %}
-                            <tr>
-                                <td><strong>User Email:</strong></td>
-                                <td><code>{{ user.email }}</code></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Provider:</strong></td>
-                                <td>
-                                    {% if user.provider == 'google' %}
-                                        <span class="badge bg-danger">Google</span>
-                                    {% elif user.provider == 'github' %}
-                                        <span class="badge bg-dark">GitHub</span>
-                                    {% elif user.provider == 'reddit' %}
-                                        <span class="badge bg-warning">Reddit</span>
-                                    {% elif user.provider == 'musicbrainz' %}
-                                        <span class="badge bg-success">MusicBrainz</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ user.provider|title }}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Member since:</strong></td>
-                                <td>{{ user.created_at.strftime('%B %d, %Y at %H:%M') }}</td>
-                            </tr>
-                        </table>
-                        
-                        <div class="mt-3">
-                            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                Logout
-                            </a>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Display Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{% if form_data and form_data.name %}{{ form_data.name }}{% elif not user.name.startswith('mb_user_') and not user.name.startswith('musicbrainz_user_') %}{{ user.name }}{% endif %}" 
+                                       required placeholder="Your preferred name">
+                                <div class="form-text">How you'd like to be known in the community</div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                    <div class="mb-3">
+                        <label for="pronoun_singular" class="form-label">
+                            <i class="fas fa-user-tag me-1"></i>Preferred Pronouns<span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="pronoun_singular" name="pronoun_singular" 
+                               value="{% if form_data and form_data.pronoun_singular %}{{ form_data.pronoun_singular }}{% else %}{{ user.pronouns or '' }}{% endif %}" 
+                               required placeholder="they/them, she/her, he/him"
+                               pattern="^[a-zA-Z0-9]{2,15}/[a-zA-Z0-9]{2,15}$"
+                               title="Pronouns must be in format: 2-15 alphanumeric characters, slash, 2-15 alphanumeric characters (e.g., they/them)">
+                        <div class="form-text">e.g., they/them, she/her, he/him (format: word/word)</div>
+                    </div>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-2"></i>Complete Profile
+                    </button>
+                </form>
             </div>
         </div>
+    {% endif %}
         
+    <!-- Join Community Call-to-Action for new users -->
+    {% if not user.role or user.role == "new" %}
+    
+        <p class="mb-3">
+            To access full event details and to attend our events, you'll need to complete a brief
+            application. This helps us maintain a safe and welcoming space for everyone.
+        </p>
+        <div class="text-center">
+            <div class="d-grid gap-2 d-md-block">
+                <a href="{{ url_for('user.apply') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Apply Now
+                </a>
+            </div>
+        </div>
+    {% elif user.role == 'pending' %}
         <div class="card mt-4">
             <div class="card-body">
                 <h5 class="card-title">
@@ -292,98 +175,112 @@
                     Community Access
                 </h5>
                 
-                {% if user.role == 'approved' %}
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle me-2"></i>
-                        <strong>Full Community Access</strong> - You can view all event details and RSVP to events.
-                    </div>
-                    <p class="card-text">As an approved member, you have access to:</p>
-                    <ul>
-                        <li><i class="fas fa-calendar-check me-2 text-success"></i>Register your attendance to events</li>
-                        <li><i class="fas fa-map-marker-alt me-2 text-success"></i>Exact event locations and times</li>
-                        <li><i class="fas fa-comments me-2 text-success"></i> Access to our community Telegram chat.</li>
-                    </ul>
-                    <div class="mt-3">
-                        <a href="{{ url_for('events.events_list') }}" class="btn btn-primary">
-                            <i class="fas fa-calendar-alt me-2"></i>View Events
-                        </a>
-                    </div>
-                    
-                {% elif user.role == 'pending' %}
-                    <div class="alert alert-warning">
-                        <i class="fas fa-clock me-2"></i>
-                        <strong>Application Under Review</strong> - Your community application is being reviewed.
-                    </div>
-                    <p class="card-text">While your application is under review, you can:</p>
-                    <ul>
-                        <li><i class="fas fa-eye me-2 text-info"></i>View basic event information (barrio and time period)</li>
-                        <li><i class="fas fa-book me-2 text-info"></i>Read community values and structure</li>
-                        <li><i class="fas fa-envelope me-2 text-info"></i>Contact organizers with questions</li>
-                    </ul>
-                    <div class="mt-3">
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
-                                <i class="fas fa-calendar-alt me-2"></i>Browse Events
-                            </a>
-                        </div>
-                    </div>
-                    
-                {% elif user.role in ['admin', 'organizer'] %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-star me-2"></i>
-                        <strong>{{ 'Administrator' if user.role == 'admin' else 'Community Organizer' }}</strong> - You have enhanced community privileges.
-                    </div>
-                    <p class="card-text">As {{ 'an administrator' if user.role == 'admin' else 'a community organizer' }}, you can:</p>
-                    <ul>
-                        <li><i class="fas fa-calendar-plus me-2 text-primary"></i>Create and manage community events</li>
-                        <li><i class="fas fa-users me-2 text-primary"></i>View/edit all attendee information</li>
-                        <li><i class="fas fa-gavel me-2 text-danger"></i>Review and approve community applications</li>
-                        <li><i class="fas fa-cog me-2 text-danger"></i>Access admin panel and site settings</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>All approved member privileges</li>
-                        {% if user.role == 'admin' %}
-                            <li><i class="fas fa-check-circle me-2 text-success"></i>Delete other users</li>
-                        {% endif %}
-                    </ul>
-                    <div class="mt-3">
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
-                                <i class="fas fa-calendar-alt me-2"></i>Events list
-                            </a>
-                            <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
-                                <i class="fas fa-calendar-plus me-2"></i>Create Event
-                            </a>
-                            {% if user.role in ['admin', 'organizer'] %}
-                                <a href="{{ url_for('admin.moderate_applications') }}" class="btn btn-warning">
-                                    <i class="fas fa-gavel me-2"></i>Review Applications
-                                </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                {% else %}
-                    <div class="alert alert-light border">
-                        <i class="fas fa-info-circle me-2 text-muted"></i>
-                        <strong>Getting Started</strong> - While your application is being processed, you can browse events with limited details.
-                    </div>
-                    <p class="card-text">Currently available to you:</p>
-                    <ul>
-                        <li><i class="fas fa-eye me-2 text-info"></i>Browse events (barrio and time period only)</li>
-                        <li><i class="fas fa-book me-2 text-info"></i>Read community values and guidelines</li>
-                        <li><i class="fas fa-envelope me-2 text-info"></i>Contact organizers with questions</li>
-                    </ul>
-                    <div class="mt-3">
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary">
-                                <i class="fas fa-calendar-alt me-2"></i>Browse Events
-                            </a>
-                            <a href="{{ url_for('pages.values') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-heart me-2"></i>Community Values
-                            </a>
-                        </div>
-                    </div>
-                {% endif %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-clock me-2"></i>
+                    <strong>Application Under Review</strong> - Your community application is being reviewed.
+                </div>
             </div>
         </div>
+    {% endif %}
+        
+    <!-- Edit Profile Section for all users -->
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Profile Information</h5>
+            {% if not needs_info %}
+                <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                    <i class="fas fa-edit me-1"></i>Edit Profile
+                </button>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 150px;">
+                    {% else %}
+                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                            <i class="fas fa-user fa-2x text-white"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-9">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h3 class="mb-0">
+                            {{ user.name }}
+                        </h3>
+                        <!-- Role Badge -->
+                        {% if user.role == 'admin' %}
+                            <span class="badge bg-orange fs-6">
+                                <i class="fas fa-shield-alt me-1"></i>Administrator
+                            </span>
+                        {% elif user.role == 'organizer' %}
+                            <span class="badge bg-primary fs-6">
+                                <i class="fas fa-star me-1"></i>Community Organizer
+                            </span>
+                        {% elif user.role == 'approved' %}
+                            <span class="badge bg-success fs-6">
+                                <i class="fas fa-check-circle me-1"></i>Approved Member
+                            </span>
+                        {% elif user.role == 'pending' %}
+                            <span class="badge bg-warning fs-6">
+                                <i class="fas fa-clock me-1"></i>Application Pending
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary fs-6">
+                                <i class="fas fa-user me-1"></i>New User
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <table class="table table-borderless">
+                        {% if user.role == 'pending' %}
+                            {% set application = user.application.first() if user.application else None %}
+                            {% if application %}
+                            <tr>
+                                <td><strong>Application:</strong></td>
+                                <td>
+                                    Submitted {{ application.submitted_at.strftime('%B %d, %Y') }}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endif %}
+                        {% if user.pronouns %}
+                        <tr>
+                            <td><strong>Pronouns:</strong></td>
+                            <td>{{ user.pronouns }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td><strong>User Email:</strong></td>
+                            <td>{{ user.email }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Logged in with:</strong></td>
+                            <td>
+                                {% if user.provider == 'google' %}
+                                    <span class="badge bg-danger">Google</span>
+                                {% elif user.provider == 'github' %}
+                                    <span class="badge bg-dark">GitHub</span>
+                                {% elif user.provider == 'reddit' %}
+                                    <span class="badge bg-warning">Reddit</span>
+                                {% elif user.provider == 'musicbrainz' %}
+                                    <span class="badge bg-success">MusicBrainz</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ user.provider|title }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Member since:</strong></td>
+                            <td>{{ user.created_at.strftime('%B %d, %Y at %H:%M') }}</td>
+                        </tr>
+                    </table>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Edit Profile Modal -->
@@ -455,7 +352,6 @@
         </div>
     </div>
 </div>
-        {% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
