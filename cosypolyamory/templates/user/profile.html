@@ -159,7 +159,7 @@
             To access full event details and to attend our events, you'll need to complete a brief
             application. This helps us maintain a safe and welcoming space for everyone.
         </p>
-        <div class="text-center">
+        <div class="text-center" style="margin: 0 0 3em 0">
             <div class="d-grid gap-2 d-md-block">
                 <a href="{{ url_for('user.apply') }}" class="btn btn-primary btn-lg">
                     <i class="fas fa-user-plus me-2"></i>
@@ -167,6 +167,7 @@
                 </a>
             </div>
         </div>
+
     {% elif user.role == 'pending' %}
         <div class="card mt-4">
             <div class="card-body">
@@ -195,56 +196,25 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-3">
-                    {% if user.avatar_url %}
-                        <img src="{{ user.avatar_url }}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 150px;">
-                    {% else %}
-                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
-                            <i class="fas fa-user fa-2x text-white"></i>
-                        </div>
-                    {% endif %}
-                </div>
                 <div class="col-md-9">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h3 class="mb-0">
-                            {{ user.name }}
-                        </h3>
-                        <!-- Role Badge -->
-                        {% if user.role == 'admin' %}
-                            <span class="badge bg-orange fs-6">
-                                <i class="fas fa-shield-alt me-1"></i>Administrator
-                            </span>
-                        {% elif user.role == 'organizer' %}
-                            <span class="badge bg-primary fs-6">
-                                <i class="fas fa-star me-1"></i>Community Organizer
-                            </span>
-                        {% elif user.role == 'approved' %}
-                            <span class="badge bg-success fs-6">
-                                <i class="fas fa-check-circle me-1"></i>Approved Member
-                            </span>
-                        {% elif user.role == 'pending' %}
-                            <span class="badge bg-warning fs-6">
-                                <i class="fas fa-clock me-1"></i>Application Pending
-                            </span>
-                        {% else %}
-                            <span class="badge bg-secondary fs-6">
-                                <i class="fas fa-user me-1"></i>New User
-                            </span>
-                        {% endif %}
-                    </div>
                     
                     <table class="table table-borderless">
-                        {% if user.role == 'pending' %}
-                            {% set application = user.application.first() if user.application else None %}
-                            {% if application %}
-                            <tr>
-                                <td><strong>Application:</strong></td>
-                                <td>
-                                    Submitted {{ application.submitted_at.strftime('%B %d, %Y') }}
-                                </td>
-                            </tr>
-                            {% endif %}
-                        {% endif %}
+                        <tr>
+                            <td><strong>Account type:</strong></td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                        administrator
+                                {% elif user.role == 'organizer' %}
+                                        organizer
+                                {% elif user.role == 'approved' %}
+                                        member
+                                {% elif user.role == 'pending' %}
+                                        application Pending
+                                {% else %}
+                                        new user
+                                {% endif %}
+                            </td>
+                        </tr>
                         {% if user.pronouns %}
                         <tr>
                             <td><strong>Pronouns:</strong></td>
@@ -259,15 +229,15 @@
                             <td><strong>Logged in with:</strong></td>
                             <td>
                                 {% if user.provider == 'google' %}
-                                    <span class="badge bg-danger">Google</span>
+                                    Google
                                 {% elif user.provider == 'github' %}
-                                    <span class="badge bg-dark">GitHub</span>
+                                    GitHub
                                 {% elif user.provider == 'reddit' %}
-                                    <span class="badge bg-warning">Reddit</span>
+                                    Reddit
                                 {% elif user.provider == 'musicbrainz' %}
-                                    <span class="badge bg-success">MusicBrainz</span>
+                                    MusicBrainz
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ user.provider|title }}</span>
+                                    {{ user.provider|title }}
                                 {% endif %}
                             </td>
                         </tr>
