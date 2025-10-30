@@ -34,16 +34,13 @@ from cosypolyamory.notification import send_event_reminder
 # Configuration
 LAST_RUN_FILE = os.path.join(project_root, '.last_reminder_run')
 LOG_FILE = os.path.join(project_root, 'event_reminders.log')
-REMINDER_TIME = "00:00"  # Send reminders at midnight
+REMINDER_TIME = "23:49"  # Send reminders at midnight
 
-# Set up logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler(sys.stdout)
-    ]
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout,
+    force=True
 )
 logger = logging.getLogger(__name__)
 
@@ -149,12 +146,8 @@ def send_daily_reminders():
     """
     Job function to be called by the scheduler to send daily reminders.
     """
+
     try:
-        # Check if we already sent reminders today
-        if not should_send_reminders():
-            logger.info("Reminders already sent today, skipping...")
-            return
-            
         logger.info("=== Starting daily reminder process ===")
         
         summary = send_reminders_for_today()
@@ -180,8 +173,6 @@ def main():
     """
     logger.info("Starting Event Reminder Service with schedule library")
     logger.info(f"Reminders scheduled for {REMINDER_TIME} each day")
-    logger.info(f"Log file: {LOG_FILE}")
-    logger.info(f"Last run tracking file: {LAST_RUN_FILE}")
     
     # Schedule the daily reminder job
     schedule.every().day.at(REMINDER_TIME).do(send_daily_reminders)
@@ -191,8 +182,9 @@ def main():
     # Main scheduling loop
     while True:
         try:
+            logger.info("woke!")
             schedule.run_pending()
-            time.sleep(60)  # Check every minute
+            time.sleep(15)  # Check every minute
             
         except KeyboardInterrupt:
             logger.info("Received interrupt signal, shutting down...")
