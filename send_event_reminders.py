@@ -32,8 +32,6 @@ from cosypolyamory.models.user import User
 from cosypolyamory.notification import send_event_reminder
 
 # Configuration
-LAST_RUN_FILE = os.path.join(project_root, '.last_reminder_run')
-LOG_FILE = os.path.join(project_root, 'event_reminders.log')
 REMINDER_TIME = "23:49"  # Send reminders at midnight
 
 logging.basicConfig(
