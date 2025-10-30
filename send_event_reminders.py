@@ -173,7 +173,7 @@ def main():
     logger.info(f"Reminders scheduled for {REMINDER_TIME} each day")
     
     # Schedule the daily reminder job
-    schedule.every().day.at(REMINDER_TIME).do(send_daily_reminders)
+    schedule.every().day.at(REMINDER_TIME, "Europe/Amsterdam").do(send_daily_reminders)
     
     logger.info(f"Job scheduled successfully. Next run: {schedule.next_run()}")
     
