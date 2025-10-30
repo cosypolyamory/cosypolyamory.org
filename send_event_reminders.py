@@ -32,7 +32,7 @@ from cosypolyamory.models.user import User
 from cosypolyamory.notification import send_event_reminder
 
 # Configuration
-REMINDER_TIME = "23:49"  # Send reminders at midnight
+REMINDER_TIME = "00:00"  # Send reminders at midnight
 
 logging.basicConfig(
     level=logging.INFO,
