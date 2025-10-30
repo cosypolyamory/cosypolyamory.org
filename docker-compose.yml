@@ -5,7 +5,7 @@ services:
 
   web:
     build: .
-    image: new.cosypolyamory.org
+    image: new-cosypolyamory-web
     expose:
       - "3031"
     volumes:
@@ -15,6 +15,12 @@ services:
       - LETSENCRYPT_HOST=new.cosypolyamory.org
       - LETSENCRYPT_EMAIL=mayhem@gmail.com
       - DATABASE_PATH=/data/cosypolyamory.db
+
+  reminders:
+    build: .
+    image: new-cosypolyamory-reminders
+    volumes:
+      - cosypolyamory:/data
 
 
 networks:

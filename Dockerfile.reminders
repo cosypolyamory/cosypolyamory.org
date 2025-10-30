@@ -1,0 +1,23 @@
+FROM ubuntu:22.04
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /code
+WORKDIR /code
+
+RUN pip3 install setuptools
+
+RUN mkdir /code/cosypolyamory.org
+WORKDIR /code/cosypolyamory.org
+
+COPY requirements.txt /code/cosypolyamory.org/
+
+RUN apt-get autoremove -y && \
+    apt-get clean -y
+
+# Now install our code, which may change frequently
+COPY . /code/cosypolyamory.org
+
+CMD /code/cosypolyamory.org/send_event_reminders.py
