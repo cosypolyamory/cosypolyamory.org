@@ -8,3 +8,4 @@ requests
 python-dotenv
 faker
 python-telegram-bot
+schedule
