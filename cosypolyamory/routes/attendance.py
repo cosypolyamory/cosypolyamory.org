@@ -64,8 +64,6 @@ def rsvp_event(event_id):
     """RSVP to an event"""
     from flask import jsonify
 
-    print("RSVP handler!")
-
     try:
         event = Event.get_by_id(event_id)
 
@@ -126,7 +124,6 @@ def rsvp_event(event_id):
                                                         event=event,
                                                         rsvps_waitlist=rsvps_waitlist,
                                                         now=datetime.now())
-                    print("meh")
                     return jsonify({
                         'success': True,
                         'message': message,
@@ -147,7 +144,6 @@ def rsvp_event(event_id):
                 if request.headers.get('Accept') == 'application/json':
                     return jsonify({'success': False, 'message': message})
                 flash(message, 'info')
-                print("meh2")
             return redirect(url_for('events.event_detail', event_id=event_id))
 
         if status not in ['yes', 'no', 'maybe']:
@@ -155,7 +151,7 @@ def rsvp_event(event_id):
             if request.headers.get('Accept') == 'application/json':
                 return jsonify({'success': False, 'message': message})
             flash(message, 'error')
-            print("meh3")
+            return redirect(url_for('events.event_detail', event_id=event_id))
             return redirect(url_for('events.event_detail', event_id=event_id))
 
         # Enforce event capacity and waitlist
@@ -208,8 +204,6 @@ def rsvp_event(event_id):
                     rsvp = RSVP.create(event=event, user=current_user, status=status, notes=notes)
                     status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
                     message = f'Attendance confirmed: {status_text}'
-
-            print("mop2")
 
         # Prepare response
         rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
@@ -300,24 +294,7 @@ def admin_remove_rsvp(event_id, user_id):
             if not skip_notification:
                 send_rsvp_update_notification(target_user, event, 'removed')
 
-            # Automatic waitlist promotion when someone who was attending is removed
-            promoted_user = None
-            if prev_status == 'yes' and event.max_attendees:
-                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                if yes_count < event.max_attendees:
-                    next_waitlisted = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(
-                        RSVP.created_at).first()
-                    if next_waitlisted:
-                        next_waitlisted.status = 'yes'
-                        next_waitlisted.updated_at = datetime.now()
-                        next_waitlisted.save()
-                        promoted_user = next_waitlisted.user.name
-                        # Send waitlist promotion notification
-                        send_waitlist_promotion_notification(next_waitlisted.user, event)
-
             message = f'RSVP removed for {target_user.name}'
-            if promoted_user:
-                message += f'. {promoted_user} has been moved from waitlist to attending.'
 
             if request.headers.get('Accept') == 'application/json':
                 # Recalculate lists and counts for real-time update
@@ -456,22 +433,6 @@ def admin_move_rsvp(event_id, user_id):
             # Send status update notification unless skipped
             if not skip_notification:
                 send_rsvp_update_notification(target_user, event, new_status)
-
-            # Automatic waitlist promotion when someone moves from attending to not attending
-            promoted_user = None
-            if prev_status == 'yes' and new_status != 'yes' and event.max_attendees:
-                yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                if yes_count < event.max_attendees:
-                    next_waitlisted = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(
-                        RSVP.created_at).first()
-                    if next_waitlisted:
-                        next_waitlisted.status = 'yes'
-                        next_waitlisted.updated_at = datetime.now()
-                        next_waitlisted.save()
-                        promoted_user = next_waitlisted.user.name
-                        # Send waitlist promotion notification
-                        send_waitlist_promotion_notification(next_waitlisted.user, event)
-                        message += f' {promoted_user} was promoted from waitlist.'
 
             if request.headers.get('Accept') == 'application/json':
                 # Recalculate lists and counts for real-time update
