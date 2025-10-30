@@ -180,9 +180,8 @@ def main():
     # Main scheduling loop
     while True:
         try:
-            logger.info("woke!")
             schedule.run_pending()
-            time.sleep(15)  # Check every minute
+            time.sleep(60)  # Check every minute
             
         except KeyboardInterrupt:
             logger.info("Received interrupt signal, shutting down...")

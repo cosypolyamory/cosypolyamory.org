@@ -922,6 +922,3 @@ def delete_event(event_id):
     except Exception as e:
         flash(f'An error occurred while deleting the event: {str(e)}', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
-
-
-
