@@ -26,6 +26,18 @@ def login():
     return render_template('user/login.html')
 
 
+@bp.route('/join')
+def join():
+    """Display join community page"""
+    return render_template('user/join.html')
+
+
+@bp.route('/create-account')
+def create_account():
+    """Display create account page with OAuth providers"""
+    return render_template('user/login.html', page_title='Create an account', is_signup=True)
+
+
 @bp.route('/login/<provider>')
 def oauth_login(provider):
     """Initiate OAuth login with specified provider"""
@@ -409,7 +421,6 @@ def oauth_callback(provider):
                         )
             
             login_user(user, remember=True)
-            flash(f'Successfully logged in with {provider.title()}!', 'success')
         except Exception as db_error:
             print(f"Database error: {db_error}")
             error_msg = str(db_error)
@@ -439,7 +450,6 @@ def oauth_callback(provider):
 def logout():
     """Log out current user"""
     logout_user()
-    flash('You have been logged out.', 'info')
     return redirect(url_for('pages.index'))
 
 
@@ -586,10 +596,8 @@ def update_profile():
         if not is_ajax:
             session.pop('profile_form_data', None)
         
-        success_msg = 'Profile updated successfully!'
         if is_ajax:
-            return jsonify({'success': True, 'message': success_msg})
-        flash(success_msg, 'success')
+            return jsonify({'success': True})
     except Exception as e:
         error_msg = f'Error updating profile: {str(e)}'
         if is_ajax:

@@ -21,5 +21,3 @@ RUN apt-get purge -y build-essential && \
 
 # Now install our code, which may change frequently
 COPY . /code/cosypolyamory.org
-
-CMD /code/cosypolyamory.org/docker_startup.sh

@@ -3,103 +3,6 @@
 {% block title %}Community Events{% endblock %}
 
 {% block content %}
-<style>
-.preview-btn {
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.preview-btn:hover {
-    background-color: #f8f9fa;
-    border-color: #6c757d;
-}
-
-.popover {
-    max-width: 500px;
-}
-
-.popover-body {
-    font-size: 1rem;
-    line-height: 1.4;
-    padding: 1rem;
-}
-
-.popover-description {
-    max-height: 300px;
-    overflow-y: auto;
-    font-size: 1rem;
-    line-height: 1.4;
-    white-space: pre-wrap;
-}
-
-.btn-close {
-    font-size: 0.7rem;
-    padding: 0.25rem;
-}
-
-.event-description {
-    font-size: 1.4rem;
-    line-height: 1.6;
-}
-
-.event-description:hover {
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-}
-
-/* Mobile optimization - reduce margins and padding */
-@media (max-width: 768px) {
-    /* Override base template's container constraints on mobile */
-    body > .container-md {
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        max-width: 100% !important;
-    }
-    
-    /* Override the col-md-8 mx-auto wrapper from base template */
-    #content {
-        max-width: 100% !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-    }
-    
-    .container {
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        max-width: 100% !important;
-    }
-    
-    .row {
-        margin-left: -4px !important;
-        margin-right: -4px !important;
-    }
-    
-    .row > [class*="col-"] {
-        padding-left: 4px !important;
-        padding-right: 4px !important;
-    }
-    
-    /* Reduce card padding on mobile */
-    .card-body {
-        padding: 0.75rem !important;
-    }
-    
-    /* Reduce margins between elements */
-    .mb-4 {
-        margin-bottom: 0.75rem !important;
-    }
-}
-</style>
-
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Community Events</h1>
@@ -238,13 +141,19 @@
                                                 {% if user_rsvp %}
                                                     {% if user_rsvp.status == 'yes' %}
                                                         <i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-success">I'm going</span>
+                                                        <span class="fw-bold text-success">
+                                                            {% if event.exact_time < now %}I went{% else %}I'm going{% endif %}
+                                                        </span>
                                                     {% elif user_rsvp.status == 'no' %}
                                                         <i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-danger">I'm not going</span>
+                                                        <span class="fw-bold text-danger">
+                                                            {% if event.exact_time < now %}I didn't go{% else %}I'm not going{% endif %}
+                                                        </span>
                                                     {% elif user_rsvp.status == 'waitlist' %}
                                                         <i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-warning">I am waitlisted</span>
+                                                        <span class="fw-bold text-warning">
+                                                            {% if event.exact_time < now %}I was waitlisted{% else %}I am waitlisted{% endif %}
+                                                        </span>
                                                     {% endif %}
                                                 {% endif %}
                                             </div>
@@ -347,9 +256,6 @@
 {% block styles %}
 {{ super() }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<style>
-.event-card.hidden { display: none !important; }
-</style>
 {% endblock %}
 
 {% block scripts %}

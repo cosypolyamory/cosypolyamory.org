@@ -5,7 +5,7 @@ services:
 
   web:
     build: .
-    image: new.cosypolyamory.org
+    image: new-cosypolyamory-web
     restart: unless-stopped
     expose:
       - "3031"
@@ -16,7 +16,14 @@ services:
       - LETSENCRYPT_HOST=new.cosypolyamory.org
       - LETSENCRYPT_EMAIL=mayhem@gmail.com
       - DATABASE_PATH=/data/cosypolyamory.db
+    command: ["/code/cosypolyamory.org/docker_startup.sh"]
 
+  reminders:
+    build: .
+    image: new-cosypolyamory-reminders
+    volumes:
+      - cosypolyamory:/data
+    command: ["/code/cosypolyamory.org/send_event_reminders.py"]
 
 networks:
   default:

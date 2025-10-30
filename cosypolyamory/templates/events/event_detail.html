@@ -21,8 +21,8 @@
                                 </a>
                             {% endif %}
                             
-                            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] %}
-                                <a href="{{ url_for('events.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
+                            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and event.exact_time > now %}
+                                <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
                                     <i class="fas fa-users-cog me-2"></i>Manage Attendance
                                 </a>
                             {% endif %}
@@ -355,13 +355,19 @@
                                                 {% elif user_rsvp %}
                                                     {% if user_rsvp.status == 'yes' %}
                                                         <i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-success">I'm going</span>
+                                                        <span class="fw-bold text-success">
+                                                            {% if event.exact_time < now %}I went{% else %}I'm going{% endif %}
+                                                        </span>
                                                     {% elif user_rsvp.status == 'no' %}
                                                         <i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-danger">I'm not going</span>
+                                                        <span class="fw-bold text-danger">
+                                                            {% if event.exact_time < now %}I didn't go{% else %}I'm not going{% endif %}
+                                                        </span>
                                                     {% elif user_rsvp.status == 'waitlist' %}
                                                         <i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-warning">I am waitlisted</span>
+                                                        <span class="fw-bold text-warning">
+                                                            {% if event.exact_time < now %}I was waitlisted{% else %}I am waitlisted{% endif %}
+                                                        </span>
                                                     {% endif %}
                                                 {% endif %}
                                             </div>
@@ -647,25 +653,6 @@ Log in or join our community for more details: {{ request.url }}</textarea>
 {% block styles %}
 {{ super() }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<style>
-.bg-orange { background-color: #fd7e14 !important; }
-.bg-purple { background-color: #6f42c1 !important; }
-/* Make the map responsive */
-#map {
-    height: 400px;
-    width: 100%;
-}
-.share-text {
-    white-space: pre-wrap;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-    padding: 1rem;
-    max-height: 300px;
-    overflow-y: auto;
-    font-family: monospace;
-}
-</style>
 {% endblock %}
 
 {% block scripts %}

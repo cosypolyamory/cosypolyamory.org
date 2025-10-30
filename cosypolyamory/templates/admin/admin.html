@@ -208,60 +208,6 @@
 {% block styles %}
 {{ super() }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<style>
-    .user-card {
-        border: 1px solid #dee2e6;
-        border-radius: 0.375rem;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        background-color: #fff;
-    }
-    .user-card:hover {
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-    .user-list {
-        max-height: 75vh;
-        overflow-y: auto;
-        padding-bottom: 50px;
-    }
-    .role-badge {
-        font-size: 0.75rem;
-    }
-    .tab-badge {
-        font-size: 0.7rem;
-    }
-    .bg-purple {
-        background-color: #6f42c1 !important;
-    }
-    .bg-orange {
-        background-color: #fd7e14 !important;
-    }
-    .dropdown-menu {
-        z-index: 1050 !important;
-        min-width: 180px;
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    .user-card {
-        position: relative;
-        overflow: visible;
-    }
-    .user-card .dropdown {
-        position: static;
-    }
-    .user-card .btn-group {
-        position: relative;
-    }
-    .card-body {
-        overflow: visible;
-    }
-    .user-list {
-        overflow: visible;
-    }
-    .user-card.dropdown-open {
-        z-index: 1000;
-    }
-</style>
 {% endblock %}
 
 {% block scripts %}

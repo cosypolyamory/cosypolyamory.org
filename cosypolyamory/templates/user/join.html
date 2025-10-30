@@ -1,0 +1,48 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Join Our Community{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <h1 class="text-center mb-4">Join Us!</h1>
+        
+        <p>
+            If you would like to join our community, you'll need to follow this process:
+        </p>
+        
+        <ol>
+            <li><strong>Read our community guidelines:</strong> 
+                <a href="{{ url_for('pages.coc') }}">Code of Conduct</a> and 
+                <a href="{{ url_for('pages.values') }}">Values</a>
+            </li>
+            <li><strong>Sign in</strong> with one of our supported providers (Google, GitHub, Reddit, or MusicBrainz)</li>
+            <li><strong>Complete the application form</strong> - tell us a bit about yourself and why you'd like to join</li>
+            <li><strong>Wait for our response</strong> - our team will review your application (usually within a few days)</li>
+        </ol>
+
+        <div class="text-center">
+            <a href="{{ url_for('auth.create_account') }}" class="btn btn-primary btn-lg me-3">
+                <i class="fas fa-sign-in-alt me-2"></i>Create an account
+            </a>
+        </div>
+
+        <div class="card mt-4 bg-light">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-question-circle text-warning me-2"></i>Questions?
+                </h6>
+                <p class="card-text mb-0">
+                    Feel free to <a href="{{ url_for('pages.contact') }}">contact us</a> if you have any questions 
+                    about joining our community. We're here to help!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}

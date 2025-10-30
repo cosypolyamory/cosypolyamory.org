@@ -18,8 +18,8 @@
                             <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-dark btn-sm">
                                 <i class="fas fa-list me-2"></i>All Events
                             </a>
-                            {% if current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id %}
-                            <a href="{{ url_for('events.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
+                            {% if (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) and event.exact_time > now %}
+                            <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
                                 <i class="fas fa-users-cog me-2"></i>Edit Attendance
                             </a>
                             {% endif %}
@@ -369,23 +369,6 @@
 {% block styles %}
 {{ super() }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<style>
-.has-error .btn {
-    border-color: #dc3545;
-    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-}
-
-.has-error .btn-outline-secondary {
-    color: #dc3545;
-    border-color: #dc3545;
-}
-
-.has-error .btn-outline-secondary:hover,
-.has-error .btn-outline-secondary:focus {
-    background-color: #dc3545;
-    color: white;
-}
-</style>
 {% endblock %}
 
 {% block scripts %}
