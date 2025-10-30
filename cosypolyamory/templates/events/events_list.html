@@ -141,13 +141,19 @@
                                                 {% if user_rsvp %}
                                                     {% if user_rsvp.status == 'yes' %}
                                                         <i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-success">I'm going</span>
+                                                        <span class="fw-bold text-success">
+                                                            {% if event.exact_time < now %}I went{% else %}I'm going{% endif %}
+                                                        </span>
                                                     {% elif user_rsvp.status == 'no' %}
                                                         <i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-danger">I'm not going</span>
+                                                        <span class="fw-bold text-danger">
+                                                            {% if event.exact_time < now %}I didn't go{% else %}I'm not going{% endif %}
+                                                        </span>
                                                     {% elif user_rsvp.status == 'waitlist' %}
                                                         <i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-warning">I am waitlisted</span>
+                                                        <span class="fw-bold text-warning">
+                                                            {% if event.exact_time < now %}I was waitlisted{% else %}I am waitlisted{% endif %}
+                                                        </span>
                                                     {% endif %}
                                                 {% endif %}
                                             </div>
