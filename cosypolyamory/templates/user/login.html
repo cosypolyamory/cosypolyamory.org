@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="col-md-10">
         <h1>{{ page_title or "Login to Cosy Polyamory" }}</h1>
         
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -19,40 +19,34 @@
                 </div>
             {% endif %}
         {% endwith %}
+
+        {% if is_signup %}
+            <p>
+                In order to create a safe community we require all new members to create an account. This allows us to keep the details about our
+                events limited to approved members. Please create an account with one of the providers below:
+            </p>
+        {% else %}
+            <p>
+                Please login with the provider you used to create your account:
+            </p>
+        {% endif %}
         
-        <div class="card mt-4">
-            <div class="card-body">
-                <h5 class="card-title">Choose your {{ "sign-up" if is_signup else "login" }} method</h5>
-                <p class="card-text">{{ "Create an account" if is_signup else "Sign in" }} with one of the following providers to access exclusive community features.</p>
-                
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('auth.oauth_login', provider='google') }}" class="btn btn-danger btn-lg">
-                        <i class="fab fa-google me-2"></i>{{ "Create Account" if is_signup else "Continue" }} with Google
-                    </a>
-                    
-                    <a href="{{ url_for('auth.oauth_login', provider='github') }}" class="btn btn-dark btn-lg">
-                        <i class="fab fa-github me-2"></i>{{ "Create Account" if is_signup else "Continue" }} with GitHub
-                    </a>
-                    
-                    <a href="{{ url_for('auth.oauth_login', provider='reddit') }}" class="btn btn-warning btn-lg">
-                        <i class="fab fa-reddit me-2"></i>{{ "Create Account" if is_signup else "Continue" }} with Reddit
-                    </a>
-                    
-                    <a href="{{ url_for('auth.oauth_login', provider='musicbrainz') }}" class="btn btn-lg" style="background-color: #BA478F; border-color: #BA478F; color: white;">
-                        <i class="fas fa-music me-2"></i>{{ "Create Account" if is_signup else "Continue" }} with MusicBrainz
-                    </a>
-                </div>
-                
-                <hr class="my-4">
-                
-                <div class="text-muted">
-                    <small>
-                        <strong>Why do we need authentication?</strong><br>
-                        Authentication helps us create a safe and welcoming community space. 
-                        It allows us to verify community members and provide access to private events and discussions.
-                    </small>
-                </div>
-            </div>
+        <div class="d-grid gap-2" style="margin: 30px 3em 0 3em">
+            <a href="{{ url_for('auth.oauth_login', provider='google') }}" class="btn btn-danger btn-lg">
+                <i class="fab fa-google me-2"></i>{{ "Create Account" if is_signup else "Continue" }} with Google
+            </a>
+            
+            <a href="{{ url_for('auth.oauth_login', provider='github') }}" class="btn btn-dark btn-lg">
+                <i class="fab fa-github me-2"></i>{{ "Create Account" if is_signup else "Continue" }} with GitHub
+            </a>
+            
+            <a href="{{ url_for('auth.oauth_login', provider='reddit') }}" class="btn btn-warning btn-lg">
+                <i class="fab fa-reddit me-2"></i>{{ "Create Account" if is_signup else "Continue" }} with Reddit
+            </a>
+            
+            <a href="{{ url_for('auth.oauth_login', provider='musicbrainz') }}" class="btn btn-lg" style="background-color: #BA478F; border-color: #BA478F; color: white;">
+                <i class="fas fa-music me-2"></i>{{ "Create Account" if is_signup else "Continue" }} with MusicBrainz
+            </a>
         </div>
     </div>
 </div>

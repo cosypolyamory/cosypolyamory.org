@@ -35,7 +35,7 @@ def join():
 @bp.route('/create-account')
 def create_account():
     """Display create account page with OAuth providers"""
-    return render_template('user/login.html', page_title='Create an Account', is_signup=True)
+    return render_template('user/login.html', page_title='Create an account', is_signup=True)
 
 
 @bp.route('/login/<provider>')
