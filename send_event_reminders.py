@@ -82,6 +82,31 @@ def set_last_run_date(run_date):
         logger.error(f"Error writing last run file: {e}")
 
 
+def calculate_next_run_timestamp():
+    """
+    Calculate the timestamp for the next reminder run.
+    This will be at the specified REMINDER_HOUR:REMINDER_MINUTE of the next day.
+    
+    Returns:
+        datetime: The datetime object representing the next run time
+    """
+    now = datetime.now()
+    
+    # Calculate today's reminder time
+    today_reminder = now.replace(hour=REMINDER_HOUR, minute=REMINDER_MINUTE, second=0, microsecond=0)
+    
+    # If today's reminder time has already passed, schedule for tomorrow
+    if now >= today_reminder:
+        # Move to tomorrow
+        next_day = now.date() + timedelta(days=1)
+        next_run = datetime.combine(next_day, datetime.min.time().replace(hour=REMINDER_HOUR, minute=REMINDER_MINUTE))
+    else:
+        # Use today's reminder time
+        next_run = today_reminder
+    
+    return next_run
+
+
 def should_send_reminders():
     """
     Determine if reminders should be sent today.
@@ -202,38 +227,37 @@ def send_reminders_for_today():
     return summary
 
 
-def is_reminder_time():
-    """
-    Check if it's the right time to send reminders (just after midnight).
-    
-    Returns:
-        bool: True if it's time to send reminders
-    """
-    now = datetime.now()
-    return now.hour == REMINDER_HOUR and now.minute == REMINDER_MINUTE
-
-
 def main():
     """
-    Main loop that runs continuously, checking for reminder time.
+    Main loop that runs continuously, using timestamp-based reminder scheduling.
     """
     logger.info("Starting Event Reminder Service")
-    logger.info(f"Will check every {CHECK_INTERVAL_SECONDS} seconds for reminder time ({REMINDER_HOUR:02d}:{REMINDER_MINUTE:02d})")
+    logger.info(f"Will check every {CHECK_INTERVAL_SECONDS} seconds for next run time")
+    logger.info(f"Reminders scheduled for {REMINDER_HOUR:02d}:{REMINDER_MINUTE:02d} each day")
     logger.info(f"Log file: {LOG_FILE}")
     logger.info(f"Last run tracking file: {LAST_RUN_FILE}")
+    
+    # Calculate initial next run timestamp
+    next_run_timestamp = calculate_next_run_timestamp()
+    logger.info(f"Next reminder scheduled for: {next_run_timestamp}")
     
     while True:
         try:
             current_time = datetime.now()
             
-            # Check if it's reminder time and we haven't sent today
-            if is_reminder_time() and should_send_reminders():
+            # Check if we've reached the next run timestamp and should send reminders
+            if current_time >= next_run_timestamp and should_send_reminders():
                 logger.info("=== Starting daily reminder process ===")
+                logger.info(f"Current time: {current_time}, target time was: {next_run_timestamp}")
                 
                 summary = send_reminders_for_today()
                 
                 # Update the last run date
                 set_last_run_date(date.today())
+                
+                # Calculate next run timestamp for the next day
+                next_run_timestamp = calculate_next_run_timestamp()
+                logger.info(f"Next reminder scheduled for: {next_run_timestamp}")
                 
                 logger.info("=== Daily reminder process completed ===")
                 logger.info(f"Summary: {summary['events_processed']} events processed, "
@@ -247,8 +271,11 @@ def main():
                 # Log current status every hour for monitoring
                 if current_time.minute == 0:
                     last_run = get_last_run_date()
-                    logger.debug(f"Service running. Current time: {current_time.strftime('%H:%M')}, "
-                               f"Last run: {last_run or 'Never'}")
+                    time_until_next = next_run_timestamp - current_time
+                    hours_until_next = time_until_next.total_seconds() / 3600
+                    logger.debug(f"Service running. Current: {current_time.strftime('%Y-%m-%d %H:%M')}, "
+                               f"Next run: {next_run_timestamp.strftime('%Y-%m-%d %H:%M')} "
+                               f"({hours_until_next:.1f}h remaining), Last run: {last_run or 'Never'}")
             
             # Sleep until next check
             time.sleep(CHECK_INTERVAL_SECONDS)
