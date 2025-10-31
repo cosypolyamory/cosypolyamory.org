@@ -19,6 +19,7 @@ import time
 import logging
 import schedule
 from datetime import datetime, date, timedelta
+import pytz
 
 # Add the project root to the Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +33,7 @@ from cosypolyamory.models.user import User
 from cosypolyamory.notification import send_event_reminder
 
 # Configuration
+TIMEZONE = pytz.timezone("Europe/Amsterdam")
 REMINDER_TIME = "00:00"  # Send reminders at midnight
 
 logging.basicConfig(
@@ -45,23 +47,30 @@ logger = logging.getLogger(__name__)
 
 def get_events_for_today():
     """
-    Get all events happening today.
+    Get all events happening today in the configured timezone.
     
     Returns:
         list: List of Event objects happening today
     """
-    today = date.today()
-    start_of_day = datetime.combine(today, datetime.min.time())
-    end_of_day = datetime.combine(today, datetime.max.time())
+    # Get today's date in the configured timezone
+    today_tz = datetime.now(TIMEZONE).date()
+    
+    # Create timezone-aware start and end of day
+    start_of_day_tz = TIMEZONE.localize(datetime.combine(today_tz, datetime.min.time()))
+    end_of_day_tz = TIMEZONE.localize(datetime.combine(today_tz, datetime.max.time()))
+    
+    # Convert to UTC for database query (assuming DB stores in UTC)
+    start_of_day_utc = start_of_day_tz.astimezone(pytz.UTC)
+    end_of_day_utc = end_of_day_tz.astimezone(pytz.UTC)
     
     try:
         events = list(Event.select().where(
-            (Event.exact_time >= start_of_day) & 
-            (Event.exact_time <= end_of_day) &
+            (Event.exact_time >= start_of_day_utc) & 
+            (Event.exact_time <= end_of_day_utc) &
             (Event.is_active == True)
         ))
         
-        logger.info(f"Found {len(events)} events for today ({today})")
+        logger.info(f"Found {len(events)} events for today ({today_tz}) in {TIMEZONE.zone}")
         return events
     
     except Exception as e:
@@ -144,14 +153,10 @@ def send_daily_reminders():
     """
     Job function to be called by the scheduler to send daily reminders.
     """
-
     try:
         logger.info("=== Starting daily reminder process ===")
         
         summary = send_reminders_for_today()
-        
-        # Update the last run date
-        set_last_run_date(date.today())
         
         logger.info("=== Daily reminder process completed ===")
         logger.info(f"Summary: {summary['events_processed']} events processed, "
@@ -170,10 +175,10 @@ def main():
     Main function that sets up the scheduler and runs the reminder service.
     """
     logger.info("Starting Event Reminder Service with schedule library")
-    logger.info(f"Reminders scheduled for {REMINDER_TIME} each day")
+    logger.info(f"Reminders scheduled for {REMINDER_TIME} each day in {TIMEZONE.zone}")
     
     # Schedule the daily reminder job
-    schedule.every().day.at(REMINDER_TIME, "Europe/Amsterdam").do(send_daily_reminders)
+    schedule.every().day.at(REMINDER_TIME, TIMEZONE.zone).do(send_daily_reminders)
     
     logger.info(f"Job scheduled successfully. Next run: {schedule.next_run()}")
     
