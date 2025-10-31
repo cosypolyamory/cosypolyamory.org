@@ -6,28 +6,18 @@ textarea::placeholder {
 }
 body {
   font-family: 'Montserrat', sans-serif !important;
-  background: #FCFBFB;
+}
+
+.page {
+    height: 100vh;
+}
+
+.page-odd {
+    background-color: #999;
 }
 
 .fake-mobile {
     width: 395px;
-}
-
-#header-title {
-    text-align: center;
-    /*margin-top: 0;*/
-}
-
-#header-pre-title {
-    font-size: 150%;
-    text-align: center;
-    margin-bottom: 0;
-}
-
-.logo {
-    text-align: center;
-    /*margin: 1.5em 0 0 0;*/
-    max-width: 250px;
 }
 
 .top-grid-logos-container {
@@ -42,6 +32,37 @@ body {
     justify-content: center;
     height: 20px;
 }
+
+#title {
+    color: #fff;
+    font-family: 'Inter', sans-serif; /* this should be in body */ /* Inter is not standard */
+    margin-top: 20vh;
+    text-align: center;
+}
+
+#title h1 {
+    font-size: 220%;
+    font-weight: 900;
+}
+
+#title h3 {
+    font-size: 85%;
+    text-align: center;
+    margin-bottom: 0;
+    padding-bottom: 15vh;
+}
+
+.bottom-grid-logos-container {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    margin-top: 1vh;
+}
+
+h2 {
+  font-weight: 800;
+}
+
 
 .top-grid-logos-container .grid-logo:nth-child(1) { grid-column: 2; grid-row: 1; }
 .top-grid-logos-container .grid-logo:nth-child(1) img { width: 20% }
@@ -58,8 +79,14 @@ body {
 .top-grid-logos-container .grid-logo:nth-child(5) { grid-column: 7; grid-row: 4; }
 .top-grid-logos-container .grid-logo:nth-child(5) img { width: 20% }
 
-h1,h2 {
-    /*margin: 1.5em 0 1.5em 0;*/
+.bottom-grid-logos-container .grid-logo:nth-child(1) { grid-column: 1; grid-row: 1; }
+.bottom-grid-logos-container .grid-logo:nth-child(1) img { width: 400% }
+
+.bottom-grid-logos-container .grid-logo:nth-child(2) { grid-column: 7; grid-row: 4; }
+.bottom-grid-logos-container .grid-logo:nth-child(2) img { width: 20% }
+
+#who-we-are {
+    /*margin-top: 80vh;*/
 }
 
 .header-paragraph {
