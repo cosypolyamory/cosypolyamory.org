@@ -238,9 +238,7 @@ def send_event_reminder(user, event):
             event_description=event.description or "Event details available on the website."
         )
         
-        if success:
-            current_app.logger.info(f"Event reminder sent to {user.email} for event: {event.title}")
-        else:
+        if not success:
             current_app.logger.warning(f"Failed to send event reminder to {user.email} for event: {event.title}")
         
         return success

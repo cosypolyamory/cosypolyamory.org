@@ -97,7 +97,7 @@ def get_attendees_for_event(event):
         ))
         
         attendees = [rsvp.user for rsvp in rsvps]
-        logger.info(f"Found {len(attendees)} attendees for event '{event.title}'")
+        #logger.info(f"Found {len(attendees)} attendees for event '{event.title}'")
         return attendees
     
     except Exception as e:
