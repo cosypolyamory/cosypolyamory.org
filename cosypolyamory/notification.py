@@ -9,6 +9,7 @@ from cosypolyamory.email import send_email, EmailError
 from flask import render_template, current_app, url_for
 import os
 import re
+import html
 
 
 def send_notification_email(to_email: str, template_name: str, **template_vars) -> bool:
@@ -64,13 +65,14 @@ def _extract_subject_from_html(html_content: str) -> str:
         html_content (str): Rendered HTML content
     
     Returns:
-        str: Email subject line
+        str: Email subject line with HTML entities unescaped
     """
     # Try to extract from <title> tag first
     title_match = re.search(r'<title>(.*?)</title>', html_content, re.DOTALL | re.IGNORECASE)
     if title_match:
         subject = title_match.group(1).strip()
-        # Remove " - Cosy Polyamory" suffix if present
+        # Unescape HTML entities (e.g., &amp; -> &, &lt; -> <, &gt; -> >)
+        subject = html.unescape(subject)
         subject = re.sub(r'\s*-\s*Cosy Polyamory\s*$', '', subject)
         return subject
     
