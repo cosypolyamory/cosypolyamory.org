@@ -148,27 +148,28 @@ def event_notes():
     notes = EventNote.select().order_by(EventNote.name)
     return render_template('events/event_notes.html', event_notes=notes)
 
-@bp.route('/event-notes/add', methods=['POST'])
+@bp.route('/event-notes/add', methods=['GET', 'POST'])
 @admin_or_organizer_required
 def add_event_note():
-
-    try:
-        with database.atomic():
-            name = request.form.get('name', '').strip()
-            note = request.form.get('note', '').strip()
-            if not name or not note:
-                flash('Both name and note are required.', 'error')
-                return render_template('events/add_event_note.html')
-            # Check for duplicate name
-            if EventNote.select().where(EventNote.name == name).exists():
-                flash('A note with this name already exists.', 'error')
-                return render_template('events/add_event_note.html')
-            EventNote.create(name=name, note=note)
-            flash('Event note added successfully.', 'success')
-            return redirect(url_for('admin.event_notes'))
-    except Exception as e:
-        flash(f'Error adding event note: {str(e)}', 'error')
-        return render_template('events/edit_event_note.html', note=note)
+    
+    if request.method == 'POST':
+        try:
+            with database.atomic():
+                name = request.form.get('name', '').strip()
+                note = request.form.get('note', '').strip()
+                if not name or not note:
+                    flash('Both name and note are required.', 'error')
+                    return render_template('events/add_event_note.html')
+                # Check for duplicate name
+                if EventNote.select().where(EventNote.name == name).exists():
+                    flash('A note with this name already exists.', 'error')
+                    return render_template('events/add_event_note.html')
+                EventNote.create(name=name, note=note)
+                flash('Event note added successfully.', 'success')
+                return redirect(url_for('admin.event_notes'))
+        except Exception as e:
+            flash(f'Error adding event note: {str(e)}', 'error')
+            return render_template('events/add_event_note.html')
 
     return render_template('events/add_event_note.html')
 
