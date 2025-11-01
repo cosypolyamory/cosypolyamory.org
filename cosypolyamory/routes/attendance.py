@@ -548,12 +548,12 @@ def edit_attendance(event_id):
         flash('Access denied. Only admins, organizers, and event creators can edit attendance.', 'error')
         return redirect(url_for('events.event_detail', event_id=event_id))
 
-    # Check if event is in the past
+    # Check if event is in the past - allow viewing but show info message
     from datetime import datetime
     current_time = datetime.now()
-    if event.exact_time < current_time:
-        flash("You can't manage attendance on a past event.", 'error')
-        return redirect(url_for('events.event_detail', event_id=event_id))
+    event_has_passed = event.exact_time < current_time
+    if event_has_passed:
+        flash("This event has passed. You can view attendance but only mark no-shows.", 'info')
 
     # Get all RSVPs
     rsvps_attending = list(RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at))
