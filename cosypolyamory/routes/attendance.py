@@ -552,8 +552,6 @@ def edit_attendance(event_id):
     from datetime import datetime
     current_time = datetime.now()
     event_has_passed = event.exact_time < current_time
-    if event_has_passed:
-        flash("This event has passed. You can view attendance but only mark no-shows.", 'info')
 
     # Get all RSVPs
     rsvps_attending = list(RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at))
@@ -573,15 +571,20 @@ def edit_attendance(event_id):
     if event.co_host:
         co_host_id = event.co_host.id
     
-    # Check if event has passed (current time > event end time, or exact_time if no end_time)
+    # Check event timing for different permissions
     from datetime import datetime
     current_time = datetime.now()
+    
+    # Event has started (allow no-show marking)
+    event_has_started = current_time >= event.exact_time
+    
+    # Event has completely passed (restrict attendance changes)
     event_end_time = event.end_time if event.end_time else event.exact_time
     event_has_passed = current_time > event_end_time
 
     # Get no-show data for this event
     no_shows = {}
-    if event_has_passed:
+    if event_has_started:  # Changed from event_has_passed to event_has_started
         # Get all no-show records for this event
         no_show_records = NoShow.select().where(NoShow.event == event)
         no_shows = {no_show.user.id: no_show for no_show in no_show_records}
@@ -640,6 +643,7 @@ def edit_attendance(event_id):
                            not_attending_count=not_attending_count,
                            organizer_id=organizer_id,
                            co_host_id=co_host_id,
+                           event_has_started=event_has_started,
                            event_has_passed=event_has_passed,
                            no_shows=no_shows,
                            user_no_show_counts=user_no_show_counts,

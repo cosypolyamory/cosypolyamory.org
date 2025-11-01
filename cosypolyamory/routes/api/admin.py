@@ -382,12 +382,11 @@ def api_mark_no_show(event_id):
     except Event.DoesNotExist:
         return jsonify({'success': False, 'message': 'Event not found'}), 404
 
-    # Check if event has passed
+    # Check if event has started (allow no-show marking once event begins)
     from datetime import datetime
     current_time = datetime.now()
-    event_end_time = event.end_time if event.end_time else event.exact_time
-    if current_time <= event_end_time:
-        return jsonify({'success': False, 'message': 'Cannot mark no-show for future events'}), 400
+    if current_time < event.exact_time:
+        return jsonify({'success': False, 'message': 'Cannot mark no-show for events that have not started yet'}), 400
 
     user_id = request.form.get('user_id')
     skip_notification = request.form.get('skip_notification') == 'true'

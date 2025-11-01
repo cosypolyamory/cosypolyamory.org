@@ -131,7 +131,7 @@
                                                 Manage
                                         </button>
                                         <ul class="dropdown-menu">
-                                            {% if event_has_passed %}
+                                            {% if event_has_started %}
                                                 {% if rsvp.user.id in no_shows %}
                                                 <li>
                                                     <button class="dropdown-item text-default" onclick="removeNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
@@ -145,7 +145,11 @@
                                                     </button>
                                                 </li>
                                                 {% endif %}
-                                            {% else %}
+                                                {% if not event_has_passed %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if not event_has_passed %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-hourglass-half me-2 text-default"></i>Move to Waitlist
