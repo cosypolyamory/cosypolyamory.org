@@ -114,6 +114,8 @@ def get_template_info() -> dict:
         dict: Dictionary with template names as keys and their descriptions as values
     """
     return {
+        'account_created': 'Welcome email for new user accounts',
+        'application_submitted': 'Confirmation email when user submits an application',
         'rsvp': 'RSVP confirmation email for event attendance',
         'application_approved': 'Welcome email for approved community applications',
         'application_rejected': 'Notification email for rejected applications',
@@ -448,6 +450,60 @@ def notify_event_updated(user, event, changes=None, update_message=None):
         
     except EmailError as e:
         current_app.logger.error(f"Error sending event update notification to {user.email}: {e}")
+        return False
+
+
+def notify_account_created(user):
+    """
+    Send welcome notification email to a newly created user
+    
+    Args:
+        user: User model instance for the new account
+    """
+    try:
+        success = send_notification_email(
+            to_email=user.email,
+            template_name="account_created",
+            name=user.name,
+            base_url=current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
+        )
+        
+        if success:
+            current_app.logger.info(f"Welcome email sent to {user.email}")
+        else:
+            current_app.logger.warning(f"Failed to send welcome email to {user.email}")
+        
+        return success
+        
+    except EmailError as e:
+        current_app.logger.error(f"Error sending welcome email to {user.email}: {e}")
+        return False
+
+
+def notify_application_submitted(user):
+    """
+    Send confirmation notification email when a user submits an application
+    
+    Args:
+        user: User model instance who submitted the application
+    """
+    try:
+        success = send_notification_email(
+            to_email=user.email,
+            template_name="application_submitted",
+            name=user.name,
+            base_url=current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
+        )
+        
+        if success:
+            current_app.logger.info(f"Application confirmation email sent to {user.email}")
+        else:
+            current_app.logger.warning(f"Failed to send application confirmation email to {user.email}")
+        
+        return success
+        
+    except EmailError as e:
+        current_app.logger.error(f"Error sending application confirmation email to {user.email}: {e}")
         return False
 
 

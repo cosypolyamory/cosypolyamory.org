@@ -14,6 +14,7 @@ from cosypolyamory.models.user import User
 from cosypolyamory.models.rsvp import RSVP
 from cosypolyamory.models.event import Event
 from cosypolyamory.database import database
+from cosypolyamory.notification import notify_account_created
 
 bp = Blueprint('auth', __name__)
 
@@ -423,6 +424,12 @@ def oauth_callback(provider):
                             provider='musicbrainz',
                             last_login=datetime.now()
                         )
+                    
+                    # Send welcome notification for new users
+                    try:
+                        notify_account_created(user)
+                    except Exception as e:
+                        current_app.logger.error(f"Failed to send welcome notification to {user.email}: {e}")
             
             login_user(user, remember=True)
         except Exception as db_error:

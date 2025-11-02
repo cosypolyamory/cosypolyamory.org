@@ -1,0 +1,29 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Application Received - Thank You! 📝{% endblock %}
+
+{% block content %}
+<h2>Thank you for your application!</h2>
+<p>Hello {{ name }},</p>
+<p>We've successfully received your application to join the Cosy Polyamory Community. Thank you for taking the time to fill out the application.</p>
+
+<div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #155724;">✅ What happens next?</h3>
+    <ul style="margin-bottom: 0;">
+        <li>Our Events Team will carefully review your application</li>
+        <li>We'll notify you once a decision has been made</li>
+        <li>If approved, you'll gain access to our events and community features</li>
+    </ul>
+</div>
+
+<p>While you wait, feel free to:</p>
+<ul>
+    <li>Browse our <a href="{{ base_url }}/events" style="color: #007bff;">upcoming events</a> (you'll see public information)</li>
+    <li>Read more about our <a href="{{ base_url }}/values" style="color: #007bff;">community values</a></li>
+    <li>Check out our <a href="{{ base_url }}/code-of-conduct" style="color: #007bff;">Code of Conduct</a></li>
+</ul>
+
+<p>We appreciate your patience during the review process and look forward to potentially welcoming you to our cosy community!</p>
+
+<p><strong>The Cosy Polyamory Team</strong></p>
+{% endblock %}
