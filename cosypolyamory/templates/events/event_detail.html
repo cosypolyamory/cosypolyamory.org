@@ -62,7 +62,67 @@
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-12">
-                            <div class="d-flex align-items-center gap-2 justify-content-end mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <!-- Left side: Attendance and Calendar buttons -->
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if event.exact_time > now and current_user.is_authenticated %}
+                                        {% set user_rsvp = user_rsvp %}
+                                        {% set is_host_or_cohost = current_user.is_authenticated and (current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id)) %}
+                                        
+                                        <!-- Attendance Dropdown -->
+                                        {% if not is_host_or_cohost %}
+                                            <div class="dropdown" style="min-width: 160px;">
+                                                {% if not user_rsvp %}
+                                                    <button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="fas fa-calendar-check me-2"></i>Your attendance
+                                                    </button>
+                                                    <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                            <i class="fas fa-check text-success me-2"></i>I want to go!
+                                                        </a></li>
+                                                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                            <i class="fas fa-times text-danger me-2"></i>I can't go
+                                                        </a></li>
+                                                    </ul>
+                                                {% elif user_rsvp.status == 'yes' %}
+                                                    <button class="btn btn-outline-success dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="fas fa-check me-2"></i>I am going
+                                                    </button>
+                                                    <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                            <i class="fas fa-times text-danger me-2"></i>I can't go anymore
+                                                        </a></li>
+                                                    </ul>
+                                                {% elif user_rsvp.status == 'waitlist' %}
+                                                    <button class="btn btn-outline-warning dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="fas fa-hourglass-half me-2"></i>I am waitlisted
+                                                    </button>
+                                                    <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                            <i class="fas fa-times text-danger me-2"></i>I can't go anymore
+                                                        </a></li>
+                                                    </ul>
+                                                {% elif user_rsvp.status == 'no' %}
+                                                    <button class="btn btn-outline-danger dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="fas fa-times me-2"></i>I am not going
+                                                    </button>
+                                                    <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                            <i class="fas fa-check text-success me-2"></i>I want to go!
+                                                        </a></li>
+                                                    </ul>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <!-- Add to Calendar Button -->
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#addToCalendarModal">
+                                            <i class="fas fa-calendar-plus me-2"></i>Add to Calendar
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Right side: Status pills -->
                                 <span id="header-pills">
                                 {% if event.exact_time < now %}
                                     <span class="badge bg-secondary fs-6">Past Event</span>
@@ -342,7 +402,7 @@
                                 </div>
                                 <div class="card-body">
                                     
-                                    <!-- Attendance Buttons -->
+                                    <!-- Attendance Status Display -->
                                     {% if event.exact_time > now %}
                                     <div class="mb-4" id="attendance-section">
                                         {% set user_rsvp = user_rsvp %}
@@ -369,60 +429,10 @@
                                                             {% if event.exact_time < now %}I was waitlisted{% else %}I am waitlisted{% endif %}
                                                         </span>
                                                     {% endif %}
+                                                {% else %}
+                                                    <i class="fas fa-question-circle text-muted me-2" title="RSVP Status"></i>
+                                                    <span class="text-muted">Use the buttons above to RSVP for this event</span>
                                                 {% endif %}
-                                            </div>
-                                            <div class="d-flex justify-content-center" role="group">
-                                                {% if not is_host_or_cohost %}
-                                                    <div class="dropdown" style="min-width: 200px;">
-                                                        {% if not user_rsvp %}
-                                                            <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                                <i class="fas fa-calendar-plus me-2"></i>Your attendance
-                                                            </button>
-                                                            <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
-                                                                <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
-                                                                    <i class="fas fa-check text-success me-2"></i>I want to go!
-                                                                </a></li>
-                                                                <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
-                                                                    <i class="fas fa-times text-danger me-2"></i>I can't go
-                                                                </a></li>
-                                                            </ul>
-                                                        {% elif user_rsvp.status == 'yes' %}
-                                                            <button class="btn btn-outline-success dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                                <i class="fas fa-check me-2"></i>I am going
-                                                            </button>
-                                                            <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
-                                                                <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
-                                                                    <i class="fas fa-times text-danger me-2"></i>I can't go anymore
-                                                                </a></li>
-                                                            </ul>
-                                                        {% elif user_rsvp.status == 'waitlist' %}
-                                                            <button class="btn btn-outline-warning dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                                <i class="fas fa-hourglass-half me-2"></i>I am waitlisted
-                                                            </button>
-                                                            <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
-                                                                <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
-                                                                    <i class="fas fa-times text-danger me-2"></i>I can't go anymore
-                                                                </a></li>
-                                                            </ul>
-                                                        {% elif user_rsvp.status == 'no' %}
-                                                            <button class="btn btn-outline-danger dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                                <i class="fas fa-times me-2"></i>I am not going
-                                                            </button>
-                                                            <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
-                                                                <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
-                                                                    <i class="fas fa-check text-success me-2"></i>I want to go!
-                                                                </a></li>
-                                                            </ul>
-                                                        {% endif %}
-                                                    </div>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            <!-- Add to Calendar Button -->
-                                            <div class="text-center mt-3">
-                                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#addToCalendarModal">
-                                                    <i class="fas fa-calendar-plus me-2"></i>Add to Calendar
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
