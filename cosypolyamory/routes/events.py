@@ -245,15 +245,18 @@ def create_event_post():
 
         # Validate organizer
         if not organizer_id:
+            current_app.logger.warning(f"Event creation failed: No organizer selected by user {current_user.id}")
             flash('Please select a primary organizer.', 'error')
             return redirect(url_for('events.create_event'))
 
         try:
             organizer = User.get_by_id(organizer_id)
             if not organizer.can_organize_events():
+                current_app.logger.warning(f"Event creation failed: User {organizer_id} cannot organize events (user {current_user.id} attempted)")
                 flash('Selected organizer does not have permission to organize events.', 'error')
                 return redirect(url_for('events.create_event'))
         except User.DoesNotExist:
+            current_app.logger.warning(f"Event creation failed: Organizer {organizer_id} not found (user {current_user.id} attempted)")
             flash('Selected organizer not found.', 'error')
             return redirect(url_for('events.create_event'))
 
@@ -262,47 +265,50 @@ def create_event_post():
             flash('You can only create events as yourself unless you are an admin.', 'error')
             return redirect(url_for('events.create_event'))
 
-        # Parse dates and times
-        date = dt.strptime(date_str, '%Y-%m-%d')
-        exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
-
-        # Check if organizer and co-host need RSVPs and if there's space for them
-        if max_attendees:
-            max_capacity = int(max_attendees)
-
-            # Check if organizer already has an RSVP for this event (shouldn't happen in create, but let's be safe)
-            organizer_needs_rsvp = True
-            cohost_needs_rsvp = bool(co_host)
-
+        # Handle co-host early, before capacity validation
+        co_host = None
+        if co_host_id:
             try:
-                # This shouldn't exist for a new event, but check anyway
-                existing_organizer_rsvp = RSVP.get((RSVP.user == organizer))
-                if existing_organizer_rsvp.status == 'yes':
-                    organizer_needs_rsvp = False
-            except RSVP.DoesNotExist:
-                pass
+                co_host = User.get_by_id(co_host_id)
+                if not co_host.can_organize_events():
+                    current_app.logger.warning(f"Event creation failed: Co-host {co_host_id} cannot organize events (user {current_user.id} attempted)")
+                    flash('Co-host must be an organizer.', 'error')
+                    return redirect(url_for('events.create_event'))
+            except User.DoesNotExist:
+                current_app.logger.warning(f"Event creation failed: Co-host {co_host_id} not found (user {current_user.id} attempted)")
+                flash('Co-host not found.', 'error')
+                return redirect(url_for('events.create_event'))
 
+        # Parse dates and times
+        try:
+            date = dt.strptime(date_str, '%Y-%m-%d')
+            exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
+        except ValueError as e:
+            flash(f'Invalid date or time format: {str(e)}', 'error')
+            return redirect(url_for('events.create_event'))
+
+        # Validate max_attendees against required host RSVPs
+        if max_attendees:
+            try:
+                max_capacity = int(max_attendees)
+                if max_capacity < 1:
+                    flash('Event capacity must be at least 1.', 'error')
+                    return redirect(url_for('events.create_event'))
+            except (ValueError, TypeError):
+                flash('Event capacity must be a valid number.', 'error')
+                return redirect(url_for('events.create_event'))
+
+            # Calculate minimum required capacity for hosts
+            required_hosts = 1  # organizer
             if co_host:
-                try:
-                    # This shouldn't exist for a new event, but check anyway
-                    existing_cohost_rsvp = RSVP.get((RSVP.user == co_host))
-                    if existing_cohost_rsvp.status == 'yes':
-                        cohost_needs_rsvp = False
-                except RSVP.DoesNotExist:
-                    pass
+                required_hosts = 2  # organizer + co-host
 
-            # Calculate how many RSVPs we need to create
-            rsvps_needed = (1 if organizer_needs_rsvp else 0) + (1 if cohost_needs_rsvp else 0)
-
-            if rsvps_needed > max_capacity:
+            if max_capacity < required_hosts:
+                current_app.logger.warning(f"Event creation failed: Capacity {max_capacity} insufficient for {required_hosts} hosts (user {current_user.id}, organizer {organizer_id}, co-host {co_host_id if co_host else 'None'})")
                 if co_host:
-                    flash(
-                        f'Cannot create event with capacity of {max_capacity}. The organizer and co-host need RSVPs but there is not enough space for them in the event.',
-                        'error')
+                    flash(f'Event capacity must be at least {required_hosts} to accommodate the organizer and co-host.', 'error')
                 else:
-                    flash(
-                        f'Cannot create event with capacity of {max_capacity}. The organizer needs an RSVP but there is not enough space in the event.',
-                        'error')
+                    flash(f'Event capacity must be at least {required_hosts} to accommodate the organizer.', 'error')
                 return redirect(url_for('events.create_event'))
 
         # Validate Google Maps link if provided
@@ -315,18 +321,6 @@ def create_event_post():
                     'error')
                 return redirect(url_for('events.create_event'))
 
-        # Handle co-host
-        co_host = None
-        if co_host_id:
-            try:
-                co_host = User.get_by_id(co_host_id)
-                if not co_host.can_organize_events():
-                    flash('Co-host must be an organizer.', 'error')
-                    return redirect(url_for('events.create_event'))
-            except User.DoesNotExist:
-                flash('Co-host not found.', 'error')
-                return redirect(url_for('events.create_event'))
-
         # Handle event note
         event_note_id = request.form.get('event_note_id')
         event_note = None
@@ -336,17 +330,6 @@ def create_event_post():
             except EventNote.DoesNotExist:
                 flash('Selected event note not found.', 'error')
                 return redirect(url_for('events.create_event'))
-
-        # Validate max_attendees against required host RSVPs
-        required_hosts = 1  # organizer
-        if co_host:
-            required_hosts = 2  # organizer + co-host
-
-        if max_attendees and int(max_attendees) < required_hosts:
-            flash(
-                f'Cannot create event with capacity of {max_attendees}. Minimum capacity must be at least {required_hosts} to accommodate the organizer{" and co-host" if co_host else ""}.',
-                'error')
-            return redirect(url_for('events.create_event'))
 
         # Handle end time from hour/minute dropdowns
         end_time_hour = request.form.get('end_time_hour')
@@ -435,10 +418,16 @@ def create_event_post():
         return redirect(url_for('events.event_detail', event_id=event.id))
 
     except ValueError as e:
-        flash(f'Error creating event: {str(e)}', 'error')
+        current_app.logger.warning(f"Value error creating event: {str(e)}")
+        flash(f'Invalid input data: {str(e)}', 'error')
+        return redirect(url_for('events.create_event'))
+    except (User.DoesNotExist, Event.DoesNotExist, EventNote.DoesNotExist) as e:
+        current_app.logger.warning(f"Database object not found when creating event: {str(e)}")
+        flash('One of the selected items (organizer, co-host, or event note) could not be found. Please try again.', 'error')
         return redirect(url_for('events.create_event'))
     except Exception as e:
-        flash(f'Unexpected error: {str(e)}', 'error')
+        current_app.logger.error(f"Unexpected error creating event: {str(e)}", exc_info=True)
+        flash('An unexpected error occurred while creating the event. Please try again or contact support if the problem persists.', 'error')
         return redirect(url_for('events.create_event'))
 
 
@@ -838,13 +827,20 @@ def edit_event_post(event_id):
         return redirect(url_for('events.event_detail', event_id=event.id))
 
     except Event.DoesNotExist:
+        current_app.logger.warning(f"Attempt to edit non-existent event {event_id}")
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
     except ValueError as e:
-        flash(f'Error updating event: {str(e)}', 'error')
+        current_app.logger.warning(f"Value error updating event {event_id}: {str(e)}")
+        flash(f'Invalid input data: {str(e)}', 'error')
+        return redirect(url_for('events.edit_event', event_id=event_id))
+    except (User.DoesNotExist, EventNote.DoesNotExist) as e:
+        current_app.logger.warning(f"Database object not found when updating event {event_id}: {str(e)}")
+        flash('One of the selected items (organizer, co-host, or event note) could not be found. Please try again.', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
     except Exception as e:
-        flash(f'Unexpected error: {str(e)}', 'error')
+        current_app.logger.error(f"Unexpected error updating event {event_id}: {str(e)}", exc_info=True)
+        flash('An unexpected error occurred while updating the event. Please try again or contact support if the problem persists.', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
 
 
@@ -917,8 +913,10 @@ def delete_event(event_id):
         return redirect(url_for('events.events_list'))
 
     except Event.DoesNotExist:
+        current_app.logger.warning(f"Attempt to delete non-existent event {event_id} by user {current_user.id}")
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
     except Exception as e:
-        flash(f'An error occurred while deleting the event: {str(e)}', 'error')
+        current_app.logger.error(f"Unexpected error deleting event {event_id}: {str(e)}", exc_info=True)
+        flash('An unexpected error occurred while deleting the event. Please try again or contact support if the problem persists.', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
