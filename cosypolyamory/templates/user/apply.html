@@ -36,113 +36,22 @@
                 </div>
                 
                 <form method="POST" action="{{ url_for('user.submit_application') }}">
+                    {% for question_key, question_text in questions.items() %}
                     <div class="mb-4">
-                        <label for="question_1" class="form-label">
-                            <strong>{{ questions.question_1 }}</strong>
+                        <label for="{{ question_key }}" class="form-label">
+                            <strong>{{ question_text }}</strong>
                         </label>
-                        <textarea class="form-control" id="question_1" name="question_1" rows="4" required 
-                                  minlength="{{ character_limits.question_1.min }}"
-                                  data-min="{{ character_limits.question_1.min }}"
-                                  data-max="{{ character_limits.question_1.max }}">{{ form_data.question_1 if form_data else '' }}</textarea>
+                        <textarea class="form-control" id="{{ question_key }}" name="{{ question_key }}" rows="4" required 
+                                  minlength="{{ character_limits[question_key].min }}"
+                                  data-min="{{ character_limits[question_key].min }}"
+                                  data-max="{{ character_limits[question_key].max }}">{{ form_data[question_key] if form_data else '' }}</textarea>
                         <div class="form-text">
-                            <span class="char-counter" data-target="question_1">0</span> / {{ character_limits.question_1.min }} characters minimum (max: {{ character_limits.question_1.max }})
+                            <span class="char-counter" data-target="{{ question_key }}">0</span> / {{ character_limits[question_key].min }} characters minimum (max: {{ character_limits[question_key].max }})
                             <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
                         </div>
                         <div class="invalid-feedback"></div>
                     </div>
-                    
-                    <div class="mb-4">
-                        <label for="question_2" class="form-label">
-                            <strong>{{ questions.question_2 }}</strong>
-                        </label>
-                        <textarea class="form-control" id="question_2" name="question_2" rows="4" required 
-                                  minlength="{{ character_limits.question_2.min }}"
-                                  data-min="{{ character_limits.question_2.min }}"
-                                  data-max="{{ character_limits.question_2.max }}">{{ form_data.question_2 if form_data else '' }}</textarea>
-                        <div class="form-text">
-                            <span class="char-counter" data-target="question_2">0</span> / {{ character_limits.question_2.min }} characters minimum (max: {{ character_limits.question_2.max }})
-                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
-                        </div>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="question_3" class="form-label">
-                            <strong>{{ questions.question_3 }}</strong>
-                        </label>
-                        <textarea class="form-control" id="question_3" name="question_3" rows="4" required 
-                                  minlength="{{ character_limits.question_3.min }}"
-                                  data-min="{{ character_limits.question_3.min }}"
-                                  data-max="{{ character_limits.question_3.max }}">{{ form_data.question_3 if form_data else '' }}</textarea>
-                        <div class="form-text">
-                            <span class="char-counter" data-target="question_3">0</span> / {{ character_limits.question_3.min }} characters minimum (max: {{ character_limits.question_3.max }})
-                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
-                        </div>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="question_4" class="form-label">
-                            <strong>{{ questions.question_4 }}</strong>
-                        </label>
-                        <textarea class="form-control" id="question_4" name="question_4" rows="4" required 
-                                  minlength="{{ character_limits.question_4.min }}"
-                                  data-min="{{ character_limits.question_4.min }}"
-                                  data-max="{{ character_limits.question_4.max }}">{{ form_data.question_4 if form_data else '' }}</textarea>
-                        <div class="form-text">
-                            <span class="char-counter" data-target="question_4">0</span> / {{ character_limits.question_4.min }} characters minimum (max: {{ character_limits.question_4.max }})
-                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
-                        </div>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="question_5" class="form-label">
-                            <strong>{{ questions.question_5 }}</strong>
-                        </label>
-                        <textarea class="form-control" id="question_5" name="question_5" rows="4" required
-                                  minlength="{{ character_limits.question_5.min }}"
-                                  maxlength="{{ character_limits.question_5.max }}"
-                                  data-min="{{ character_limits.question_5.min }}"
-                                  data-max="{{ character_limits.question_5.max }}"></textarea>
-                        <div class="form-text">
-                            <span class="char-counter" data-target="question_5">0</span> / {{ character_limits.question_5.min }} characters minimum (max: {{ character_limits.question_5.max }})
-                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
-                        </div>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="question_6" class="form-label">
-                            <strong>{{ questions.question_6 }}</strong>
-                        </label>
-                        <textarea class="form-control" id="question_6" name="question_6" rows="4" required
-                                  minlength="{{ character_limits.question_6.min }}"
-                                  maxlength="{{ character_limits.question_6.max }}"
-                                  data-min="{{ character_limits.question_6.min }}"
-                                  data-max="{{ character_limits.question_6.max }}"></textarea>
-                        <div class="form-text">
-                            <span class="char-counter" data-target="question_6">0</span> / {{ character_limits.question_6.min }} characters minimum (max: {{ character_limits.question_6.max }})
-                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
-                        </div>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="question_7" class="form-label">
-                            <strong>{{ questions.question_7 }}</strong>
-                        </label>
-                        <textarea class="form-control" id="question_7" name="question_7" rows="4" required
-                                  minlength="{{ character_limits.question_7.min }}"
-                                  maxlength="{{ character_limits.question_7.max }}"
-                                  data-min="{{ character_limits.question_7.min }}"
-                                  data-max="{{ character_limits.question_7.max }}"></textarea>
-                        <div class="form-text">
-                            <span class="char-counter" data-target="question_7">0</span> / {{ character_limits.question_7.min }} characters minimum (max: {{ character_limits.question_7.max }})
-                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
-                        </div>
-                        <div class="invalid-feedback"></div>
-                    </div>
+                    {% endfor %}
                     
                     <div class="mb-3">
                         <div class="form-check">

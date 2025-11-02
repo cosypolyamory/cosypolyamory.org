@@ -45,21 +45,9 @@ def moderate_applications():
     prev_num = page - 1 if has_prev else None
     next_num = page + 1 if has_next else None
     
-    # Get questions from environment for display
-    questions = {
-        'question_1': os.getenv('QUESTION_1', 'Error: question not defined'),
-        'question_2': os.getenv('QUESTION_2', 'Error: question not defined'),
-        'question_3': os.getenv('QUESTION_3', 'Error: question not defined'),
-        'question_4': os.getenv('QUESTION_4', 'Error: question not defined'),
-        'question_5': os.getenv('QUESTION_5', 'Error: question not defined'),
-        'question_6': os.getenv('QUESTION_6', 'Error: question not defined'),
-        'question_7': os.getenv('QUESTION_7', 'Error: question not defined'),
-    }
-    
     return render_template('admin/moderate.html',
                          pending_applications=pending_applications,
                          pending_count=total_applications,
-                         questions=questions,
                          pagination={
                              'page': page,
                              'per_page': per_page,
