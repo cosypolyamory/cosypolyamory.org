@@ -12,6 +12,16 @@
             </button>
         </div>
 
+        {% if pending_applications_count > 0 %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            There {{ 'is' if pending_applications_count == 1 else 'are' }} {{ pending_applications_count }}
+            <a href="{{ url_for('admin.moderate_applications') }}" class="alert-link">
+             application{{ 's' if pending_applications_count != 1 else '' }} pending review</a>.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
         <div id="search-form-container" class="mb-3" style="display: none;">
             <div class="input-group">
                 <input type="text" id="user-search-input" class="form-control" placeholder="Type to search for members...">

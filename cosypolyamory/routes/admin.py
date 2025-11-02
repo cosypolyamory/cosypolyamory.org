@@ -139,7 +139,16 @@ def reject_application(application_id):
 def admin_dashboard():
     """Admin dashboard"""
     users = list(User.select())
-    return render_template('admin/admin.html', users=users)
+    
+    # Calculate pending applications count for the notification message
+    pending_applications_count = (UserApplication.select()
+                                 .join(User)
+                                 .where(User.role == "pending")
+                                 .count())
+    
+    return render_template('admin/admin.html', 
+                         users=users, 
+                         pending_applications_count=pending_applications_count)
 
 # Event Notes Admin Routes (admins and organizers only)
 @bp.route('/event-notes')
