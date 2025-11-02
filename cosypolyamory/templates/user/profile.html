@@ -153,7 +153,7 @@
     {% endif %}
         
     <!-- Join Community Call-to-Action for new users -->
-    {% if not user.role or user.role == "new" %}
+    {% if not needs_info and (not user.role or user.role == "new") %}
     
         <p class="mb-3">
             To access full event details and to attend our events, you'll need to complete a brief
