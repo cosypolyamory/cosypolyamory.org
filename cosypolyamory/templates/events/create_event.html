@@ -329,7 +329,7 @@
                             <div class="form-text">Leave empty for unlimited capacity</div>
                         </div>
                         
-                        <div class="col-12 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Event Notes</label>
                             <select class="form-select mb-2" id="event_note_select" name="event_note_id">
                                 <option value="">Do not include an event note</option>
@@ -337,6 +337,19 @@
                                     <option value="{{ note.id }}" data-note='{{ note.note|tojson }}'{% if event and event.event_note_id == note.id %} selected{% endif %}>{{ note.name }}</option>
                                 {% endfor %}
                             </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <a href="{{ url_for('admin.event_notes') }}" target="_blank" class="btn btn-outline-secondary">
+                                    <i class="fas fa-edit me-2"></i>Edit event notes
+                                    <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75em;"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
                             <div id="selected_event_note_box" class="border rounded bg-light p-2 mb-2" style="display:none; white-space:pre-line;"></div>
                             <label for="tips_for_attendees" class="form-label">Additional notes for this event</label>
                             <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3" maxlength="5000"
