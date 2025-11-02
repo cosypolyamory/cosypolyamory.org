@@ -22,6 +22,48 @@ from cosypolyamory.notification import send_notification_email, send_rsvp_confir
 bp = Blueprint('events', __name__, url_prefix='/events')
 
 
+def validate_event_form_data(title, description, barrio, establishment_name, tips_for_attendees, 
+                           location_notes=None, google_maps_link=None):
+    """
+    Validate event form data for character limits and required fields.
+    
+    Returns (is_valid, error_message)
+    """
+    # Required field validation
+    if not title or not title.strip():
+        return False, "Event title is required."
+    
+    if not description or not description.strip():
+        return False, "Event description is required."
+    
+    if not barrio or not barrio.strip():
+        return False, "Barrio/neighborhood is required."
+    
+    # Character limit validation
+    if len(title.strip()) > 255:
+        return False, f"Event title must be 255 characters or less. Current length: {len(title.strip())}"
+    
+    if len(description.strip()) > 5000:
+        return False, f"Event description must be 5000 characters or less. Current length: {len(description.strip())}"
+    
+    if len(barrio.strip()) > 64:
+        return False, f"Barrio/neighborhood must be 64 characters or less. Current length: {len(barrio.strip())}"
+    
+    if establishment_name and len(establishment_name.strip()) > 64:
+        return False, f"Establishment name must be 64 characters or less. Current length: {len(establishment_name.strip())}"
+    
+    if tips_for_attendees and len(tips_for_attendees.strip()) > 5000:
+        return False, f"Tips for attendees must be 5000 characters or less. Current length: {len(tips_for_attendees.strip())}"
+    
+    if location_notes and len(location_notes.strip()) > 1000:
+        return False, f"Location notes must be 1000 characters or less. Current length: {len(location_notes.strip())}"
+    
+    if google_maps_link and len(google_maps_link.strip()) > 2000:
+        return False, f"Google Maps link must be 2000 characters or less. Current length: {len(google_maps_link.strip())}"
+    
+    return True, None
+
+
 def organizer_required(f):
     """Decorator to require organizer access"""
     from functools import wraps
@@ -242,6 +284,16 @@ def create_event_post():
         max_attendees = request.form.get('max_attendees')
         organizer_id = request.form.get('organizer_id')
         co_host_id = request.form.get('co_host_id', '')
+
+        # Validate form data lengths and required fields
+        is_valid, error_message = validate_event_form_data(
+            title, description, barrio, establishment_name, tips_for_attendees,
+            location_notes, google_maps_link
+        )
+        if not is_valid:
+            current_app.logger.warning(f"Event creation validation failed for user {current_user.id}: {error_message}")
+            flash(error_message, 'error')
+            return redirect(url_for('events.create_event'))
 
         # Validate organizer
         if not organizer_id:
@@ -512,6 +564,16 @@ def edit_event_post(event_id):
         max_attendees = request.form.get('max_attendees')
         organizer_id = request.form.get('organizer_id')
         co_host_id = request.form.get('co_host_id', '')
+
+        # Validate form data lengths and required fields
+        is_valid, error_message = validate_event_form_data(
+            title, description, barrio, establishment_name, tips_for_attendees,
+            location_notes, google_maps_link
+        )
+        if not is_valid:
+            current_app.logger.warning(f"Event edit validation failed for user {current_user.id}, event {event_id}: {error_message}")
+            flash(error_message, 'error')
+            return redirect(url_for('events.edit_event', event_id=event_id))
 
         # Validate organizer
         if not organizer_id:
