@@ -116,6 +116,7 @@ def get_template_info() -> dict:
     return {
         'account_created': 'Welcome email for new user accounts',
         'application_submitted': 'Confirmation email when user submits an application',
+        'organizer_new_application': 'Notification to organizers when new application is submitted',
         'rsvp': 'RSVP confirmation email for event attendance',
         'application_approved': 'Welcome email for approved community applications',
         'application_rejected': 'Notification email for rejected applications',
@@ -504,6 +505,63 @@ def notify_application_submitted(user):
         
     except EmailError as e:
         current_app.logger.error(f"Error sending application confirmation email to {user.email}: {e}")
+        return False
+
+
+def notify_organizers_new_application(user):
+    """
+    Send notification to all organizers when a new application is submitted
+    
+    Args:
+        user: User model instance who submitted the application
+    """
+    from cosypolyamory.models.user import User
+    from cosypolyamory.models.user_application import UserApplication
+    from datetime import datetime
+    
+    try:
+        # Get the user's application
+        application = UserApplication.get(UserApplication.user == user)
+        questions_and_answers = application.get_questions_and_answers()
+        
+        # Get all organizers and admins
+        organizers = User.select().where(User.role.in_(['admin', 'organizer']))
+        
+        success_count = 0
+        total_count = 0
+        
+        for organizer in organizers:
+            try:
+                total_count += 1
+                success = send_notification_email(
+                    to_email=organizer.email,
+                    template_name="organizer_new_application",
+                    applicant_name=user.name,
+                    applicant_pronouns=user.pronouns,
+                    submission_date=datetime.now().strftime('%B %d, %Y at %I:%M %p'),
+                    questions_and_answers=questions_and_answers,
+                    base_url=current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
+                )
+                
+                if success:
+                    success_count += 1
+                    current_app.logger.info(f"New application notification sent to organizer {organizer.email}")
+                else:
+                    current_app.logger.warning(f"Failed to send new application notification to organizer {organizer.email}")
+                    
+            except EmailError as e:
+                current_app.logger.error(f"Error sending new application notification to organizer {organizer.email}: {e}")
+            except Exception as e:
+                current_app.logger.error(f"Unexpected error sending new application notification to organizer {organizer.email}: {e}")
+        
+        current_app.logger.info(f"New application notifications: {success_count}/{total_count} sent successfully for user {user.email}")
+        return success_count > 0
+        
+    except UserApplication.DoesNotExist:
+        current_app.logger.error(f"Application not found for user {user.email} when trying to notify organizers")
+        return False
+    except Exception as e:
+        current_app.logger.error(f"Error getting application data for organizer notification: {e}")
         return False
 
 

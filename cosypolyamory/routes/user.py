@@ -11,7 +11,7 @@ from flask_login import login_required, current_user
 from cosypolyamory.models.user import User
 from cosypolyamory.models.user_application import UserApplication
 from cosypolyamory.database import database
-from cosypolyamory.notification import notify_application_submitted
+from cosypolyamory.notification import notify_application_submitted, notify_organizers_new_application
 
 bp = Blueprint('user', __name__)
 
@@ -140,12 +140,19 @@ def submit_application():
             current_user.role = 'pending'
             current_user.save()
             
-        # Send application confirmation notification
+        # Send application confirmation notification to user
         try:
             notify_application_submitted(current_user)
         except Exception as e:
             from flask import current_app
             current_app.logger.error(f"Failed to send application confirmation notification to {current_user.email}: {e}")
+            
+        # Send notification to organizers about new application
+        try:
+            notify_organizers_new_application(current_user)
+        except Exception as e:
+            from flask import current_app
+            current_app.logger.error(f"Failed to send organizer notification for new application from {current_user.email}: {e}")
             
         flash('Your application has been submitted! You will be notified once it has been reviewed.', 'success')
         return redirect(url_for('auth.profile'))
