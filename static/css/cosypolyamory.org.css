@@ -7,6 +7,7 @@ textarea::placeholder {
 body {
   font-family: 'Montserrat', sans-serif !important;
   background: #FCFBFB;
+  color: #3F51B5;
 }
 
 .coming-soon {
@@ -18,13 +19,13 @@ body {
 }
 
 #header-title { 
-    text-align: center;
+    text-align: left;
     margin-top: 0;
 }
 
 #header-pre-title {
     font-size: 150%;
-    text-align: center;
+    text-align: left;
     margin-bottom: 0;
 }
 
