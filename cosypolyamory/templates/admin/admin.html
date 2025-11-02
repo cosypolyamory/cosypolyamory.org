@@ -51,7 +51,7 @@
                 <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
-                            New <span class="badge bg-warning ms-1 tab-badge" id="pending-count">0</span>
+                            Pending Review <span class="badge bg-warning ms-1 tab-badge" id="pending-count">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -345,7 +345,7 @@ function createUserCard(user) {
         approved: 'Member',
         pending: 'Pending',
         rejected: 'Rejected',
-        new: 'New'
+        new: 'Pending Review'
     };
     let applicationInfo = '';
     // Only show application buttons for pending users
@@ -407,7 +407,7 @@ function createUserCard(user) {
                                         <i class="fas fa-calendar me-2" style="color: #6f42c1;"></i>Make organizer
                                     </button></li>`);
                                     options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'new')">
-                                        <i class="fas fa-clock text-warning me-2"></i>Mark new (force user to reapply)
+                                        <i class="fas fa-clock text-warning me-2"></i>Mark pending review (force user to reapply)
                                     </button></li>`);
                                 }
                                 
@@ -419,7 +419,7 @@ function createUserCard(user) {
                                 }
                                 if (user.role === 'rejected') {
                                     options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'new')">
-                                        <i class="fas fa-clock text-warning me-2"></i>Mark new (force user to reapply)
+                                        <i class="fas fa-clock text-warning me-2"></i>Mark pending review (force user to reapply)
                                     </button></li>`);
                                 }
                                 
@@ -544,7 +544,7 @@ function viewUser(userId) {
                         case 'rejected':
                             return { class: 'bg-danger', icon: 'fas fa-times-circle', text: 'Rejected' };
                         default:
-                            return { class: 'bg-secondary', icon: 'fas fa-user', text: 'New User' };
+                            return { class: 'bg-secondary', icon: 'fas fa-user', text: 'Pending Review' };
                     }
                 };
                 
@@ -704,7 +704,7 @@ function viewUser(userId) {
                         case 'rejected':
                             return { class: 'bg-danger', icon: 'fas fa-times-circle', text: 'Rejected' };
                         default:
-                            return { class: 'bg-secondary', icon: 'fas fa-user', text: 'New User' };
+                            return { class: 'bg-secondary', icon: 'fas fa-user', text: 'Pending Review' };
                     }
                 };
                 
