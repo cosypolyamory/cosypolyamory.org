@@ -118,8 +118,10 @@ def oauth_callback(provider):
                                            emails[0].get('email') if emails[0] else None)
                 except Exception as e:
                     print(f"Error getting GitHub emails: {e}")
-                    # If we can't get email, we'll use the username as a fallback
-                    primary_email = f"{user_info['login']}@github.local"
+            
+            # Ensure we always have a valid email, use fallback if needed
+            if not primary_email:
+                primary_email = f"{user_info['login']}@github.local"
             
             user_id = f"github_{user_info['id']}"
             user = User(
