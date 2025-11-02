@@ -190,24 +190,47 @@
                                         <div class="attendance-buttons-container">
                                             {% set user_rsvp = user_rsvps.get(event.id) %}
                                             <div class="attendance-container">
-                                                <div class="text-center">
-                                                    <div class="btn-group w-100" role="group">
-                                                        {% if not user_rsvp %}
-                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes">
-                                                                <i class="fas fa-check me-1"></i>I want to go!
-                                                            </button>
-                                                            <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no">
-                                                                <i class="fas fa-times me-1"></i>I can't go
-                                                            </button>
-                                                        {% else %}
-                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes" {% if user_rsvp.status == 'yes' or user_rsvp.status == 'waitlist' %}disabled{% endif %}>
-                                                                <i class="fas fa-check me-1"></i>I want to go!
-                                                            </button>
-                                                            <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if user_rsvp.status == 'no' %}disabled{% endif %}>
-                                                                <i class="fas fa-times me-1"></i>I can't go
-                                                            </button>
-                                                        {% endif %}
-                                                    </div>
+                                                <div class="dropdown w-100">
+                                                    {% if not user_rsvp %}
+                                                        <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="fas fa-calendar-plus me-2"></i>Your attendance
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                                <i class="fas fa-check text-success me-2"></i>I want to go!
+                                                            </a></li>
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                                <i class="fas fa-times text-danger me-2"></i>I can't go
+                                                            </a></li>
+                                                        </ul>
+                                                    {% elif user_rsvp.status == 'yes' %}
+                                                        <button class="btn btn-outline-success dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="fas fa-check me-2"></i>I am going
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                                <i class="fas fa-times text-danger me-2"></i>I can't go anymore
+                                                            </a></li>
+                                                        </ul>
+                                                    {% elif user_rsvp.status == 'waitlist' %}
+                                                        <button class="btn btn-outline-warning dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="fas fa-hourglass-half me-2"></i>I am waitlisted
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                                <i class="fas fa-times text-danger me-2"></i>I can't go anymore
+                                                            </a></li>
+                                                        </ul>
+                                                    {% elif user_rsvp.status == 'no' %}
+                                                        <button class="btn btn-outline-danger dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <i class="fas fa-times me-2"></i>I am not going
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                                <i class="fas fa-check text-success me-2"></i>I want to go!
+                                                            </a></li>
+                                                        </ul>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                         </div>
@@ -339,23 +362,28 @@ document.addEventListener('DOMContentLoaded', function() {
         upcomingRadio.dispatchEvent(new Event('change'));
     }
     
-    // Handle attendance confirmation buttons
-    document.querySelectorAll('.attendance-btn').forEach(button => {
-        button.addEventListener('click', function() {
+    // Handle attendance confirmation dropdown items
+    document.querySelectorAll('.attendance-dropdown-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
             const eventId = this.getAttribute('data-event-id');
             const status = this.getAttribute('data-status');
-            const currentStatus = this.getAttribute('data-current');
             
-            updateAttendanceStatus(eventId, status, this, currentStatus);
+            updateAttendanceStatus(eventId, status, this);
         });
     });
     
-    function updateAttendanceStatus(eventId, status, button, currentStatus) {
-        console.log('updateAttendanceStatus called:', {eventId, status, currentStatus});
+    function updateAttendanceStatus(eventId, status, dropdownItem) {
+        console.log('updateAttendanceStatus called:', {eventId, status});
+        
+        // Find the dropdown button for this event
+        const dropdownButton = document.querySelector(`#rsvpDropdown${eventId}`);
+        if (!dropdownButton) return;
+        
         // Show loading state
-        const originalText = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+        const originalText = dropdownButton.innerHTML;
+        dropdownButton.disabled = true;
+        dropdownButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
 
         // Make AJAX request
         fetch(`/events/${eventId}/rsvp`, {
@@ -369,20 +397,20 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                updateButtonState(button, data.status, eventId);
+                updateDropdownState(dropdownButton, data.status, eventId);
                 updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
             } else {
                 showToast(data.message, 'error');
-                button.innerHTML = originalText;
+                dropdownButton.innerHTML = originalText;
             }
-            button.disabled = false;
+            dropdownButton.disabled = false;
         })
         .catch(error => {
             console.error('Error:', error);
             showToast('An error occurred while updating your attendance.', 'error');
-            button.innerHTML = originalText;
-            button.disabled = false;
+            dropdownButton.innerHTML = originalText;
+            dropdownButton.disabled = false;
         });
     }
 
@@ -425,70 +453,76 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function updateButtonState(button, newStatus, eventId) {
-    // Update RSVP status line
-    const attendanceContainer = button.closest('.attendance-container');
-    const statusLine = document.querySelector(`.rsvp-status-line[data-event-id='${eventId}']`);
-    if (statusLine) {
-        let statusHtml = '';
-        if (newStatus === 'yes') {
-            statusHtml = '<i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-success">I\'m going</span>';
-        } else if (newStatus === 'no') {
-            statusHtml = '<i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-danger">I\'m not going</span>';
-        } else if (newStatus === 'waitlist') {
-            statusHtml = '<i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-warning">I am waitlisted</span>';
+    function updateDropdownState(dropdownButton, newStatus, eventId) {
+        // Update RSVP status line
+        const statusLine = document.querySelector(`.rsvp-status-line[data-event-id='${eventId}']`);
+        if (statusLine) {
+            let statusHtml = '';
+            if (newStatus === 'yes') {
+                statusHtml = '<i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-success">I\'m going</span>';
+            } else if (newStatus === 'no') {
+                statusHtml = '<i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-danger">I\'m not going</span>';
+            } else if (newStatus === 'waitlist') {
+                statusHtml = '<i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-warning">I am waitlisted</span>';
+            }
+            statusLine.innerHTML = statusHtml;
         }
-        statusLine.innerHTML = statusHtml;
-    }
+
+        // Update the dropdown button and menu
+        const attendanceContainer = dropdownButton.closest('.attendance-container');
+        let dropdownHtml = '';
+        
         if (newStatus === 'yes') {
-            attendanceContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="yes" disabled>
-                            <i class="fas fa-check me-1"></i>I want to go!
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="yes">
-                            <i class="fas fa-times me-1"></i>I can't go
-                        </button>
-                    </div>
+            dropdownHtml = `
+                <div class="dropdown w-100">
+                    <button class="btn btn-outline-success dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-check me-2"></i>I am going
+                    </button>
+                    <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
+                            <i class="fas fa-times text-danger me-2"></i>I can't go anymore
+                        </a></li>
+                    </ul>
                 </div>
             `;
         } else if (newStatus === 'no') {
-            attendanceContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="no">
-                            <i class="fas fa-check me-1"></i>I want to go!
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="no" disabled>
-                            <i class="fas fa-times me-1"></i>I can't go
-                        </button>
-                    </div>
+            dropdownHtml = `
+                <div class="dropdown w-100">
+                    <button class="btn btn-outline-danger dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-times me-2"></i>I am not going
+                    </button>
+                    <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
+                            <i class="fas fa-check text-success me-2"></i>I want to go!
+                        </a></li>
+                    </ul>
                 </div>
             `;
         } else if (newStatus === 'waitlist') {
-            attendanceContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="waitlist" disabled>
-                            <i class="fas fa-check me-1"></i>I want to go!
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="waitlist">
-                            <i class="fas fa-times me-1"></i>I can't go
-                        </button>
-                    </div>
+            dropdownHtml = `
+                <div class="dropdown w-100">
+                    <button class="btn btn-outline-warning dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-hourglass-half me-2"></i>I am waitlisted
+                    </button>
+                    <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
+                            <i class="fas fa-times text-danger me-2"></i>I can't go anymore
+                        </a></li>
+                    </ul>
                 </div>
             `;
         }
         
-        // Re-attach event listeners to the new buttons
-        const newButtons = attendanceContainer.querySelectorAll('.attendance-btn');
-        newButtons.forEach(newButton => {
-            newButton.addEventListener('click', function() {
+        attendanceContainer.innerHTML = dropdownHtml;
+        
+        // Re-attach event listeners to the new dropdown items
+        const newDropdownItems = attendanceContainer.querySelectorAll('.attendance-dropdown-item');
+        newDropdownItems.forEach(newItem => {
+            newItem.addEventListener('click', function(e) {
+                e.preventDefault();
                 const eventId = this.getAttribute('data-event-id');
                 const status = this.getAttribute('data-status');
-                const currentStatus = this.getAttribute('data-current');
-                updateAttendanceStatus(eventId, status, this, currentStatus);
+                updateAttendanceStatus(eventId, status, this);
             });
         });
     }
