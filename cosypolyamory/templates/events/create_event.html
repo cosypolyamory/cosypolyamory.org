@@ -250,9 +250,14 @@
                         
                         <div class="col-12 mb-3">
                             <label for="time_period" class="form-label">Time Period (Public) *</label>
-                            <input type="text" class="form-control" id="time_period" name="time_period" required 
-                                   placeholder="e.g., Evening, Afternoon, Late Morning"
-                                   value="{% if event %}{{ event.time_period }}{% endif %}">
+                            <select class="form-select" id="time_period" name="time_period" required>
+                                <option value="">Select time period...</option>
+                                <option value="morning"{% if event and event.time_period == 'morning' %} selected{% endif %}>Morning</option>
+                                <option value="mid day"{% if event and event.time_period == 'mid day' %} selected{% endif %}>Mid Day</option>
+                                <option value="afternoon"{% if event and event.time_period == 'afternoon' %} selected{% endif %}>Afternoon</option>
+                                <option value="evening"{% if event and event.time_period == 'evening' %} selected{% endif %}>Evening</option>
+                                <option value="night"{% if event and event.time_period == 'night' %} selected{% endif %}>Night</option>
+                            </select>
                             <div class="form-text">This is what non-approved members will see instead of the exact time</div>
                         </div>
                     </div>                    <!-- Location -->
