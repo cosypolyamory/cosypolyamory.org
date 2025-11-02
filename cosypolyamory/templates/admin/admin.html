@@ -364,14 +364,6 @@ function createUserCard(user) {
     return `
         <div class="user-card">
             <div class="row align-items-center">
-                <div class="col-12 col-sm-auto me-3 mb-2 mb-sm-0">
-                    ${user.avatar_url && user.avatar_url.trim() !== '' ? 
-                        `<img src="${user.avatar_url}" alt="${user.name} Avatar" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 50px; height: 50px;\\'><i class=\\'fas fa-user text-white\\'></i></div>';">` :
-                        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                            <i class="fas fa-user text-white"></i>
-                        </div>`
-                    }
-                </div>
                 <div class="col-12 col-sm">
                     <h6 class="mb-1">
                         <a href="javascript:void(0)" onclick="viewUser('${user.id}')" class="text-decoration-none" title="Click to view user details">
@@ -574,10 +566,7 @@ function viewUser(userId) {
                     // Create basic profile content
                     let profileContent = `
                         <div class="row">
-                            <div class="col-md-3">
-                                ${avatarHtml}
-                            </div>
-                            <div class="col-md-9">
+                            <div class="col">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div>
                                         <h4 class="mb-0 d-flex align-items-center">
@@ -593,12 +582,12 @@ function viewUser(userId) {
                                 <table class="table table-borderless">
                                     <tr>
                                         <td><strong>User Email:</strong></td>
-                                        <td><code>${userData.email}</code></td>
+                                        <td>${userData.email}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Provider:</strong></td>
                                         <td>
-                                            <span class="badge ${getProviderBadge(userData.provider)}">${userData.provider ? userData.provider.charAt(0).toUpperCase() + userData.provider.slice(1) : 'Unknown'}</span>
+                                            ${userData.provider}
                                         </td>
                                     </tr>
                                     <tr>
@@ -821,18 +810,8 @@ function showUserModal(userData) {
     const roleColor = roleColors[userData.role] || 'bg-secondary';
     const roleName = userData.role_display || userData.role;
     
-    // Create avatar or placeholder
-    const avatarHtml = userData.avatar_url ? 
-        `<img src="${userData.avatar_url}" alt="${userData.name}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">` :
-        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-            <i class="fas fa-user text-white"></i>
-        </div>`;
-    
     modalBody.innerHTML = `
         <div class="d-flex align-items-center mb-3">
-            <div class="me-3">
-                ${avatarHtml}
-            </div>
             <div class="flex-grow-1">
                 <h5 class="mb-1">${userData.name}</h5>
                 <p class="mb-1 text-muted">${userData.email}</p>
