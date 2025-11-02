@@ -1185,11 +1185,14 @@ function addToYahooCalendar() {
 
 function addToAppleCalendar() {
     const event = window.eventData;
+    // Extract domain from base_url for calendar entries
+    const baseUrl = '{{ base_url }}';
+    const domain = baseUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//cosypolyamory.org//Event//EN
+PRODID:-//${domain}//Event//EN
 BEGIN:VEVENT
-UID:event-{{ event.id }}-${Date.now()}@cosypolyamory.org
+UID:event-{{ event.id }}-${Date.now()}@${domain}
 DTSTART:${event.startDate}
 DTEND:${event.endDate}
 SUMMARY:${event.title}

@@ -19,6 +19,17 @@ bp = Blueprint('user', __name__)
 @login_required
 def apply():
     """Community application form"""
+    # Special handling for users marked as 'new' - they should start fresh
+    if current_user.role == 'new':
+        # Clean up any stale application data for users marked as 'new'
+        try:
+            stale_application = UserApplication.get(UserApplication.user == current_user)
+            stale_application.delete_instance()
+            from flask import current_app
+            current_app.logger.warning(f"Deleted stale application for user {current_user.id} marked as 'new'")
+        except UserApplication.DoesNotExist:
+            pass  # Good, no stale data
+    
     # Check if user already has an application
     try:
         application = UserApplication.get(UserApplication.user == current_user)
@@ -50,6 +61,17 @@ def apply():
 @login_required
 def submit_application():
     """Submit community application"""
+    # Special handling for users marked as 'new' - they should start fresh
+    if current_user.role == 'new':
+        # Clean up any stale application data for users marked as 'new'
+        try:
+            stale_application = UserApplication.get(UserApplication.user == current_user)
+            stale_application.delete_instance()
+            from flask import current_app
+            current_app.logger.warning(f"Deleted stale application for user {current_user.id} marked as 'new' during submission")
+        except UserApplication.DoesNotExist:
+            pass  # Good, no stale data
+    
     # Check if user already has an application
     try:
         application = UserApplication.get(UserApplication.user == current_user)

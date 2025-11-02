@@ -198,11 +198,19 @@ def api_change_user_role():
             # If changing to pending, clear their application data and mark as "new"
             if new_role == 'new':
                 # Delete any existing application
+                deleted_count = 0
                 try:
                     application = UserApplication.get(UserApplication.user == user)
                     application.delete_instance()
+                    deleted_count = 1
+                    current_app.logger.info(f"Deleted application for user {user.id} ({user.email}) when marking as new")
                 except UserApplication.DoesNotExist:
-                    pass  # No application to delete
+                    current_app.logger.info(f"No application found to delete for user {user.id} ({user.email}) when marking as new")
+                
+                # Also clear any applications that might exist due to race conditions
+                additional_deleted = UserApplication.delete().where(UserApplication.user == user).execute()
+                if additional_deleted > deleted_count:
+                    current_app.logger.warning(f"Found and deleted {additional_deleted} additional applications for user {user.id}")
                 
                 # Set role to 'new' instead of 'pending' to indicate fresh start
                 user.role = 'new'

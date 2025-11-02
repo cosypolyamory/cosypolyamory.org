@@ -228,13 +228,14 @@ class CosyPolyTelegramBot:
         Returns:
             bool: True if notification was sent successfully, False otherwise
         """
+        base_url = os.getenv('DOMAIN', 'https://cosypolyamory.org')
         message = self.render_template(
             "event_created.txt",
             event_title=event_title,
             event_date=event_date,
             event_time=event_time,
             event_location=event_location,
-            event_url=event_url or "https://cosypolyamory.org/events"
+            event_url=event_url or f"{base_url}/events"
         )
         
         return await self.send_announcement(message, chat_id)
@@ -264,11 +265,12 @@ class CosyPolyTelegramBot:
             )
         else:
             # Use update template
+            base_url = os.getenv('DOMAIN', 'https://cosypolyamory.org')
             message = self.render_template(
                 "event_updated.txt",
                 event_title=event_title,
                 update_details=details,
-                event_url=event_url or "https://cosypolyamory.org/events"
+                event_url=event_url or f"{base_url}/events"
             )
         
         return await self.send_announcement(message, chat_id)

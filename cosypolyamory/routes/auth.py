@@ -7,7 +7,7 @@ Handles OAuth login, logout, and profile management.
 import os
 import re
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 
 from cosypolyamory.models.user import User
@@ -169,10 +169,11 @@ def oauth_callback(provider):
             if not username:
                 try:
                     # Try collections endpoint which might reveal the user
+                    base_url = current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
                     resp = oauth.musicbrainz.get('ws/2/collection', token=token, params={
                         'fmt': 'json'
                     }, headers={
-                        'User-Agent': 'CozyPolyamory/1.0 (https://cosypolyamory.org)',
+                        'User-Agent': f'CozyPolyamory/1.0 ({base_url})',
                         'Accept': 'application/json'
                     })
                     
@@ -241,8 +242,9 @@ def oauth_callback(provider):
                 
                 # Try to get user profile/whoami to get a stable user ID
                 try:
+                    base_url = current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
                     resp = oauth.musicbrainz.get('oauth2/userinfo', token=token, headers={
-                        'User-Agent': 'CozyPolyamory/1.0 (https://cosypolyamory.org)',
+                        'User-Agent': f'CozyPolyamory/1.0 ({base_url})',
                         'Accept': 'application/json'
                     })
                     
