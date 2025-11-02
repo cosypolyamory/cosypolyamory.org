@@ -66,6 +66,9 @@ def api_admin_users_by_role(role):
             paged = sorted_users[(page-1)*per_page:page*per_page]
             user_list = []
             for user, application in paged:
+                # Get no-show count for this user
+                no_show_count = NoShow.select().where(NoShow.user == user).count()
+                
                 user_list.append({
                     'id': user.id,
                     'name': user.name,
@@ -77,7 +80,8 @@ def api_admin_users_by_role(role):
                     'last_login': user.last_login.isoformat() if user.last_login else None,
                     'has_application': bool(application),
                     'application_id': application.id if application else None,
-                    'application_status': application.status if application else None
+                    'application_status': application.status if application else None,
+                    'no_show_count': no_show_count
                 })
             return jsonify({
                 'users': user_list,
@@ -101,6 +105,10 @@ def api_admin_users_by_role(role):
         for user in users:
             # Always get the most recent application for this user
             application = UserApplication.select().where(UserApplication.user == user).order_by(UserApplication.submitted_at.desc()).first()
+            
+            # Get no-show count for this user
+            no_show_count = NoShow.select().where(NoShow.user == user).count()
+            
             user_list.append({
                 'id': user.id,
                 'name': user.name,
@@ -112,7 +120,8 @@ def api_admin_users_by_role(role):
                 'last_login': user.last_login.isoformat() if user.last_login else None,
                 'has_application': bool(application),
                 'application_id': application.id if application else None,
-                'application_status': application.status if application else None
+                'application_status': application.status if application else None,
+                'no_show_count': no_show_count
             })
         
         return jsonify({

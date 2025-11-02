@@ -348,6 +348,12 @@ function createUserCard(user) {
             applicationInfo = `<div class="mt-1"><span class="badge bg-secondary">No application submitted</span></div>`;
         }
     }
+    
+    // Add no-show count if user has any no-shows
+    let noShowInfo = '';
+    if (user.no_show_count && user.no_show_count > 0) {
+        noShowInfo = `<div class="mt-1"><span class="badge bg-danger">${user.no_show_count} no-show${user.no_show_count > 1 ? 's' : ''}</span></div>`;
+    }
     return `
         <div class="user-card">
             <div class="row align-items-center">
@@ -369,6 +375,7 @@ function createUserCard(user) {
                         <i class="fas fa-envelope me-1"></i>${user.email}
                     </p>
                     ${applicationInfo}
+                    ${noShowInfo}
                 </div>
                 <div class="col-12 col-sm-auto mt-2 mt-sm-0">
                     ${user.role !== 'admin' ? `
