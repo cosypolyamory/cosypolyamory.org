@@ -16,22 +16,6 @@
     </ul>
 </div>
 
-{% if questions_and_answers %}
-<div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0;">
-    <h3 style="margin-top: 0; color: #495057;">💭 Application Responses</h3>
-    {% for question_key, qa_data in questions_and_answers.items() %}
-        {% if qa_data.answer and qa_data.answer.strip() %}
-        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #dee2e6;">
-            <h4 style="color: #6f42c1; font-size: 14px; margin-bottom: 8px;">{{ qa_data.question }}</h4>
-            <div style="background-color: #ffffff; padding: 10px; border-radius: 3px; border-left: 3px solid #6f42c1;">
-                {{ qa_data.answer | replace('\n', '<br>') | safe }}
-            </div>
-        </div>
-        {% endif %}
-    {% endfor %}
-</div>
-{% endif %}
-
 <p><strong>Ready to review?</strong> <a href="{{ base_url }}/admin/moderate" style="color: #007bff;">Review applications here</a></p>
 
 <p>Thank you for helping maintain our welcoming community!</p>
