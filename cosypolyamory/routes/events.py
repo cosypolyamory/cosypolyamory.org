@@ -173,7 +173,41 @@ def event_detail(event_id):
     rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
     rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
     rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+    rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
     rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
+    
+    # Create consolidated attendance list sorted by status priority, then by name
+    all_rsvps = list(rsvps) + list(rsvps_no) + list(rsvps_maybe) + list(rsvps_waitlist)
+    
+    # Add host/co-host to the list if they haven't RSVPed
+    host_in_list = any(rsvp.user.id == event.organizer_id for rsvp in all_rsvps)
+    cohost_in_list = any(rsvp.user.id == event.co_host.id for rsvp in all_rsvps) if event.co_host else True
+    
+    # Create mock RSVP objects for host/co-host display
+    class MockRSVP:
+        def __init__(self, user, status):
+            self.user = user
+            self.status = status
+            self.created_at = event.created_at
+    
+    # Always show host and co-host at the top of the list
+    if not host_in_list:
+        all_rsvps.append(MockRSVP(event.organizer, 'host'))
+    
+    if event.co_host and not cohost_in_list:
+        all_rsvps.append(MockRSVP(event.co_host, 'co-host'))
+    
+    # Sort by status priority, then by first name, then by last name
+    status_priority = {'host': 0, 'co-host': 1, 'yes': 2, 'maybe': 3, 'waitlist': 4, 'no': 5}
+    
+    def sort_key(rsvp):
+        # Split the name to get first and last name
+        name_parts = rsvp.user.name.split()
+        first_name = name_parts[0] if name_parts else ''
+        last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+        return (status_priority.get(rsvp.status, 6), first_name.lower(), last_name.lower())
+    
+    consolidated_attendance = sorted(all_rsvps, key=sort_key)
     # Extract Google Maps information
     google_maps_info = extract_google_maps_info(event.google_maps_link) if event.google_maps_link else None
     is_user_waitlisted = user_rsvp and user_rsvp.status == 'waitlist'
@@ -210,7 +244,9 @@ def event_detail(event_id):
                            rsvp_no_count=rsvp_no_count,
                            rsvps=rsvps,
                            rsvps_no=rsvps_no,
+                           rsvps_maybe=rsvps_maybe,
                            rsvps_waitlist=rsvps_waitlist,
+                           consolidated_attendance=consolidated_attendance,
                            is_user_waitlisted=is_user_waitlisted,
                            can_manage_rsvps=can_manage_rsvps,
                            google_maps_api_key=os.getenv('GOOGLE_MAPS_API_KEY'),

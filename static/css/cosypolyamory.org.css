@@ -637,3 +637,34 @@ h4 {
     border-color: #0d6efd !important;
     color: white !important;
 }
+
+/* Badge classes using the same custom colors */
+.badge-rsvp-host {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-cohost {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.badge-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}

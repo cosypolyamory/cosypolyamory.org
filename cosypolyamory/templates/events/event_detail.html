@@ -503,37 +503,76 @@
                                     </div>
                                     {% endif %}
 
-                                    <!-- Event Responses Lists -->
+                                    <!-- Event Responses List -->
                                     <div class="border-top pt-4">
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <h6 class="text-success mb-3" id="attendee-count-header">
-                                                    <i class="fas fa-check me-2"></i>
-                                                    Attendees ({{ rsvp_count }})
-                                                </h6>
-                                                <div style="max-height: 250px; overflow-y: auto;">
-                                                    {% include 'events/event_detail_attendees.html' %}
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4 border-start">
-                                                <h6 class="text-warning mb-3" id="waitlist-count-header">
-                                                    <i class="fas fa-user-clock me-2"></i>
-                                                    Waitlist ({{ rsvps_waitlist|length }})
-                                                </h6>
-                                                <div style="max-height: 250px; overflow-y: auto;">
-                                                    {% include 'events/event_detail_waitlist.html' %}
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4 border-start">
-                                                <h6 class="text-danger mb-3" id="not-attending-count-header">
-                                                    <i class="fas fa-times me-2"></i>
-                                                    Not Attending ({{ rsvp_no_count }})
-                                                </h6>
-                                                <div style="max-height: 250px; overflow-y: auto;">
-                                                    {% include 'events/event_detail_not_attending.html' %}
-                                                </div>
-                                            </div>
+                                        <h6 class="text-dark mb-3">
+                                            <i class="fas fa-users me-2"></i>
+                                            Event Attendance ({{ consolidated_attendance|length }})
+                                        </h6>
+                                        
+                                        {% if consolidated_attendance %}
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th scope="col">Name</th>
+                                                        <th scope="col" class="text-end">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for attendance in consolidated_attendance %}
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="me-2">
+                                                                    {% if attendance.status == 'host' %}
+                                                                        <i class="fas fa-crown fa-lg text-warning" title="Host"></i>
+                                                                    {% elif attendance.status == 'co-host' %}
+                                                                        <i class="fas fa-star fa-lg text-warning" title="Co-host"></i>
+                                                                    {% elif attendance.status == 'yes' %}
+                                                                        <i class="fas fa-check-circle fa-lg text-success" title="Attending"></i>
+                                                                    {% elif attendance.status == 'maybe' %}
+                                                                        <i class="fas fa-question-circle fa-lg text-info" title="Maybe"></i>
+                                                                    {% elif attendance.status == 'waitlist' %}
+                                                                        <i class="fas fa-clock fa-lg text-warning" title="Waitlisted"></i>
+                                                                    {% elif attendance.status == 'no' %}
+                                                                        <i class="fas fa-times-circle fa-lg text-danger" title="Not Attending"></i>
+                                                                    {% endif %}
+                                                                </div>
+                                                                <div>
+                                                                    <strong>{{ attendance.user.name }}</strong>
+                                                                    {% if attendance.user.pronouns %}
+                                                                        <span class="text-muted">({{ attendance.user.pronouns }})</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            {% if attendance.status == 'host' %}
+                                                                <span class="badge badge-rsvp-host">Host</span>
+                                                            {% elif attendance.status == 'co-host' %}
+                                                                <span class="badge badge-rsvp-cohost">Co-host</span>
+                                                            {% elif attendance.status == 'yes' %}
+                                                                <span class="badge badge-rsvp-yes">Attending</span>
+                                                            {% elif attendance.status == 'maybe' %}
+                                                                <span class="badge badge-rsvp-maybe">Maybe</span>
+                                                            {% elif attendance.status == 'waitlist' %}
+                                                                <span class="badge badge-rsvp-waitlisted">Waitlisted</span>
+                                                            {% elif attendance.status == 'no' %}
+                                                                <span class="badge badge-rsvp-no">Not Attending</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
                                         </div>
+                                        {% else %}
+                                        <div class="text-muted text-center py-3">
+                                            <i class="fas fa-users fa-2x mb-2"></i>
+                                            <p>No responses yet</p>
+                                        </div>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -747,55 +786,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Override page-specific functions for event detail page
     window.updateAttendeeInfo = function(eventId, data) {
-        // Update attendee, not attending, and waitlist lists
-        if (data.rsvps_html) {
-            const attendeesCol = document.querySelector('h6#attendee-count-header + div');
-            if (attendeesCol) attendeesCol.innerHTML = data.rsvps_html;
-        }
-        if (data.rsvps_no_html) {
-            const notAttendingCol = document.querySelector('h6#not-attending-count-header + div');
-            if (notAttendingCol) notAttendingCol.innerHTML = data.rsvps_no_html;
-        }
-        if (data.waitlist_html) {
-            const waitlistCol = document.querySelector('h6#waitlist-count-header + div');
-            if (waitlistCol) waitlistCol.innerHTML = data.waitlist_html;
+        // Update the consolidated attendance list if provided
+        if (data.consolidated_attendance_html) {
+            const attendanceTable = document.querySelector('.table-responsive');
+            if (attendanceTable) attendanceTable.innerHTML = data.consolidated_attendance_html;
         }
         
-        if (data.rsvp_count !== undefined) {
-            const attendeesHeader = document.getElementById('attendee-count-header');
-            if (attendeesHeader) attendeesHeader.innerHTML = `<i class="fas fa-check me-2"></i><span>Attendees (${data.rsvp_count})</span>`;
-        }
-        if (data.rsvp_no_count !== undefined) {
-            const notAttendingHeader = document.getElementById('not-attending-count-header');
-            if (notAttendingHeader) notAttendingHeader.innerHTML = `<i class="fas fa-times me-2"></i><span>Not Attending (${data.rsvp_no_count})</span>`;
-        }
-        if (data.rsvp_waitlist_count !== undefined) {
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.rsvp_waitlist_count})</span>`;
-        } else if (data.waitlist_count !== undefined) {
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.waitlist_count})</span>`;
-        } else if (data.rsvps_waitlist !== undefined) {
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.rsvps_waitlist.length || 0})</span>`;
-        } else if (data.waitlist_html !== undefined) {
-            // Count waitlist items from the HTML if no explicit count is provided
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = data.waitlist_html;
-            const waitlistItems = tempDiv.querySelectorAll('.d-flex.align-items-center');
-            const waitlistCount = waitlistItems.length;
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${waitlistCount})</span>`;
-        } else {
-            // If no waitlist data is provided, preserve the current count
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) {
-                // Extract current count from the header and maintain it
-                const currentText = waitlistHeader.textContent;
-                const currentCount = currentText.match(/Waitlist \((\d+)\)/);
-                if (currentCount) {
-                    waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${currentCount[1]})</span>`;
-                }
+        // Update the attendance count in the header
+        if (data.total_attendance_count !== undefined) {
+            const attendanceHeader = document.querySelector('h6.text-dark');
+            if (attendanceHeader) {
+                attendanceHeader.innerHTML = `<i class="fas fa-users me-2"></i>Event Attendance (${data.total_attendance_count})`;
             }
         }
         
