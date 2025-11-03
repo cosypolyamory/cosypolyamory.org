@@ -41,6 +41,13 @@
                 </label>
             </div>
         </div>
+        {% if current_user.is_authenticated %}
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('auth.my_events') }}" class="btn btn-outline-secondary">
+                My Events
+            </a>
+        </div>
+        {% endif %}
     </div>
     
     <!-- Events Display -->
