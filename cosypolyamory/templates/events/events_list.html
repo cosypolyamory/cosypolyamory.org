@@ -143,27 +143,6 @@
                                             <i class="fas fa-users me-1"></i>
                                             Hosts: {{ event.organizer.name }}{% if event.co_host and event.co_host.id != event.organizer.id %}, {{ event.co_host.name }}{% endif %}
                                         </small>
-                                        {% set user_rsvp = user_rsvps.get(event.id) %}
-                                            <div class="mt-1 d-flex align-items-center rsvp-status-line" data-event-id="{{ event.id }}">
-                                                {% if user_rsvp %}
-                                                    {% if user_rsvp.status == 'yes' %}
-                                                        <i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-success">
-                                                            {% if event.exact_time < now %}I went{% else %}I'm going{% endif %}
-                                                        </span>
-                                                    {% elif user_rsvp.status == 'no' %}
-                                                        <i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-danger">
-                                                            {% if event.exact_time < now %}I didn't go{% else %}I'm not going{% endif %}
-                                                        </span>
-                                                    {% elif user_rsvp.status == 'waitlist' %}
-                                                        <i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-warning">
-                                                            {% if event.exact_time < now %}I was waitlisted{% else %}I am waitlisted{% endif %}
-                                                        </span>
-                                                    {% endif %}
-                                                {% endif %}
-                                            </div>
                                     </div>
                                 {% endif %}
                             </div>
@@ -171,13 +150,20 @@
                             <div class="card-footer">
                                 <div class="d-grid gap-2">
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] and event.exact_time > now %}
-                                        <div>
+                                        <div class="attendance-header">
                                             Do you plan to attend?
                                         </div>
                                         <div class="attendance-buttons-container">
                                             {% set user_rsvp = user_rsvps.get(event.id) %}
+                                            {% set is_organizer = current_user.id == event.organizer.id %}
+                                            {% set is_co_host = event.co_host and current_user.id == event.co_host.id %}
                                             <div class="attendance-container">
-                                                {% if not user_rsvp %}
+                                                {% if is_organizer or is_co_host %}
+                                                    <!-- Disabled button for hosts/co-hosts -->
+                                                    <button class="btn btn-outline-primary w-100" type="button" disabled>
+                                                        {% if is_organizer %}You're hosting{% else %}You're co-hosting{% endif %}
+                                                    </button>
+                                                {% elif not user_rsvp %}
                                                     <!-- Three initial buttons for new RSVP -->
                                                     <div class="btn-group w-100" role="group">
                                                         <button class="btn btn-outline-primary attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="yes">
@@ -194,14 +180,14 @@
                                                     <!-- Status dropdown for confirmed attendance -->
                                                     <div class="dropdown w-100">
                                                         <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            I am going
+                                                            Yes
                                                         </button>
                                                         <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
                                                             <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
-                                                                I can't go
+                                                                No
                                                             </a></li>
                                                             <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
-                                                                Maybe I'll go
+                                                                Maybe
                                                             </a></li>
                                                         </ul>
                                                     </div>
@@ -209,14 +195,14 @@
                                                     <!-- Status dropdown for waitlisted -->
                                                     <div class="dropdown w-100">
                                                         <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            I'm waitlisted
+                                                            Waitlisted
                                                         </button>
                                                         <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
                                                             <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
-                                                                I can't go
+                                                                No
                                                             </a></li>
                                                             <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
-                                                                Maybe I'll go
+                                                                Maybe
                                                             </a></li>
                                                         </ul>
                                                     </div>
@@ -224,14 +210,14 @@
                                                     <!-- Status dropdown for maybe -->
                                                     <div class="dropdown w-100">
                                                         <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            Maybe I'll go
+                                                            Maybe
                                                         </button>
                                                         <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
                                                             <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
-                                                                I'll go!
+                                                                Yes
                                                             </a></li>
                                                             <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
-                                                                I can't go
+                                                                No
                                                             </a></li>
                                                         </ul>
                                                     </div>
@@ -239,14 +225,14 @@
                                                     <!-- Status dropdown for not going -->
                                                     <div class="dropdown w-100">
                                                         <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            I can't go
+                                                            No
                                                         </button>
                                                         <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
                                                             <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
-                                                                I can go
+                                                                Yes
                                                             </a></li>
                                                             <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
-                                                                Maybe I'll go
+                                                                Maybe
                                                             </a></li>
                                                         </ul>
                                                     </div>
@@ -460,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Restore buttons on error
                 allButtons.forEach((btn, index) => {
                     btn.disabled = false;
-                    const originalTexts = ['<i class="fas fa-check me-1"></i>I want to go!', '<i class="fas fa-times me-1"></i>I can\'t go', '<i class="fas fa-question me-1"></i>Maybe I\'ll go'];
+                    const originalTexts = ['I want to go!', 'I can\'t go', 'Maybe I\'ll go'];
                     btn.innerHTML = originalTexts[index];
                 });
             }
@@ -471,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Restore buttons on error
             allButtons.forEach((btn, index) => {
                 btn.disabled = false;
-                const originalTexts = ['<i class="fas fa-check me-1"></i>I want to go!', '<i class="fas fa-times me-1"></i>I can\'t go', '<i class="fas fa-question me-1"></i>Maybe I\'ll go'];
+                const originalTexts = ['I want to go!', 'I can\'t go', 'Maybe I\'ll go'];
                 btn.innerHTML = originalTexts[index];
             });
         });
@@ -558,22 +544,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateDropdownState(elementOrButton, newStatus, eventId) {
-        // Update RSVP status line
-        const statusLine = document.querySelector(`.rsvp-status-line[data-event-id='${eventId}']`);
-        if (statusLine) {
-            let statusHtml = '';
-            if (newStatus === 'yes') {
-                statusHtml = '<i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-success">I\'m going</span>';
-            } else if (newStatus === 'no') {
-                statusHtml = '<i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-danger">I\'m not going</span>';
-            } else if (newStatus === 'maybe') {
-                statusHtml = '<i class="fas fa-question-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-warning">Maybe I\'ll go</span>';
-            } else if (newStatus === 'waitlist') {
-                statusHtml = '<i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-warning">I am waitlisted</span>';
-            }
-            statusLine.innerHTML = statusHtml;
-        }
-
         // Find the attendance container
         const attendanceContainer = elementOrButton.closest('.attendance-container');
         let dropdownHtml = '';
@@ -582,14 +552,14 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdownHtml = `
                 <div class="dropdown w-100">
                     <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-check me-2"></i>I am going
+                        Yes
                     </button>
                     <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
                         <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
-                            <i class="fas fa-times text-danger me-2"></i>I can no longer go
+                            No
                         </a></li>
                         <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="maybe">
-                            <i class="fas fa-question text-warning me-2"></i>Maybe I'll go
+                            Maybe
                         </a></li>
                     </ul>
                 </div>
@@ -598,14 +568,14 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdownHtml = `
                 <div class="dropdown w-100">
                     <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-times me-2"></i>I can't go
+                        No
                     </button>
                     <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
                         <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
-                            <i class="fas fa-check text-success me-2"></i>I can go!
+                            Yes
                         </a></li>
                         <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="maybe">
-                            <i class="fas fa-question text-warning me-2"></i>Maybe I'll go
+                            Maybe
                         </a></li>
                     </ul>
                 </div>
@@ -614,14 +584,14 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdownHtml = `
                 <div class="dropdown w-100">
                     <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-question me-2"></i>Maybe I'll go
+                        Maybe
                     </button>
                     <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
                         <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
-                            <i class="fas fa-check text-success me-2"></i>I can go!
+                            Yes
                         </a></li>
                         <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
-                            <i class="fas fa-times text-danger me-2"></i>I can no longer go
+                            No
                         </a></li>
                     </ul>
                 </div>
@@ -630,14 +600,14 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdownHtml = `
                 <div class="dropdown w-100">
                     <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-hourglass-half me-2"></i>I'm waitlisted
+                        Waitlisted
                     </button>
                     <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
                         <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
-                            <i class="fas fa-times text-danger me-2"></i>I can no longer go
+                            No
                         </a></li>
                         <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="maybe">
-                            <i class="fas fa-question text-warning me-2"></i>Maybe I'll go
+                            Maybe
                         </a></li>
                     </ul>
                 </div>
