@@ -179,7 +179,7 @@
                                                 {% elif user_rsvp.status == 'yes' %}
                                                     <!-- Status dropdown for confirmed attendance -->
                                                     <div class="dropdown w-100">
-                                                        <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <button class="btn btn-outline-success dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
                                                             Yes
                                                         </button>
                                                         <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
@@ -194,7 +194,7 @@
                                                 {% elif user_rsvp.status == 'waitlist' %}
                                                     <!-- Status dropdown for waitlisted -->
                                                     <div class="dropdown w-100">
-                                                        <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <button class="btn btn-outline-warning dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
                                                             Waitlisted
                                                         </button>
                                                         <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
@@ -209,7 +209,7 @@
                                                 {% elif user_rsvp.status == 'maybe' %}
                                                     <!-- Status dropdown for maybe -->
                                                     <div class="dropdown w-100">
-                                                        <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <button class="btn btn-outline-dark dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
                                                             Maybe
                                                         </button>
                                                         <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
@@ -224,7 +224,7 @@
                                                 {% elif user_rsvp.status == 'no' %}
                                                     <!-- Status dropdown for not going -->
                                                     <div class="dropdown w-100">
-                                                        <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <button class="btn btn-outline-danger dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
                                                             No
                                                         </button>
                                                         <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (newStatus === 'yes') {
             dropdownHtml = `
                 <div class="dropdown w-100">
-                    <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-outline-success dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
                         Yes
                     </button>
                     <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
@@ -567,7 +567,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (newStatus === 'no') {
             dropdownHtml = `
                 <div class="dropdown w-100">
-                    <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-outline-danger dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
                         No
                     </button>
                     <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (newStatus === 'maybe') {
             dropdownHtml = `
                 <div class="dropdown w-100">
-                    <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-outline-dark dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
                         Maybe
                     </button>
                     <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
@@ -599,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (newStatus === 'waitlist') {
             dropdownHtml = `
                 <div class="dropdown w-100">
-                    <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-outline-warning dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
                         Waitlisted
                     </button>
                     <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
