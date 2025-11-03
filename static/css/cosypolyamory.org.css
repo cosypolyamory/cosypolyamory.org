@@ -91,6 +91,16 @@ h4 {
     background-color: #f8f9fa !important;
 }
 
+/* Make dropdown menu bigger and scrollable */
+.navbar .dropdown-menu,
+.navbar-color .dropdown-menu {
+    max-height: 70vh;
+    min-width: 250px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
 /* User Search Component Styles */
 .user-search-suggestions {
     position: absolute;
