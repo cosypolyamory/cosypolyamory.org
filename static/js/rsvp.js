@@ -40,8 +40,6 @@ function initializeRSVPHandlers() {
  * Handle RSVP from initial three-button click
  */
 function updateAttendanceStatusFromButton(eventId, status, button) {
-    console.log('updateAttendanceStatusFromButton called:', {eventId, status});
-    
     // Find the button group for this event
     const buttonGroup = button.closest('.btn-group');
     if (!buttonGroup) return;
@@ -57,12 +55,10 @@ function updateAttendanceStatusFromButton(eventId, status, button) {
     makeRSVPRequest(eventId, status)
         .then(data => {
             if (data.success) {
-                console.log('RSVP success, calling updateDropdownState with:', {buttonGroup, status: data.status, eventId});
                 updateDropdownState(buttonGroup, data.status, eventId);
                 updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
             } else {
-                console.log('RSVP failed:', data.message);
                 showToast(data.message, 'error');
                 // Restore buttons on error
                 allButtons.forEach((btn, index) => {
@@ -88,8 +84,6 @@ function updateAttendanceStatusFromButton(eventId, status, button) {
  * Handle RSVP from dropdown item click
  */
 function updateAttendanceStatusFromDropdown(eventId, status, dropdownItem) {
-    console.log('updateAttendanceStatusFromDropdown called:', {eventId, status});
-    
     // Find the dropdown button for this event
     const dropdownButton = document.querySelector(`#rsvpDropdown${eventId}`);
     if (!dropdownButton) return;
@@ -103,7 +97,6 @@ function updateAttendanceStatusFromDropdown(eventId, status, dropdownItem) {
     makeRSVPRequest(eventId, status)
         .then(data => {
             if (data.success) {
-                console.log('Dropdown RSVP success, calling updateDropdownState');
                 updateDropdownState(dropdownButton, data.status, eventId);
                 updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
@@ -133,14 +126,7 @@ function makeRSVPRequest(eventId, status) {
         },
         body: `status=${status}`
     })
-    .then(response => {
-        console.log('Raw response:', response);
-        return response.json();
-    })
-    .then(data => {
-        console.log('RSVP response received:', data);
-        return data;
-    });
+    .then(response => response.json());
 }
 
 /**
@@ -148,23 +134,54 @@ function makeRSVPRequest(eventId, status) {
  * Works for both button groups and individual dropdowns
  */
 function updateDropdownState(elementOrButton, newStatus, eventId) {
-    console.log('updateDropdownState called with:', {elementOrButton, newStatus, eventId});
-    
     // Find the attendance container
     const attendanceContainer = elementOrButton.closest('.attendance-container');
-    console.log('Found attendance container:', attendanceContainer);
-    
     if (!attendanceContainer) return;
+    
+    // Detect button size classes from existing buttons
+    const existingButtons = attendanceContainer.querySelectorAll('button');
+    let buttonSizeClass = '';
+    let dropdownSizeClass = '';
+    let buttonWidthClass = '';
+    let minWidthStyle = '';
+    
+    if (existingButtons.length > 0) {
+        const firstButton = existingButtons[0];
+        if (firstButton.classList.contains('btn-sm')) {
+            buttonSizeClass = ' btn-sm';
+        } else if (firstButton.classList.contains('btn-lg')) {
+            buttonSizeClass = ' btn-lg';
+        }
+        
+        // Check for width classes
+        if (firstButton.classList.contains('w-100')) {
+            buttonWidthClass = ' w-100';
+            dropdownSizeClass = ' w-100';
+        }
+        
+        // Check for existing min-width style
+        const computedStyle = window.getComputedStyle(firstButton);
+        const minWidth = computedStyle.minWidth;
+        if (minWidth && minWidth !== 'auto' && minWidth !== '0px') {
+            minWidthStyle = ` style="min-width: ${minWidth};"`;
+        } else {
+            // Default min-width for consistent sizing
+            minWidthStyle = ' style="min-width: 100px;"';
+        }
+    } else {
+        // Default min-width for consistent sizing
+        minWidthStyle = ' style="min-width: 100px;"';
+    }
     
     let dropdownHtml = '';
     
     if (newStatus === 'yes') {
         dropdownHtml = `
-            <div class="dropdown w-100">
-                <button class="btn btn-rsvp-yes dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown${dropdownSizeClass}">
+                <button class="btn btn-rsvp-yes dropdown-toggle${buttonSizeClass}${buttonWidthClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false"${minWidthStyle}>
                     Yes
                 </button>
-                <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                <ul class="dropdown-menu${dropdownSizeClass}" aria-labelledby="rsvpDropdown${eventId}">
                     <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
                         No
                     </a></li>
@@ -176,11 +193,11 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
         `;
     } else if (newStatus === 'no') {
         dropdownHtml = `
-            <div class="dropdown w-100">
-                <button class="btn btn-rsvp-no dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown${dropdownSizeClass}">
+                <button class="btn btn-rsvp-no dropdown-toggle${buttonSizeClass}${buttonWidthClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false"${minWidthStyle}>
                     No
                 </button>
-                <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                <ul class="dropdown-menu${dropdownSizeClass}" aria-labelledby="rsvpDropdown${eventId}">
                     <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
                         Yes
                     </a></li>
@@ -192,11 +209,11 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
         `;
     } else if (newStatus === 'maybe') {
         dropdownHtml = `
-            <div class="dropdown w-100">
-                <button class="btn btn-rsvp-maybe dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown${dropdownSizeClass}">
+                <button class="btn btn-rsvp-maybe dropdown-toggle${buttonSizeClass}${buttonWidthClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false"${minWidthStyle}>
                     Maybe
                 </button>
-                <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                <ul class="dropdown-menu${dropdownSizeClass}" aria-labelledby="rsvpDropdown${eventId}">
                     <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
                         Yes
                     </a></li>
@@ -208,11 +225,11 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
         `;
     } else if (newStatus === 'waitlist') {
         dropdownHtml = `
-            <div class="dropdown w-100">
-                <button class="btn btn-rsvp-waitlisted dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown${dropdownSizeClass}">
+                <button class="btn btn-rsvp-waitlisted dropdown-toggle${buttonSizeClass}${buttonWidthClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false"${minWidthStyle}>
                     Waitlisted
                 </button>
-                <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                <ul class="dropdown-menu${dropdownSizeClass}" aria-labelledby="rsvpDropdown${eventId}">
                     <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
                         No
                     </a></li>
@@ -224,30 +241,22 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
         `;
     } else {
         // Fallback case - restore to initial three-button state
-        console.log('Unknown status, restoring to initial state:', newStatus);
         dropdownHtml = `
-            <div class="btn-group w-100" role="group">
-                <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="${eventId}" data-status="yes">
+            <div class="btn-group${dropdownSizeClass}" role="group">
+                <button class="btn btn-rsvp-none attendance-btn${buttonSizeClass}" type="button" data-event-id="${eventId}" data-status="yes">
                     Yes
                 </button>
-                <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="${eventId}" data-status="no">
+                <button class="btn btn-rsvp-none attendance-btn${buttonSizeClass}" type="button" data-event-id="${eventId}" data-status="no">
                     No
                 </button>
-                <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="${eventId}" data-status="maybe">
+                <button class="btn btn-rsvp-none attendance-btn${buttonSizeClass}" type="button" data-event-id="${eventId}" data-status="maybe">
                     Maybe
                 </button>
             </div>
         `;
     }
     
-    console.log('Setting attendance container HTML to:', dropdownHtml);
     attendanceContainer.innerHTML = dropdownHtml;
-    console.log('Attendance container after update:', attendanceContainer.innerHTML);
-    
-    // Add a brief delay to check if something is overriding our change
-    setTimeout(() => {
-        console.log('Attendance container after 100ms:', attendanceContainer.innerHTML);
-    }, 100);
 }
 
 /**
@@ -255,7 +264,6 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
  */
 function updateAttendeeInfo(eventId, data) {
     // This function is page-specific and will be overridden by each page
-    console.log('updateAttendeeInfo called with:', {eventId, data});
 }
 
 /**
@@ -263,6 +271,5 @@ function updateAttendeeInfo(eventId, data) {
  */
 function showToast(message, type) {
     // This function is page-specific and will be overridden by each page
-    console.log('showToast called:', {message, type});
     alert(message); // Fallback
 }

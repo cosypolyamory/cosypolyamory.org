@@ -738,7 +738,6 @@ Log in or join our community for more details: {{ request.url }}</textarea>
 {% block scripts %}
 {{ super() }}
 <script>
-console.log('Event detail RSVP script loaded');
 document.addEventListener('DOMContentLoaded', function() {
     let eventId = "{{ event.id }}";
     let currentUserId = {% if current_user.is_authenticated %}"{{ current_user.id }}"{% else %}null{% endif %};
@@ -748,10 +747,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Override page-specific functions for event detail page
     window.updateAttendeeInfo = function(eventId, data) {
-        console.log('RSVP data received - rsvp_count:', data.rsvp_count, 'rsvp_no_count:', data.rsvp_no_count);
-        if (data.waitlist_html) console.log('Has waitlist_html');
-        if (data.waitlist_count) console.log('Has waitlist_count:', data.waitlist_count);
-
         // Update attendee, not attending, and waitlist lists
         if (data.rsvps_html) {
             const attendeesCol = document.querySelector('h6#attendee-count-header + div');
@@ -793,7 +788,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${waitlistCount})</span>`;
         } else {
             // If no waitlist data is provided, preserve the current count
-            console.log('No waitlist data in response - preserving current count');
             const waitlistHeader = document.getElementById('waitlist-count-header');
             if (waitlistHeader) {
                 // Extract current count from the header and maintain it
