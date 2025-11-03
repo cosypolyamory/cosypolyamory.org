@@ -197,7 +197,7 @@ def event_detail(event_id):
         all_rsvps.append(MockRSVP(event.co_host, 'co-host'))
     
     # Sort by status priority, then by first name, then by last name
-    status_priority = {'host': 0, 'co-host': 1, 'yes': 2, 'maybe': 3, 'waitlist': 4, 'no': 5}
+    status_priority = {'yes': 0, 'maybe': 1, 'waitlist': 2, 'no': 3, 'co-host': 4, 'host': 5}
     
     def sort_key(rsvp):
         # Split the name to get first and last name
