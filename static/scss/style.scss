@@ -1,5 +1,11 @@
-$dark-background-color: #1C003A;
-$bright-text-color: #fff;
+$dark-background: #1C003A;
+$bright-text: #fff;
+
+$pink-1: #ffbcfd;
+$pink-2: #ff7ecf;
+$pink-3: #a95da8;
+$pink-4: #bf29bc;
+
 
 /* Make all input/textarea placeholders a lighter gray for field hints */
 input::placeholder,
@@ -19,9 +25,10 @@ body {
 }
 
 .page-odd {
-    background-color: $dark-background-color;
-    color: $bright-text-color;
+    background-color: $dark-background;
+    color: $bright-text;
     margin: auto -10vw;
+    z-index: -1;
 }
 
 .page-bottom-shape {
@@ -31,21 +38,44 @@ body {
     z-index:-1;
 }
 
-.top-grid-logos-container { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(4, 1fr);
-    margin-top: 2em;
+.circles-bg-container {
+    position: relative;
+    top: -60px;
+    left: 25px;
 }
 
-.grid-logo {
-    display: flex;
-    justify-content: center;
-    height: 20px;
+.circle-bg {
+    position: absolute;
+    border-radius: 50%;
+    background-color: #6f42c1;
+    z-index: 7;
+    width: 30px;
+    height: 30px;
 }
+
+.circle-bg-01 { left: 314px; top: 098px; height: 13px; width: 13px; background-color: $pink-2; }
+.circle-bg-02 { left: 218px; top: 108px; height: 19px; width: 19px; background-color: $pink-4; }
+.circle-bg-03 { left: 046px; top: 165px; height: 12px; width: 12px; background-color: $pink-2; }
+.circle-bg-04 { left: 348px; top: 199px; height: 25px; width: 25px; background-color: $pink-2; }
+.circle-bg-05 { left: 268px; top: 232px; height: 13px; width: 13px; background-color: $pink-2; }
+.circle-bg-06 { left: 016px; top: 246px; height: 19px; width: 19px; background-color: $pink-1; }
+.circle-bg-07 { left: 335px; top: 264px; height: 13px; width: 13px; background-color: $pink-2; }
+.circle-bg-08 { left: 100px; top: 277px; height: 13px; width: 13px; background-color: $pink-3; }
+
+.circle-bg-09 { left: 236px; top: 534px; height: 17px; width: 17px; background-color: $pink-1; }
+.circle-bg-10 { left: 322px; top: 552px; height: 25px; width: 25px; background-color: $pink-2; }
+.circle-bg-11 { left: -15px; top: 563px; height: 61px; width: 61px; background-color: $pink-2; }
+.circle-bg-12 { left: 290px; top: 623px; height: 25px; width: 25px; background-color: $pink-2; }
+.circle-bg-13 { left: 348px; top: 669px; height: 19px; width: 19px; background-color: $pink-4; }
 
 #title {
-    color: $bright-text-color;
+    color: $bright-text;
     font-family: 'Inter', sans-serif; /* this should be in body */ /* Inter is not standard */
     margin: 15vw;
     text-align: left;
+    position: relative;
+    top: 20vh;
+    z-index: 1;
 }
 
 #title h1 {
