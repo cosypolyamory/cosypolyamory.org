@@ -112,9 +112,9 @@
                                 <div class="mb-2">
                                     <i class="fas fa-map-marker-alt me-2 text-muted"></i>
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] %}
-                                        {{ event.establishment_name }}
+                                        <span title="{{ event.establishment_name }}">{{ event.establishment_name[:40] }}{% if event.establishment_name|length > 40 %}...{% endif %}</span>
                                     {% else %}
-                                        {{ event.barrio }}
+                                        <span title="{{ event.barrio }}">{{ event.barrio[:30] }}{% if event.barrio|length > 30 %}...{% endif %}</span>
                                     {% endif %}
                                 </div>
                                 
