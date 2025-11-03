@@ -30,15 +30,15 @@
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="btn-group" role="group" aria-label="Event filters">
-                <input type="radio" class="btn-check" name="filter" id="upcoming" value="upcoming" checked>
-                <label class="btn btn-outline-primary" for="upcoming">
+                <a href="{{ url_for('events.events_list', filter='upcoming') }}" 
+                   class="btn {{ 'btn-primary' if current_filter == 'upcoming' else 'btn-outline-primary' }}">
                     <i class="fas fa-calendar-alt me-1"></i>Upcoming
-                </label>
+                </a>
                 
-                <input type="radio" class="btn-check" name="filter" id="past" value="past">
-                <label class="btn btn-outline-primary" for="past">
+                <a href="{{ url_for('events.events_list', filter='past') }}" 
+                   class="btn {{ 'btn-primary' if current_filter == 'past' else 'btn-outline-primary' }}">
                     <i class="fas fa-history me-1"></i>Past Events
-                </label>
+                </a>
             </div>
         </div>
         {% if current_user.is_authenticated %}
@@ -55,9 +55,7 @@
         {% if events %}
             <div class="row">
                 {% for event in events %}
-                    <div class="col-12 col-md-6 col-lg-6 mb-4 event-card" 
-                         data-event-date="{{ event.exact_time.isoformat() }}"
-                         data-event-status="{{ 'past' if event.exact_time < now else 'upcoming' }}">
+                    <div class="col-12 col-md-6 col-lg-6 mb-4 event-card">
                         <div class="card h-100 {% if event.exact_time < now %}opacity-75{% endif %}">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <small class="text-muted">
@@ -270,35 +268,22 @@
                 {% endfor %}
             </div>
         {% else %}
+            <!-- Empty state message -->
             <div class="alert alert-info text-center">
-                <i class="fas fa-calendar-times fa-3x mb-3 text-muted"></i>
-                <h5>No Events Yet</h5>
-                <p>There are no events scheduled at this time. Check back soon!</p>
-                {% if current_user.role in ['admin', 'organizer'] %}
-                    <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Create First Event
-                    </a>
+                <i class="fas fa-{% if current_filter == 'past' %}history{% else %}calendar-plus{% endif %} fa-3x mb-3 text-muted"></i>
+                <h5>No {{ page_title }}</h5>
+                {% if current_filter == 'past' %}
+                    <p>There are no past events to display. Once events have happened, they'll appear here.</p>
+                {% else %}
+                    <p>There are no upcoming events scheduled at this time. Check back soon for new events!</p>
+                    {% if current_user.role in ['admin', 'organizer'] %}
+                        <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create Event
+                        </a>
+                    {% endif %}
                 {% endif %}
             </div>
         {% endif %}
-        
-        <!-- Empty state messages for filtered views -->
-        <div id="no-upcoming-events" class="alert alert-info text-center" style="display: none;">
-            <i class="fas fa-calendar-plus fa-3x mb-3 text-muted"></i>
-            <h5>No Upcoming Events</h5>
-            <p>There are no upcoming events scheduled at this time. Check back soon for new events!</p>
-            {% if current_user.role in ['admin', 'organizer'] %}
-                <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Create Event
-                </a>
-            {% endif %}
-        </div>
-        
-        <div id="no-past-events" class="alert alert-secondary text-center" style="display: none;">
-            <i class="fas fa-history fa-3x mb-3 text-muted"></i>
-            <h5>No Past Events</h5>
-            <p>There are no past events to display. Once events have happened, they'll appear here.</p>
-        </div>
     </div>
 </div>
 
@@ -312,49 +297,8 @@
 {% block scripts %}
 {{ super() }}
 <script>
-// Event filtering
-document.querySelectorAll('input[name="filter"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        const filter = this.value;
-        const eventCards = document.querySelectorAll('.event-card');
-        
-        let visibleCount = 0;
-        
-        eventCards.forEach(card => {
-            const eventStatus = card.dataset.eventStatus;
-            if (filter === 'upcoming' && eventStatus === 'upcoming') {
-                card.classList.remove('hidden');
-                visibleCount++;
-            } else if (filter === 'past' && eventStatus === 'past') {
-                card.classList.remove('hidden');
-                visibleCount++;
-            } else {
-                card.classList.add('hidden');
-            }
-        });
-        
-        // Show/hide empty state messages
-        const noUpcomingMsg = document.getElementById('no-upcoming-events');
-        const noPastMsg = document.getElementById('no-past-events');
-        
-        // Hide both messages first
-        noUpcomingMsg.style.display = 'none';
-        noPastMsg.style.display = 'none';
-        
-        // Show appropriate message if no events visible
-        if (visibleCount === 0) {
-            if (filter === 'upcoming') {
-                noUpcomingMsg.style.display = 'block';
-            } else if (filter === 'past') {
-                noPastMsg.style.display = 'block';
-            }
-        }
-    });
-});
-
-// Initialize filter on page load
+// Initialize Bootstrap popovers for preview buttons with custom content
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Bootstrap popovers for preview buttons with custom content
     const popoverTriggerList = [].slice.call(document.querySelectorAll('.preview-btn'));
     const popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
         const description = popoverTriggerEl.getAttribute('data-bs-content');
@@ -382,16 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-    
-    
-    // Trigger the upcoming filter to show only upcoming events by default
-    const upcomingRadio = document.getElementById('upcoming');
-    if (upcomingRadio) {
-        upcomingRadio.checked = true;
-        upcomingRadio.dispatchEvent(new Event('change'));
-    }
-    
-    // Override page-specific functions for events list page
+});    // Override page-specific functions for events list page
     window.updateAttendeeInfo = function(eventId, data) {
         // Find the event card
         const eventCard = document.querySelector(`.event-card [data-event-id='${eventId}']`);
@@ -451,9 +386,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 3000);
     };
-</script>    function updateAttendanceStatusFromButton(eventId, status, button) {
-        console.log('updateAttendanceStatusFromButton called:', {eventId, status});
-        
+    
+    function updateAttendanceStatusFromButton(eventId, status, button) {
         // Find the button group for this event
         const buttonGroup = button.closest('.btn-group');
         if (!buttonGroup) return;
@@ -475,18 +409,14 @@ document.addEventListener('DOMContentLoaded', function() {
             body: `status=${status}`
         })
         .then(response => {
-            console.log('Raw response:', response);
             return response.json();
         })
         .then(data => {
-            console.log('RSVP response received:', data);
             if (data.success) {
-                console.log('RSVP success, calling updateDropdownState with:', {buttonGroup, status: data.status, eventId});
                 updateDropdownState(buttonGroup, data.status, eventId);
                 updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
             } else {
-                console.log('RSVP failed:', data.message);
                 showToast(data.message, 'error');
                 // Restore buttons on error
                 allButtons.forEach((btn, index) => {
@@ -509,12 +439,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateAttendanceStatus(eventId, status, dropdownItem) {
-        console.log('updateAttendanceStatus called:', {eventId, status});
-        console.log('updateAttendanceStatus function starting for event:', eventId, 'status:', status);
-        
         // Find the dropdown button for this event
         const dropdownButton = document.querySelector(`#rsvpDropdown${eventId}`);
-        console.log('Found dropdown button:', dropdownButton);
         if (!dropdownButton) return;
         
         // Show loading state
@@ -533,9 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            console.log('updateAttendanceStatus response:', data);
             if (data.success) {
-                console.log('Calling updateDropdownState from updateAttendanceStatus with:', {dropdownButton, status: data.status, eventId});
                 updateDropdownState(dropdownButton, data.status, eventId);
                 updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
@@ -593,10 +517,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateDropdownState(elementOrButton, newStatus, eventId) {
-        console.log('updateDropdownState called with:', {elementOrButton, newStatus, eventId});
         // Find the attendance container
         const attendanceContainer = elementOrButton.closest('.attendance-container');
-        console.log('Found attendance container:', attendanceContainer);
         let dropdownHtml = '';
         
         if (newStatus === 'yes') {
@@ -665,7 +587,6 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         } else {
             // Fallback case - restore to initial three-button state
-            console.log('Unknown status, restoring to initial state:', newStatus);
             dropdownHtml = `
                 <div class="btn-group w-100" role="group">
                     <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="${eventId}" data-status="yes">
@@ -681,13 +602,10 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
         
-        console.log('Setting attendance container HTML to:', dropdownHtml);
         attendanceContainer.innerHTML = dropdownHtml;
-        console.log('Attendance container after update:', attendanceContainer.innerHTML);
         
         // Add a brief delay to check if something is overriding our change
         setTimeout(() => {
-            console.log('Attendance container after 100ms:', attendanceContainer.innerHTML);
         }, 100);
         
         // Re-attach event listeners to the new dropdown items
@@ -695,7 +613,6 @@ document.addEventListener('DOMContentLoaded', function() {
         newDropdownItems.forEach(newItem => {
             newItem.addEventListener('click', function(e) {
                 e.preventDefault();
-                console.log('NEW dropdown listener called for event:', this.getAttribute('data-event-id'));
                 const eventId = this.getAttribute('data-event-id');
                 const status = this.getAttribute('data-status');
                 updateAttendanceStatus(eventId, status, this);

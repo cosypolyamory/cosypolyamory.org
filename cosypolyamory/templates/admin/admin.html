@@ -387,8 +387,6 @@ function createUserCard(user) {
                             ${(() => {
                                 let options = [];
                                 const currentUserRole = window.getCurrentUserRole();
-                                console.log(currentUserRole);
-                                console.log(user.role);
                                 
                                 // Organizer option (available to all admins/organizers)
                                 if (user.role === 'approved') {
@@ -502,7 +500,6 @@ function changeRole(userId, newRole) {
 }
 
 function viewUser(userId) {
-    console.log('Opening user profile for:', userId);
     fetch(`/api/admin/user/${userId}`)
         .then(response => {
             if (!response.ok) {
@@ -789,8 +786,6 @@ function viewUser(userId) {
 
 // Show user modal with data directly (without API call)
 function showUserModal(userData) {
-    console.log('Showing user modal with data:', userData);
-    
     const modalBody = document.getElementById('userModalBody');
     if (!modalBody) {
         console.error('Could not find userModalBody element');
@@ -836,10 +831,8 @@ function showUserModal(userData) {
         </div>
     `;
     
-    console.log('About to show modal...');
     const modal = new bootstrap.Modal(document.getElementById('userModal'));
     modal.show();
-    console.log('Modal show() called');
 }
 
 function deleteUser(userId, userName) {
@@ -996,8 +989,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function highlightUser(userId) {
-    console.log('highlightUser called with userId:', userId);
-    
     // Clear previous highlights
     clearHighlight();
     
@@ -1022,7 +1013,6 @@ function highlightUser(userId) {
     });
     
     // Show the user detail modal immediately
-    console.log('Calling viewUser with userId:', userId);
     viewUser(userId);
     
     if (!userFound) {

@@ -100,13 +100,22 @@ def approved_user_required(f):
 @bp.route('/')
 def events_list():
     """List all events with appropriate visibility"""
+    from flask import request
+    
     now_dt = datetime.now()
-
-    # Fetch upcoming events (future events)
-    upcoming_events = Event.select().where((Event.is_active == True) & (Event.exact_time >= now_dt)).order_by(Event.exact_time)
-
-    # Fetch past events (events that have already happened)
-    past_events = Event.select().where((Event.is_active == True) & (Event.exact_time < now_dt)).order_by(Event.exact_time.desc())
+    
+    # Get filter from query parameter, default to 'upcoming'
+    current_filter = request.args.get('filter', 'upcoming')
+    
+    if current_filter == 'past':
+        # Show only past events
+        events = Event.select().where((Event.is_active == True) & (Event.exact_time < now_dt)).order_by(Event.exact_time.desc())
+        page_title = "Past Events"
+    else:
+        # Show only upcoming events (default)
+        events = Event.select().where((Event.is_active == True) & (Event.exact_time >= now_dt)).order_by(Event.exact_time)
+        page_title = "Upcoming Events"
+        current_filter = 'upcoming'  # Ensure it's set to upcoming for template
 
     can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
 
@@ -116,12 +125,18 @@ def events_list():
         rsvps = RSVP.select().where(RSVP.user == current_user)
         user_rsvps = {rsvp.event.id: rsvp for rsvp in rsvps}
 
-    # Get RSVP counts for each event (both upcoming and past)
+    # Get RSVP counts for the filtered events
     rsvp_counts = {}
-    all_events = list(upcoming_events) + list(past_events)
+    rsvps_waitlist = {}
+    all_events = list(events)
     for event in all_events:
         count = RSVP.select().where(RSVP.event == event, RSVP.status == 'yes').count()
         rsvp_counts[event.id] = count
+        
+        # Get waitlist count for this event
+        waitlist_count = RSVP.select().where(RSVP.event == event, RSVP.status == 'waitlist').count()
+        if waitlist_count > 0:
+            rsvps_waitlist[event.id] = waitlist_count
 
     # Strip leading/trailing whitespace from descriptions only
     class EventWithStrippedDesc:
@@ -133,21 +148,17 @@ def events_list():
                     setattr(self, attr, getattr(event, attr))
             self.description = (event.description or "").strip()
 
-    upcoming_events_stripped = [EventWithStrippedDesc(e) for e in upcoming_events]
-    past_events_stripped = [EventWithStrippedDesc(e) for e in past_events]
-
-    # Provide both upcoming and past events to template
-    # Also keep 'events' for backward compatibility with existing template logic
-    events_stripped = upcoming_events_stripped + past_events_stripped
+    events_stripped = [EventWithStrippedDesc(e) for e in events]
 
     return render_template('events/events_list.html',
                            events=events_stripped,
-                           upcoming_events=upcoming_events_stripped,
-                           past_events=past_events_stripped,
                            can_see_details=can_see_details,
                            user_rsvps=user_rsvps,
                            rsvp_counts=rsvp_counts,
-                           now=datetime.now())
+                           rsvps_waitlist=rsvps_waitlist,
+                           current_filter=current_filter,
+                           page_title=page_title,
+                           now=now_dt)
 
 
 @bp.route('/<int:event_id>')

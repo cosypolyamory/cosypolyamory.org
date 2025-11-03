@@ -271,5 +271,4 @@ function updateAttendeeInfo(eventId, data) {
  */
 function showToast(message, type) {
     // This function is page-specific and will be overridden by each page
-    alert(message); // Fallback
 }
