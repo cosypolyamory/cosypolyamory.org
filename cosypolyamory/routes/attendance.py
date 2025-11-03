@@ -631,12 +631,15 @@ def edit_attendance(event_id):
     # Get all RSVPs
     rsvps_attending = list(RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at))
 
+    rsvps_maybe = list(RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at))
+
     rsvps_waitlist = list(RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at))
 
     rsvps_not_attending = list(RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at))
 
     # Calculate counts
     rsvp_count = len(rsvps_attending)
+    maybe_count = len(rsvps_maybe)
     waitlist_count = len(rsvps_waitlist)
     not_attending_count = len(rsvps_not_attending)
 
@@ -669,7 +672,7 @@ def edit_attendance(event_id):
     if not event_has_passed:
         # Collect all unique user IDs from RSVPs
         all_user_ids = set()
-        for rsvp in rsvps_attending + rsvps_waitlist + rsvps_not_attending:
+        for rsvp in rsvps_attending + rsvps_maybe + rsvps_waitlist + rsvps_not_attending:
             all_user_ids.add(rsvp.user.id)
         
         # Get no-show counts for each user
@@ -711,9 +714,11 @@ def edit_attendance(event_id):
     return render_template('events/edit_attendance.html',
                            event=event,
                            rsvps_attending=rsvps_attending,
+                           rsvps_maybe=rsvps_maybe,
                            rsvps_waitlist=rsvps_waitlist,
                            rsvps_not_attending=rsvps_not_attending,
                            rsvp_count=rsvp_count,
+                           maybe_count=maybe_count,
                            waitlist_count=waitlist_count,
                            not_attending_count=not_attending_count,
                            organizer_id=organizer_id,

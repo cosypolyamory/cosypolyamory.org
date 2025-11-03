@@ -45,6 +45,13 @@
     <!-- Event Info -->
     <div class="row mb-4">
         <div class="col-12">
+            <div style="margin: -1em 0 1.5em 0">
+                This page gives you full control over the attandance responses and no automatic actions happen 
+                when you change a users attandance. (e.g. no one is automatically promoted from the waitlist to attending.)
+                By default users will receive a notifcation of the changes you make, but you can override this in 
+                confirmation dialog.
+            </div>
+
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -85,7 +92,7 @@
         <div class="col-12">
             <!-- Attending -->
             <div class="card mb-4">
-                <div class="card-header bg-success text-white">
+                <div class="card-header card-header-rsvp-yes">
                     <h6 class="mb-0">
                         <i class="fas fa-check me-2"></i>
                         Attending ({{ rsvp_count }})
@@ -151,6 +158,11 @@
                                             {% endif %}
                                             {% if not event_has_passed %}
                                             <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'maybe', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-question-circle me-2 text-info"></i>Move to Maybe
+                                                </button>
+                                            </li>
+                                            <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-hourglass-half me-2 text-default"></i>Move to Waitlist
                                                 </button>
@@ -183,9 +195,114 @@
                 </div>
             </div>
 
+            <!-- Maybe -->
+            <div class="card mb-4">
+                <div class="card-header card-header-rsvp-maybe">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Maybe ({{ maybe_count }})
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if rsvps_maybe %}
+                        <div class="list-group list-group-flush">
+                            {% for rsvp in rsvps_maybe %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            {% if rsvp.user.id == organizer_id %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif rsvp.user.id == co_host_id %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                            {% if event_has_passed and rsvp.user.id in no_shows %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-user-times me-1"></i>No Show
+                                                </span>
+                                            {% endif %}
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-danger text-light">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            RSVP'd {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                Manage
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if event_has_started %}
+                                                {% if rsvp.user.id in no_shows %}
+                                                <li>
+                                                    <button class="dropdown-item text-default" onclick="removeNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                        <i class="fas fa-user-check me-2"></i>Remove No Show
+                                                    </button>
+                                                </li>
+                                                {% else %}
+                                                <li>
+                                                    <button class="dropdown-item text-default" onclick="markNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                        <i class="fas fa-user-times me-2"></i>Mark as No Show
+                                                    </button>
+                                                </li>
+                                                {% endif %}
+                                                {% if not event_has_passed %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if not event_has_passed %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-check me-2 text-success"></i>Move to Attending
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-hourglass-half me-2 text-default"></i>Move to Waitlist
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-times me-2 text-danger"></i>Move to Not Attending
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-trash me-2"></i>Remove RSVP
+                                                </button>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-question-circle fa-2x mb-2"></i>
+                            <p class="mb-0">No maybes yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Waitlist -->
             <div class="card mb-4">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header card-header-rsvp-waitlisted">
                     <h6 class="mb-0">
                         <i class="fas fa-hourglass-half me-2"></i>
                         Waitlist ({{ waitlist_count }})
@@ -235,6 +352,11 @@
                                             </li>
                                             {% endif %}
                                             <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'maybe', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-question-circle me-2 text-info"></i>Move to Maybe
+                                                </button>
+                                            </li>
+                                            <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-times me-2 text-danger"></i>Move to Not Attending
                                                 </button>
@@ -268,7 +390,7 @@
 
             <!-- Not Attending -->
             <div class="card mb-4">
-                <div class="card-header bg-danger text-white">
+                <div class="card-header card-header-rsvp-no">
                     <h6 class="mb-0">
                         <i class="fas fa-times me-2"></i>
                         Not Attending ({{ not_attending_count }})
@@ -317,6 +439,11 @@
                                                 </button>
                                             </li>
                                             {% endif %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'maybe', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-question-circle me-2 text-info"></i>Move to Maybe
+                                                </button>
+                                            </li>
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-hourglass-half me-2 text-warning"></i>Move to Waitlist

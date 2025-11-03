@@ -685,3 +685,24 @@ h4 {
     background-color: #f0d24a !important;
     color: #333 !important;
 }
+
+/* Card header classes using the same custom colors */
+.card-header-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.card-header-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.card-header-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.card-header-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
