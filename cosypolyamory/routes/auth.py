@@ -498,29 +498,56 @@ def profile():
     if form_data:
         session.pop('profile_form_data', None)
     
-    # Get user's RSVPs for approved users (upcoming events only)
-    user_rsvps = []
-    if current_user.role not in ("new", "pending"):
-        try:
-            user_rsvps = (RSVP
-                         .select(RSVP, Event)
-                         .join(Event)
-                         .where(
-                             (RSVP.user == current_user) &
-                             (Event.exact_time >= datetime.now())  # Only upcoming events
-                         )
-                         .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
-                         .limit(10))  # Show next 10 upcoming RSVPs
-        except Exception as e:
-            print(f"Error fetching user RSVPs: {e}")
-            user_rsvps = []
-    
     return render_template('user/profile.html', 
                          user=current_user, 
                          needs_info=needs_info,
                          form_data=form_data,
                          show_edit_modal=show_edit_modal,
-                         user_rsvps=user_rsvps,
+                         now=datetime.now())
+
+
+@bp.route('/my-events')
+@login_required
+def my_events():
+    """User's events page showing RSVPs"""
+    
+    # Get user's upcoming RSVPs for approved users
+    upcoming_rsvps = []
+    past_rsvps = []
+    
+    if current_user.role not in ("new", "pending"):
+        try:
+            # Upcoming events
+            upcoming_rsvps = (RSVP
+                             .select(RSVP, Event)
+                             .join(Event)
+                             .where(
+                                 (RSVP.user == current_user) &
+                                 (Event.exact_time >= datetime.now())  # Only upcoming events
+                             )
+                             .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
+                             .limit(20))  # Show next 20 upcoming RSVPs
+            
+            # Past events
+            past_rsvps = (RSVP
+                         .select(RSVP, Event)
+                         .join(Event)
+                         .where(
+                             (RSVP.user == current_user) &
+                             (Event.exact_time < datetime.now())  # Only past events
+                         )
+                         .order_by(Event.exact_time.desc())  # Order by most recent first
+                         .limit(20))  # Show last 20 past RSVPs
+                         
+        except Exception as e:
+            print(f"Error fetching user RSVPs: {e}")
+            upcoming_rsvps = []
+            past_rsvps = []
+    
+    return render_template('user/my_events.html', 
+                         user=current_user,
+                         upcoming_rsvps=upcoming_rsvps,
+                         past_rsvps=past_rsvps,
                          now=datetime.now())
 
 
