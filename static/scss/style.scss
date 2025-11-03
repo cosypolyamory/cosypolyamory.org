@@ -1,3 +1,5 @@
+$main-background-color: #1C003A;
+
 /* Make all input/textarea placeholders a lighter gray for field hints */
 input::placeholder,
 textarea::placeholder {
@@ -17,7 +19,7 @@ body {
 }
 
 .page-odd {
-    background-color: #999;
+    background-color: $main-background-color;
 }
 
 .fake-mobile {

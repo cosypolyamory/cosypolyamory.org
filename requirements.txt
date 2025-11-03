@@ -2,6 +2,7 @@ flask
 jinja2
 flask-login
 flask-session
+libsass
 peewee
 authlib
 requests
