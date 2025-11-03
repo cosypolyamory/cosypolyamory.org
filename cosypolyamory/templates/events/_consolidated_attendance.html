@@ -1,12 +1,6 @@
 {# Consolidated attendance list for event detail page AJAX updates #}
 {% if consolidated_attendance %}
 <table class="table table-hover">
-    <thead class="table-light">
-        <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Status</th>
-        </tr>
-    </thead>
     <tbody>
         {% for attendance in consolidated_attendance %}
         <tr>

@@ -437,70 +437,51 @@
                                         Event Attendance ({{ consolidated_attendance|length }})
                                     </h6>
                                 </div>
-                                <div class="card-body">
-                                    <!-- Event Responses List -->
-                                    <div class="pt-4">
-                                        {% if consolidated_attendance %}
-                                        <div class="table-responsive">
-                                            <table class="table table-hover">
-                                                <tbody>
-                                                    {% for attendance in consolidated_attendance %}
-                                                    <tr>
-                                                        <td>
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="me-2">
-                                                                    {% if attendance.status == 'host' %}
-                                                                        <i class="fas fa-crown fa-lg text-warning" title="Host"></i>
-                                                                    {% elif attendance.status == 'co-host' %}
-                                                                        <i class="fas fa-star fa-lg text-warning" title="Co-host"></i>
-                                                                    {% elif attendance.status == 'yes' %}
-                                                                        <i class="fas fa-check-circle fa-lg text-success" title="Attending"></i>
-                                                                    {% elif attendance.status == 'maybe' %}
-                                                                        <i class="fas fa-question-circle fa-lg text-info" title="Maybe"></i>
-                                                                    {% elif attendance.status == 'waitlist' %}
-                                                                        <i class="fas fa-clock fa-lg text-warning" title="Waitlisted"></i>
-                                                                    {% elif attendance.status == 'no' %}
-                                                                        <i class="fas fa-times-circle fa-lg text-danger" title="Not Attending"></i>
-                                                                    {% endif %}
-                                                                </div>
-                                                                <div>
-                                                                    <strong>{{ attendance.user.name }}</strong>
-                                                                    {% if attendance.user.pronouns %}
-                                                                        <span class="text-muted">({{ attendance.user.pronouns }})</span>
-                                                                    {% endif %}
-                                                                </div>
+                                {% if consolidated_attendance %}
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                        <table class="table table-hover">
+                                            <tbody>
+                                                {% for attendance in consolidated_attendance %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div>
+                                                                <strong>{{ attendance.user.name }}</strong>
+                                                                {% if attendance.user.pronouns %}
+                                                                    <span class="text-muted">({{ attendance.user.pronouns }})</span>
+                                                                {% endif %}
                                                             </div>
-                                                        </td>
-                                                        <td class="text-end">
-                                                            {% if attendance.status == 'host' %}
-                                                                <span class="badge badge-rsvp-host">Host</span>
-                                                            {% elif attendance.status == 'co-host' %}
-                                                                <span class="badge badge-rsvp-cohost">Co-host</span>
-                                                            {% elif attendance.status == 'yes' %}
-                                                                <span class="badge badge-rsvp-yes">Attending</span>
-                                                            {% elif attendance.status == 'maybe' %}
-                                                                <span class="badge badge-rsvp-maybe">Maybe</span>
-                                                            {% elif attendance.status == 'waitlist' %}
-                                                                <span class="badge badge-rsvp-waitlisted">Waitlisted</span>
-                                                            {% elif attendance.status == 'no' %}
-                                                                <span class="badge badge-rsvp-no">Not Attending</span>
-                                                            {% endif %}
-                                                        </td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        {% else %}
-                                        <div class="text-muted text-center py-3">
-                                            <i class="fas fa-users fa-2x mb-2"></i>
-                                            <p>No responses yet</p>
-                                        </div>
-                                        {% endif %}
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        {% if attendance.status == 'host' %}
+                                                            <span class="badge badge-rsvp-host">Host</span>
+                                                        {% elif attendance.status == 'co-host' %}
+                                                            <span class="badge badge-rsvp-cohost">Co-host</span>
+                                                        {% elif attendance.status == 'yes' %}
+                                                            <span class="badge badge-rsvp-yes">Attending</span>
+                                                        {% elif attendance.status == 'maybe' %}
+                                                            <span class="badge badge-rsvp-maybe">Maybe</span>
+                                                        {% elif attendance.status == 'waitlist' %}
+                                                            <span class="badge badge-rsvp-waitlisted">Waitlisted</span>
+                                                        {% elif attendance.status == 'no' %}
+                                                            <span class="badge badge-rsvp-no">Not Attending</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
+                                    {% else %}
+                                    <div class="text-muted text-center py-3">
+                                        <i class="fas fa-users fa-2x mb-2"></i>
+                                        <p>No responses yet</p>
+                                    </div>
+                                    {% endif %}
                                     <!-- Capacity Information -->
                                     {% if event.max_attendees %}
-                                    <div class="mb-4 border-top pt-4">
+                                    <div class="mb-4 pt-4" style="margin: 1em;">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <span class="fw-bold">Capacity:</span>
                                             <span>
@@ -520,9 +501,7 @@
                                                  style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
                                         </div>
                                     </div>
-                                    {% endif %}
-
-                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -542,7 +521,6 @@
                         </div>
                     </div>
                     {% endif %}
-                    
                     
                     
                     <!-- Member-only notice -->
