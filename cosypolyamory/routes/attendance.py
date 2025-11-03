@@ -482,11 +482,9 @@ def admin_move_rsvp(event_id, user_id):
             # Handle capacity constraints when moving to 'yes'
             if new_status == 'yes' and prev_status != 'yes':
                 if is_event_full:
-                    message = f'Cannot move to attending: Event is full. {target_user.name} should be moved to waitlist instead.'
-                    if request.headers.get('Accept') == 'application/json':
-                        return jsonify({'success': False, 'message': message})
-                    flash(message, 'error')
-                    return redirect(url_for('events.event_detail', event_id=event_id))
+                    # Silently move to waitlist instead when event is full
+                    new_status = 'waitlist'
+                    message = f'{target_user.name} moved to waitlist (event is full).'
                 else:
                     message = f'{target_user.name} moved to attending.'
             elif new_status == 'no':

@@ -57,17 +57,17 @@
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <h4 class="card-title mb-0">{{ event.title }}</h4>
                         <div class="d-flex align-items-center gap-2">
-                            <span id="header-pills">
+                            <span id="header-pills" class="d-flex align-items-start gap-2">
                             {% if event.exact_time < now %}
-                                <span class="badge bg-secondary fs-6">Past Event</span>
+                                <span class="badge bg-secondary">Past Event</span>
                             {% else %}
                                 {% if event.max_attendees and rsvp_count >= event.max_attendees %}
-                                    <span class="badge bg-warning text-dark align-middle">Full</span>
+                                    <span class="badge bg-warning text-dark">Full</span>
                                 {% endif %}
                                 {% if waitlist_count > 0 %}
-                                    <span class="badge bg-secondary align-middle ms-2">{{ waitlist_count }} Waitlisted</span>
+                                    <span class="badge bg-secondary">{{ waitlist_count }} Waitlisted</span>
                                 {% endif %}
-                                <span class="badge bg-primary fs-6 ms-2">Upcoming</span>
+                                <span class="badge bg-primary">Upcoming</span>
                             {% endif %}
                             </span>
                         </div>
@@ -79,7 +79,7 @@
                     {% if event.max_attendees %}
                     <p class="mb-0">
                         <i class="fas fa-users me-2"></i>
-                        Capacity: {{ rsvp_count }}/{{ event.max_attendees }} attendees
+                        <span id="capacity-text">Capacity: {{ rsvp_count }}/{{ event.max_attendees }} attendees</span>
                     </p>
                     {% endif %}
                 </div>
@@ -262,11 +262,13 @@
                                                 {% endif %}
                                             {% endif %}
                                             {% if not event_has_passed %}
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-check me-2 text-success"></i>Move to Attending
                                                 </button>
                                             </li>
+                                            {% endif %}
                                             <li>
                                                 <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-hourglass-half me-2 text-default"></i>Move to Waitlist
@@ -614,6 +616,10 @@ function executeMoveRSVP(eventId, userId, newStatus, userName) {
         if (data.success) {
             // Show success message briefly before reload
             showToast('Success', data.message || `${userName} moved successfully`, 'success');
+            
+            // Update capacity display dynamically if needed
+            updateCapacityDisplay();
+            
             // Reload the page to show updated attendance
             setTimeout(() => {
                 window.location.reload();
@@ -627,6 +633,55 @@ function executeMoveRSVP(eventId, userId, newStatus, userName) {
         showToast('Error', 'An error occurred while updating the RSVP.', 'error');
     });
 }
+
+// Function to update capacity display and overflow warning
+function updateCapacityDisplay() {
+    const attendingCard = document.querySelector('.card-header-rsvp-yes');
+    let attendingCount = 0;
+    
+    if (attendingCard) {
+        const headerText = attendingCard.querySelector('h6').textContent;
+        const match = headerText.match(/\((\d+)\)/);
+        attendingCount = match ? parseInt(match[1]) : 0;
+    }
+    
+    const maxAttendees = {{ event.max_attendees or 0 }};
+    
+    if (maxAttendees > 0) {
+        const capacityText = document.getElementById('capacity-text');
+        const existingWarning = document.getElementById('overflow-warning');
+        
+        if (capacityText) {
+            // Update capacity text
+            capacityText.textContent = `Capacity: ${attendingCount}/${maxAttendees} attendees`;
+            
+            // Handle overflow warning
+            if (attendingCount > maxAttendees) {
+                const overflowAmount = attendingCount - maxAttendees;
+                
+                if (existingWarning) {
+                    // Update existing warning
+                    existingWarning.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>Over capacity by ${overflowAmount}`;
+                } else {
+                    // Create new warning
+                    const warningBadge = document.createElement('span');
+                    warningBadge.id = 'overflow-warning';
+                    warningBadge.className = 'badge bg-danger ms-2';
+                    warningBadge.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>Over capacity by ${overflowAmount}`;
+                    capacityText.parentNode.appendChild(warningBadge);
+                }
+            } else if (existingWarning) {
+                // Remove warning if within capacity
+                existingWarning.remove();
+            }
+        }
+    }
+}
+
+// Initialize capacity display on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCapacityDisplay();
+});
 
 function removeRSVP(eventId, userId, userName) {
     // Set up the confirmation modal
