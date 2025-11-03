@@ -109,12 +109,48 @@ def rsvp_event(event_id):
                     rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
                     rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
                     rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+                    rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
                     rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(
                         RSVP.created_at)
+                    
+                    # Create consolidated attendance list 
+                    all_rsvps = list(rsvps) + list(rsvps_no) + list(rsvps_maybe) + list(rsvps_waitlist)
+                    
+                    # Create mock RSVP objects for host/co-host display
+                    class MockRSVP:
+                        def __init__(self, user, status):
+                            self.user = user
+                            self.status = status
+                            self.created_at = event.created_at
+                    
+                    # Remove host and co-host from regular RSVP lists if they exist
+                    all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.organizer_id]
+                    if event.co_host:
+                        all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.co_host.id]
+                    
+                    # Always add host and co-host at the beginning with their special status
+                    all_rsvps.append(MockRSVP(event.organizer, 'host'))
+                    if event.co_host:
+                        all_rsvps.append(MockRSVP(event.co_host, 'co-host'))
+                    
+                    # Sort by status priority, then by first name, then by last name
+                    status_priority = {'host': 0, 'co-host': 1, 'yes': 2, 'maybe': 3, 'waitlist': 4, 'no': 5}
+                    
+                    def sort_key(rsvp):
+                        # Split the name to get first and last name
+                        name_parts = rsvp.user.name.split()
+                        first_name = name_parts[0] if name_parts else ''
+                        last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+                        return (status_priority.get(rsvp.status, 6), first_name.lower(), last_name.lower())
+                    
+                    consolidated_attendance = sorted(all_rsvps, key=sort_key)
+                    
                     from flask import render_template
                     attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps)
                     not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
                     waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist)
+                    consolidated_attendance_html = render_template('events/_consolidated_attendance.html', 
+                                                                 consolidated_attendance=consolidated_attendance)
                     capacity_pills_html = render_template('events/_capacity_pills.html',
                                                           rsvp_count=rsvp_count,
                                                           event=event,
@@ -134,6 +170,7 @@ def rsvp_event(event_id):
                         'rsvps_html': attendees_html,
                         'rsvps_no_html': not_attending_html,
                         'waitlist_html': waitlist_html,
+                        'consolidated_attendance_html': consolidated_attendance_html,
                         'capacity_pills_html': capacity_pills_html,
                         'header_pills_html': header_pills_html,
                         'promoted_user': promoted_user
@@ -213,12 +250,8 @@ def rsvp_event(event_id):
         rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
         rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
         
-        # Create consolidated attendance list
+        # Create consolidated attendance list sorted by status priority, then by name
         all_rsvps = list(rsvps) + list(rsvps_no) + list(rsvps_maybe) + list(rsvps_waitlist)
-        
-        # Add host/co-host to the list if they haven't RSVPed
-        host_in_list = any(rsvp.user.id == event.organizer_id for rsvp in all_rsvps)
-        cohost_in_list = any(rsvp.user.id == event.co_host.id for rsvp in all_rsvps) if event.co_host else True
         
         # Create mock RSVP objects for host/co-host display
         class MockRSVP:
@@ -227,10 +260,14 @@ def rsvp_event(event_id):
                 self.status = status
                 self.created_at = event.created_at
         
-        if not host_in_list:
-            all_rsvps.append(MockRSVP(event.organizer, 'host'))
+        # Remove host and co-host from regular RSVP lists if they exist
+        all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.organizer_id]
+        if event.co_host:
+            all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.co_host.id]
         
-        if event.co_host and not cohost_in_list:
+        # Always add host and co-host at the beginning with their special status
+        all_rsvps.append(MockRSVP(event.organizer, 'host'))
+        if event.co_host:
             all_rsvps.append(MockRSVP(event.co_host, 'co-host'))
         
         # Sort by status priority, then by first name, then by last name

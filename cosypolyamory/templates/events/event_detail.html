@@ -434,91 +434,15 @@
                                 <div class="card-header">
                                     <h6 class="mb-0">
                                         <i class="fas fa-users me-2"></i>
-                                        Event Attendance
+                                        Event Attendance ({{ consolidated_attendance|length }})
                                     </h6>
                                 </div>
                                 <div class="card-body">
-                                    
-                                    <!-- Attendance Buttons -->
-                                    {% if event.exact_time > now %}
-                                    <div class="mb-4" id="attendance-section">
-                                        {% set user_rsvp = user_rsvp %}
-                                        {% set is_host_or_cohost = current_user.is_authenticated and (current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id)) %}
-                                        <div class="text-center">
-                                            <div class="rsvp-status-line mt-2 mb-3">
-                                                {% if is_host_or_cohost %}
-                                                    <i class="fas fa-crown text-warning me-2" title="Host/Co-host"></i>
-                                                    <span class="fw-bold text-info">You are {% if current_user.id == event.organizer_id %}the host{% else %}a co-host{% endif %} of this event</span>
-                                                {% elif user_rsvp %}
-                                                    {% if user_rsvp.status == 'yes' %}
-                                                        <i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-success">
-                                                            {% if event.exact_time < now %}I went{% else %}I'm going{% endif %}
-                                                        </span>
-                                                    {% elif user_rsvp.status == 'no' %}
-                                                        <i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-danger">
-                                                            {% if event.exact_time < now %}I didn't go{% else %}I'm not going{% endif %}
-                                                        </span>
-                                                    {% elif user_rsvp.status == 'waitlist' %}
-                                                        <i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-warning">
-                                                            {% if event.exact_time < now %}I was waitlisted{% else %}I am waitlisted{% endif %}
-                                                        </span>
-                                                    {% endif %}
-                                                {% endif %}
-                                            </div>
-                                            <!-- Status message instead of buttons -->
-                                            {% if not user_rsvp and not is_host_or_cohost %}
-                                            <div class="text-center mt-2">
-                                                <i class="fas fa-question-circle text-muted me-2" title="RSVP Status"></i>
-                                                <span class="text-muted">Use the buttons above to RSVP for this event</span>
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    {% endif %}
-                                    
-                                    <!-- Capacity Information -->
-                                    {% if event.max_attendees %}
-                                    <div class="mb-4 border-top pt-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span class="fw-bold">Capacity:</span>
-                                            <span>
-                                                {{ rsvp_count }}/{{ event.max_attendees }} attendees
-                                                <span id="capacity-pills">
-                                                    {% if event.max_attendees and rsvp_count >= event.max_attendees %}
-                                                        <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
-                                                    {% endif %}
-                                                    {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
-                                                        <span class="badge bg-secondary ms-2 align-middle">Waitlist</span>
-                                                    {% endif %}
-                                                </span>
-                                            </span>
-                                        </div>
-                                        <div class="progress mb-3" style="height: 8px;">
-                                            <div class="progress-bar" role="progressbar" 
-                                                 style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
                                     <!-- Event Responses List -->
-                                    <div class="border-top pt-4">
-                                        <h6 class="text-dark mb-3">
-                                            <i class="fas fa-users me-2"></i>
-                                            Event Attendance ({{ consolidated_attendance|length }})
-                                        </h6>
-                                        
+                                    <div class="pt-4">
                                         {% if consolidated_attendance %}
                                         <div class="table-responsive">
                                             <table class="table table-hover">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th scope="col">Name</th>
-                                                        <th scope="col" class="text-end">Status</th>
-                                                    </tr>
-                                                </thead>
                                                 <tbody>
                                                     {% for attendance in consolidated_attendance %}
                                                     <tr>
@@ -574,6 +498,30 @@
                                         </div>
                                         {% endif %}
                                     </div>
+                                    <!-- Capacity Information -->
+                                    {% if event.max_attendees %}
+                                    <div class="mb-4 border-top pt-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold">Capacity:</span>
+                                            <span>
+                                                {{ rsvp_count }}/{{ event.max_attendees }} attendees
+                                                <span id="capacity-pills">
+                                                    {% if event.max_attendees and rsvp_count >= event.max_attendees %}
+                                                        <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
+                                                    {% endif %}
+                                                    {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
+                                                        <span class="badge bg-secondary ms-2 align-middle">Waitlist</span>
+                                                    {% endif %}
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="progress mb-3" style="height: 8px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
                                 </div>
                             </div>
                         </div>
