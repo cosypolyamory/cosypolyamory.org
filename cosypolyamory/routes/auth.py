@@ -514,40 +514,70 @@ def my_events():
     # Get user's upcoming RSVPs for approved users
     upcoming_rsvps = []
     past_rsvps = []
+    upcoming_hosted = []
+    past_hosted = []
     
     if current_user.role not in ("new", "pending"):
         try:
-            # Upcoming events
+            # Upcoming events the user is attending (but not hosting)
             upcoming_rsvps = (RSVP
                              .select(RSVP, Event)
                              .join(Event)
                              .where(
                                  (RSVP.user == current_user) &
-                                 (Event.exact_time >= datetime.now())  # Only upcoming events
+                                 (Event.exact_time >= datetime.now()) &  # Only upcoming events
+                                 (Event.organizer != current_user) &  # Exclude events they're organizing
+                                 ((Event.co_host.is_null()) | (Event.co_host != current_user))  # Exclude events they're co-hosting
                              )
                              .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
                              .limit(20))  # Show next 20 upcoming RSVPs
             
-            # Past events
+            # Past events the user attended (but didn't host)
             past_rsvps = (RSVP
                          .select(RSVP, Event)
                          .join(Event)
                          .where(
                              (RSVP.user == current_user) &
-                             (Event.exact_time < datetime.now())  # Only past events
+                             (Event.exact_time < datetime.now()) &  # Only past events
+                             (Event.organizer != current_user) &  # Exclude events they organized
+                             ((Event.co_host.is_null()) | (Event.co_host != current_user))  # Exclude events they co-hosted
                          )
                          .order_by(Event.exact_time.desc())  # Order by most recent first
                          .limit(20))  # Show last 20 past RSVPs
                          
+            # Upcoming events the user is hosting or co-hosting
+            upcoming_hosted = (Event
+                              .select()
+                              .where(
+                                  (Event.exact_time >= datetime.now()) &  # Only upcoming events
+                                  ((Event.organizer == current_user) | (Event.co_host == current_user))  # Events they're hosting/co-hosting
+                              )
+                              .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
+                              .limit(20))  # Show next 20 upcoming hosted events
+                              
+            # Past events the user hosted or co-hosted
+            past_hosted = (Event
+                          .select()
+                          .where(
+                              (Event.exact_time < datetime.now()) &  # Only past events
+                              ((Event.organizer == current_user) | (Event.co_host == current_user))  # Events they hosted/co-hosted
+                          )
+                          .order_by(Event.exact_time.desc())  # Order by most recent first
+                          .limit(20))  # Show last 20 past hosted events
+                         
         except Exception as e:
-            print(f"Error fetching user RSVPs: {e}")
+            print(f"Error fetching user events: {e}")
             upcoming_rsvps = []
             past_rsvps = []
+            upcoming_hosted = []
+            past_hosted = []
     
     return render_template('user/my_events.html', 
                          user=current_user,
                          upcoming_rsvps=upcoming_rsvps,
                          past_rsvps=past_rsvps,
+                         upcoming_hosted=upcoming_hosted,
+                         past_hosted=past_hosted,
                          now=datetime.now())
 
 
