@@ -18,7 +18,7 @@
     {% endif %}
 {% endwith %}
 
-<div class="page page-odd">
+<div class="page page-odd" id="splash-page">
   <div class="circles-bg-container">
     <div class="circle-bg circle-bg-01"></div>
     <div class="circle-bg circle-bg-02"></div>
@@ -49,45 +49,74 @@
 
 </div>
 
-<div class="row">
-  <div class="page" id="who-we-are">
-    <h2 class="index-header">Who we are</h2>
-    <p>
-        We are a welcoming space for people exploring polyamory / ethical non monogamy mostly based in Barcelona. 
-        
-        Our core values are fairness, equality, and transparency. We encourage members to participate in ways that feel comfortable. Together, we strive to support one another and say <b>yes</b> to opportunities that bring us closer as a community.
-    </p>
-    <a href="/values"><button type="button" class="btn btn-secondary">Learn more about us</button></a>
+<div class="page" id="who-we-are">
+  <h2 class="index-header">Who we are</h2>
+  <p>
+      We are a welcoming space for people exploring polyamory / ethical non monogamy mostly based in Barcelona. 
+  </p>
+  <div class="row" id="core-values-container">
+    <div class="col-12">
+      <p><strong>Our values</strong></p>
+    </div>
+    <div class="col-3 value-box mx-auto">
+      <svg class="fill-pink-1 value-heart">
+        <use xlink:href="static/img/heart.svg#hearth-shape"></use>
+      </svg>
+      <p><small>Transparency</small></p>
+    </div>
+    <div class="col-3 value-box mx-auto">
+      <svg class="fill-pink-4 value-heart">
+        <use xlink:href="static/img/heart.svg#hearth-shape"></use>
+      </svg>
+      <p><small>Fairness</small></p>
+    </div>
+    <div class="col-3 value-box mx-auto">
+      <svg class="fill-pink-2 value-heart">
+        <use xlink:href="static/img/heart.svg#hearth-shape"></use>
+      </svg>
+      <p><small>Equality</small></p>
+    </div>
   </div>
-
-  <div class="page page-odd" id="how-to-member">
-    <h2 class="header-paragraph">Becoming a member of the community</h2>
-    <p>
-        Please sign up on our <a href="https://www.meetup.com/cosy-polyamory-community/">Meetup</a> page. Once you’ve joined, you’ll receive a welcome email with our <a href="/code-of-conduct">Code of Conduct</a>. Read the Code of Conduct fully and then answer a few simple questions to confirm that you've read it.
-    </p>
-    <p>
-        Once approved, you’ll gain access to our Meetup group, where you can RSVP to events and meet members. After attending an event, the organizer may invite you to join our main Telegram Community Chat. Meeting in person helps us ensure a safe and welcoming environment for all.
-    </p>
-    <p>
-    If you have questions, please <a href="/contact">connect with our team</a> to ask about our policies, or learn more about upcoming events.
-    </p>
-    <p>
-        We’re excited to meet you and welcome you to our cosy community!
-    </p>
+  <p>
+    We encourage members to participate in ways that feel comfortable—whether that’s attending events, sharing ideas, or helping to create a cosy, inclusive atmosphere.
+  </p>
+  <div id="learn-more-button">
+    <a href="/values">
+      <button type="button" class="btn btn-secondary call-to-action-button">
+        <small>Learn more about us</small>
+      </button>
+    </a>
   </div>
-  <div id="links">
-    <h2 class="header-paragraph">Links</h2>
+</div>
 
-    <p>
-    Here are some link to relevant Cosy resources:
-    </p>
+    <div class="page page-odd" id="how-to-member">
+      <h2 class="header-paragraph">Becoming a member of the community</h2>
+      <p>
+          Please sign up on our <a href="https://www.meetup.com/cosy-polyamory-community/">Meetup</a> page. Once you’ve joined, you’ll receive a welcome email with our <a href="/code-of-conduct">Code of Conduct</a>. Read the Code of Conduct fully and then answer a few simple questions to confirm that you've read it.
+      </p>
+      <p>
+          Once approved, you’ll gain access to our Meetup group, where you can RSVP to events and meet members. After attending an event, the organizer may invite you to join our main Telegram Community Chat. Meeting in person helps us ensure a safe and welcoming environment for all.
+      </p>
+      <p>
+      If you have questions, please <a href="/contact">connect with our team</a> to ask about our policies, or learn more about upcoming events.
+      </p>
+      <p>
+          We’re excited to meet you and welcome you to our cosy community!
+      </p>
+    </div>
+    <div id="links">
+      <h2 class="header-paragraph">Links</h2>
 
-    <ul>
-      <li><a href="https://www.meetup.com/cosy-polyamory-community/">Meetup page</a></li>
-      <li><a href="/code-of-conduct">Our Code of Conduct</a></li>
-      <li><a href="/values">Our Community Values</a></li>
-      <li><a href="/governance">How we are organized: Governance</a></li>
-    </ul>
+      <p>
+      Here are some link to relevant Cosy resources:
+      </p>
+
+      <ul>
+        <li><a href="https://www.meetup.com/cosy-polyamory-community/">Meetup page</a></li>
+        <li><a href="/code-of-conduct">Our Code of Conduct</a></li>
+        <li><a href="/values">Our Community Values</a></li>
+        <li><a href="/governance">How we are organized: Governance</a></li>
+      </ul>
   </div>
 </div>
 </div>

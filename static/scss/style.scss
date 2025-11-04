@@ -1,36 +1,25 @@
-$dark-background: #1C003A;
-$bright-background: #FFE3D8;
-$bright-text: #fff;
-$dark-text: #000;
+/* color palette */
+$dark:   #1C003A;
+$bright: #FFE3D8;
+$pink-1: #FFBCFD;
+$pink-2: #FF7ECF;
+$pink-3: #A95DA8;
+$pink-4: #BF29BC;
+$purple: #390177;
 
-$pink-1: #ffbcfd;
-$pink-2: #ff7ecf;
-$pink-3: #a95da8;
-$pink-4: #bf29bc;
-
-
-/* Make all input/textarea placeholders a lighter gray for field hints */
-input::placeholder,
-textarea::placeholder {
-  color: #adb5bd !important;
-  opacity: 1;
-}
 body {
-    background-color: $bright-background;
-    font-family: 'Inter', sans-serif; /* this should be in body */ /* Inter is not standard */
+    background-color: $bright;
+    font-family: 'Inter', sans-serif; /* Inter is not standard */
 }
 
 #first-page-title {
     height: 60vh;
 }
 
-.page {
-}
-
 .page-odd {
-    background-color: $dark-background;
-    color: $bright-text;
-    margin: auto -10vw;
+    background-color: $dark;
+    color: $bright;
+    margin: auto -10vw; /* extend background color to edges */
     z-index: -1;
 }
 
@@ -65,7 +54,7 @@ body {
 .circle-bg-13 { left: 348px; top: 669px; height: 19px; width: 19px; background-color: $pink-4; }
 
 #title {
-    color: $bright-text;
+    color: $bright;
     margin: 15vw;
     text-align: left;
     position: relative;
@@ -106,25 +95,48 @@ body {
     margin: 8em 0 1.3em 0;
 }
 
-h2 {
-  font-weight: 800;
-}
-
 #who-we-are {
     margin-top: 170px;
+}
+
+#core-values-container {
+    background-color: $purple;
+    border-radius: 15px;
+    color: $bright;
+    height: 150px;
+    margin-bottom: 1rem;
+    padding: 5vw;
+    text-align: center;
+}
+
+.value-box {
+    width: 100px;
+}
+
+.value-heart {
+    width: 40px;
+    height: 40px;
+}
+
+.fill-pink-1{ fill: $pink-1; }
+.fill-pink-2{ fill: $pink-2; }
+.fill-pink-4{ fill: $pink-4; }
+
+.call-to-action-button {
+    margin: 1rem 0;
+    background-color: $pink-4;
+    border-radius: 50px;;
+    font-weight: 600;
+    width: 100%;
 }
 
 .header-paragraph {
   font-size: 150%;
 }
 
-h3 {
-    margin: 1.3em 0 1.3em 0;
-}
-
-h4 {
-    margin: 1.2em 0 1.2em 0 !important;
-}
+h2 { font-weight: 800; }
+h3 { margin: 1.3em 0 1.3em 0; }
+h4 { margin: 1.2em 0 1.2em 0 !important; }
 
 .navbar-color {
     background-color: #5d0096;
@@ -630,4 +642,11 @@ h4 {
     .application-actions .btn i {
         margin-right: 0 !important;
     }
+}
+
+/* Make all input/textarea placeholders a lighter gray for field hints */
+input::placeholder,
+textarea::placeholder {
+  color: #adb5bd !important;
+  opacity: 1;
 }
