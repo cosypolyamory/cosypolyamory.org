@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential python3-dev python3-pip \
+    && apt-get install -y --no-install-recommends build-essential python3-dev python3-pip libsass-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /code

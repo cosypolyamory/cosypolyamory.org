@@ -2,7 +2,7 @@ flask
 jinja2
 flask-login
 flask-session
-flask_assets
+Flask-Assets
 libsass
 peewee
 authlib
