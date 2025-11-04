@@ -84,7 +84,10 @@ html, body {
   width: 100%;
   position: absolute;
   left: 0px;
-  z-index: -1; }
+  z-index: -1;
+  transform: scaleY(-1);
+  -webkit-transform: scaleY(-1);
+}
 
 .blob-shape-background {
     width: 70%;
@@ -115,7 +118,7 @@ html, body {
   margin-top: 100px;
   max-width: 95vw;
   transform: translateX(10vw);
-}
+  -webkit-transform: translateX(10vw); }
 
 #core-values-container {
     background-color: $purple;
@@ -146,6 +149,8 @@ html, body {
     border-radius: 50px;;
     font-weight: 600;
     width: 100%;
+    border: none;
+    outline: none;
 }
 
 .header-paragraph {
