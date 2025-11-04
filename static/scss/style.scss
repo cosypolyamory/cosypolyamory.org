@@ -7,13 +7,21 @@ $pink-3: #A95DA8;
 $pink-4: #BF29BC;
 $purple: #390177;
 
+.fill-pink-1 { fill: $pink-1; }
+.fill-pink-2 { fill: $pink-2; }
+.fill-pink-4 { fill: $pink-4; }
+.fill-bright { fill: $bright; }
+.fill-dark   { fill: $dark; }
+
+
 body {
     background-color: $bright;
     font-family: 'Inter', sans-serif; /* Inter is not standard */
+    position: relative;
 }
 
-#first-page-title {
-    height: 60vh;
+#splash-page-title {
+    height: 70vh;
 }
 
 .page-odd {
@@ -21,6 +29,15 @@ body {
     color: $bright;
     margin: auto -10vw; /* extend background color to edges */
     z-index: -1;
+}
+
+.page-content {
+    position: relative;
+    z-index: 1;
+}
+
+.margin-fixer {
+    margin: auto 10vw;
 }
 
 .circles-bg-container {
@@ -68,18 +85,22 @@ body {
     line-height: 1.5;
 }
 
-.page-bottom-shape-background {
+.page-shape-background {
+    height: 200px;
+    position: absolute;
+    right:0;
     width: 100%;
-    position: relative;
-    top: 150px;
     z-index:-1;
 }
+#page-shape-background-1 { top: 70vh; }
+#page-shape-background-2 { top: 350px; width: 105%; right: -2vw} /* not very elegant */
+
 .blob-shape-background {
     width: 70%;
     position: absolute;
-    top: 386px;
-    right: 13px;
     z-index: 0;
+    right: 13px;
+    top: 386px;
 }
 
 .circle-line-shape-background {
@@ -118,16 +139,16 @@ body {
     height: 40px;
 }
 
-.fill-pink-1{ fill: $pink-1; }
-.fill-pink-2{ fill: $pink-2; }
-.fill-pink-4{ fill: $pink-4; }
-
 .call-to-action-button {
     margin: 1rem 0;
     background-color: $pink-4;
     border-radius: 50px;;
     font-weight: 600;
     width: 100%;
+}
+
+#what-we-do h2 {
+    padding-top: 12vh;
 }
 
 .header-paragraph {

@@ -18,7 +18,7 @@
     {% endif %}
 {% endwith %}
 
-<div class="page page-odd" id="splash-page">
+<div class="page page-odd" id="splash-page-title">
   <div class="circles-bg-container">
     <div class="circle-bg circle-bg-01"></div>
     <div class="circle-bg circle-bg-02"></div>
@@ -45,48 +45,91 @@
   </div>
   <img class="blob-shape-background"        src="{{ url_for('static', filename='img/blob-shape.svg') }}"        alt="Circle Blob Shape">
   <img class="circle-line-shape-background" src="{{ url_for('static', filename='img/circle-line-shape.svg') }}" alt="Circle Line Shape">
-  <img class="page-bottom-shape-background" src="{{ url_for('static', filename='img/page-bottom-shape.svg') }}" alt="Bottom Shape">
+  <svg class="fill-dark page-shape-background" id="page-shape-background-1">
+    <use xlink:href="static/img/page-shape-background.svg#page-shape"></use>
+  </svg>
 
 </div>
 
 <div class="page" id="who-we-are">
-  <h2 class="index-header">Who we are</h2>
-  <p>
-      We are a welcoming space for people exploring polyamory / ethical non monogamy mostly based in Barcelona. 
-  </p>
-  <div class="row" id="core-values-container">
-    <div class="col-12">
-      <p><strong>Our values</strong></p>
+  <div class="page-content">
+    <h2>Who we are</h2>
+    <p>
+        We are a welcoming space for people exploring polyamory / ethical non monogamy mostly based in Barcelona. 
+    </p>
+    <div class="row" id="core-values-container">
+      <div class="col-12">
+        <p><strong>Our values</strong></p>
+      </div>
+      <div class="col-3 value-box mx-auto">
+        <svg class="fill-pink-1 value-heart">
+          <use xlink:href="static/img/heart.svg#hearth-shape"></use>
+        </svg>
+        <p><small>Transparency</small></p>
+      </div>
+      <div class="col-3 value-box mx-auto">
+        <svg class="fill-pink-4 value-heart">
+          <use xlink:href="static/img/heart.svg#hearth-shape"></use>
+        </svg>
+        <p><small>Fairness</small></p>
+      </div>
+      <div class="col-3 value-box mx-auto">
+        <svg class="fill-pink-2 value-heart">
+          <use xlink:href="static/img/heart.svg#hearth-shape"></use>
+        </svg>
+        <p><small>Equality</small></p>
+      </div>
     </div>
-    <div class="col-3 value-box mx-auto">
-      <svg class="fill-pink-1 value-heart">
-        <use xlink:href="static/img/heart.svg#hearth-shape"></use>
-      </svg>
-      <p><small>Transparency</small></p>
+    <p>
+      We encourage members to participate in ways that feel comfortable—whether that’s attending events, sharing ideas, or helping to create a cosy, inclusive atmosphere.
+    </p>
+    <div id="learn-more-button">
+      <a href="/values">
+        <button type="button" class="btn btn-secondary call-to-action-button">
+          <small>Learn more about us</small>
+        </button>
+      </a>
     </div>
-    <div class="col-3 value-box mx-auto">
-      <svg class="fill-pink-4 value-heart">
-        <use xlink:href="static/img/heart.svg#hearth-shape"></use>
-      </svg>
-      <p><small>Fairness</small></p>
-    </div>
-    <div class="col-3 value-box mx-auto">
-      <svg class="fill-pink-2 value-heart">
-        <use xlink:href="static/img/heart.svg#hearth-shape"></use>
-      </svg>
-      <p><small>Equality</small></p>
+    <svg class="fill-bright page-shape-background" id="page-shape-background-2">
+      <use xlink:href="static/img/page-shape-background.svg#page-shape"></use>
+    </svg>
+  </div>
+</div>
+
+<div class="page page-odd" id="what-we-do">
+  <div class="margin-fixer">
+    <h2 class="index-header">What we do</h2>
+    <p>
+      Together, we strive to support one another and say <b>yes</b> to opportunities that bring us closer as a community.
+    </p>
+    <p>
+      We’re always open to new ideas, and members are encouraged to propose events that interest them.
+    </p>
+    <p>We do...</p>
+    <div class="what-we-do-container">
+      <div class="what-we-do-item">
+        <h3>Events</h3>
+        <p>Social gatherings, workshops, activities</p>
+      </div>
+      <div class="what-we-do-item">
+        <h3>Workshops</h3>
+        <p>Educational sessions on polyamory and relationship skills.</p>
+      </div>
+      <div class="what-we-do-item">
+        <h3>Support Groups</h3>
+        <p>Safe spaces for discussing challenges and seeking advice.</p>
+      </div>
+      <div class="what-we-do-item">
+        <h3>Community Projects</h3>
+        <p>Collaborative initiatives to promote inclusivity and understanding.</p>
+      </div>
     </div>
   </div>
+</div>
+<div id="intro">
   <p>
-    We encourage members to participate in ways that feel comfortable—whether that’s attending events, sharing ideas, or helping to create a cosy, inclusive atmosphere.
+    Our events include social gatherings, book clubs, hikes, beach outings, and more, mostly in Barcelona.
   </p>
-  <div id="learn-more-button">
-    <a href="/values">
-      <button type="button" class="btn btn-secondary call-to-action-button">
-        <small>Learn more about us</small>
-      </button>
-    </a>
-  </div>
 </div>
 
 <div class="page page-odd" id="how-to-member">
