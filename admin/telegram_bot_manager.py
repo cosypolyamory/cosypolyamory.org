@@ -232,12 +232,13 @@ async def send_test_event():
         return
     
     try:
+        base_url = os.getenv('DOMAIN', 'https://cosypolyamory.org')
         success = await bot.send_event_notification(
             event_title="Test Community Gathering",
             event_date="September 15, 2025",
             event_time="7:00 PM PST",
             event_location="Community Center - Main Hall",
-            event_url="https://cosypolyamory.org/events/test"
+            event_url=f"{base_url}/events/test"
         )
         
         if success:

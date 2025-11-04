@@ -7,13 +7,14 @@ Handles OAuth login, logout, and profile management.
 import os
 import re
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 
 from cosypolyamory.models.user import User
 from cosypolyamory.models.rsvp import RSVP
 from cosypolyamory.models.event import Event
 from cosypolyamory.database import database
+from cosypolyamory.notification import notify_account_created
 
 bp = Blueprint('auth', __name__)
 
@@ -118,8 +119,10 @@ def oauth_callback(provider):
                                            emails[0].get('email') if emails[0] else None)
                 except Exception as e:
                     print(f"Error getting GitHub emails: {e}")
-                    # If we can't get email, we'll use the username as a fallback
-                    primary_email = f"{user_info['login']}@github.local"
+            
+            # Ensure we always have a valid email, use fallback if needed
+            if not primary_email:
+                primary_email = f"{user_info['login']}@github.local"
             
             user_id = f"github_{user_info['id']}"
             user = User(
@@ -167,10 +170,11 @@ def oauth_callback(provider):
             if not username:
                 try:
                     # Try collections endpoint which might reveal the user
+                    base_url = current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
                     resp = oauth.musicbrainz.get('ws/2/collection', token=token, params={
                         'fmt': 'json'
                     }, headers={
-                        'User-Agent': 'CozyPolyamory/1.0 (https://cosypolyamory.org)',
+                        'User-Agent': f'CozyPolyamory/1.0 ({base_url})',
                         'Accept': 'application/json'
                     })
                     
@@ -239,8 +243,9 @@ def oauth_callback(provider):
                 
                 # Try to get user profile/whoami to get a stable user ID
                 try:
+                    base_url = current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
                     resp = oauth.musicbrainz.get('oauth2/userinfo', token=token, headers={
-                        'User-Agent': 'CozyPolyamory/1.0 (https://cosypolyamory.org)',
+                        'User-Agent': f'CozyPolyamory/1.0 ({base_url})',
                         'Accept': 'application/json'
                     })
                     
@@ -419,6 +424,12 @@ def oauth_callback(provider):
                             provider='musicbrainz',
                             last_login=datetime.now()
                         )
+                    
+                    # Send welcome notification for new users
+                    try:
+                        notify_account_created(user)
+                    except Exception as e:
+                        current_app.logger.error(f"Failed to send welcome notification to {user.email}: {e}")
             
             login_user(user, remember=True)
         except Exception as db_error:
@@ -487,29 +498,86 @@ def profile():
     if form_data:
         session.pop('profile_form_data', None)
     
-    # Get user's RSVPs for approved users (upcoming events only)
-    user_rsvps = []
-    if current_user.role not in ("new", "pending"):
-        try:
-            user_rsvps = (RSVP
-                         .select(RSVP, Event)
-                         .join(Event)
-                         .where(
-                             (RSVP.user == current_user) &
-                             (Event.exact_time >= datetime.now())  # Only upcoming events
-                         )
-                         .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
-                         .limit(10))  # Show next 10 upcoming RSVPs
-        except Exception as e:
-            print(f"Error fetching user RSVPs: {e}")
-            user_rsvps = []
-    
     return render_template('user/profile.html', 
                          user=current_user, 
                          needs_info=needs_info,
                          form_data=form_data,
                          show_edit_modal=show_edit_modal,
-                         user_rsvps=user_rsvps,
+                         now=datetime.now())
+
+
+@bp.route('/my-events')
+@login_required
+def my_events():
+    """User's events page showing RSVPs"""
+    
+    # Get user's upcoming RSVPs for approved users
+    upcoming_rsvps = []
+    past_rsvps = []
+    upcoming_hosted = []
+    past_hosted = []
+    
+    if current_user.role not in ("new", "pending"):
+        try:
+            # Upcoming events the user is attending (but not hosting)
+            upcoming_rsvps = (RSVP
+                             .select(RSVP, Event)
+                             .join(Event)
+                             .where(
+                                 (RSVP.user == current_user) &
+                                 (Event.exact_time >= datetime.now()) &  # Only upcoming events
+                                 (Event.organizer != current_user) &  # Exclude events they're organizing
+                                 ((Event.co_host.is_null()) | (Event.co_host != current_user))  # Exclude events they're co-hosting
+                             )
+                             .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
+                             .limit(20))  # Show next 20 upcoming RSVPs
+            
+            # Past events the user attended (but didn't host)
+            past_rsvps = (RSVP
+                         .select(RSVP, Event)
+                         .join(Event)
+                         .where(
+                             (RSVP.user == current_user) &
+                             (Event.exact_time < datetime.now()) &  # Only past events
+                             (Event.organizer != current_user) &  # Exclude events they organized
+                             ((Event.co_host.is_null()) | (Event.co_host != current_user))  # Exclude events they co-hosted
+                         )
+                         .order_by(Event.exact_time.desc())  # Order by most recent first
+                         .limit(20))  # Show last 20 past RSVPs
+                         
+            # Upcoming events the user is hosting or co-hosting
+            upcoming_hosted = (Event
+                              .select()
+                              .where(
+                                  (Event.exact_time >= datetime.now()) &  # Only upcoming events
+                                  ((Event.organizer == current_user) | (Event.co_host == current_user))  # Events they're hosting/co-hosting
+                              )
+                              .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
+                              .limit(20))  # Show next 20 upcoming hosted events
+                              
+            # Past events the user hosted or co-hosted
+            past_hosted = (Event
+                          .select()
+                          .where(
+                              (Event.exact_time < datetime.now()) &  # Only past events
+                              ((Event.organizer == current_user) | (Event.co_host == current_user))  # Events they hosted/co-hosted
+                          )
+                          .order_by(Event.exact_time.desc())  # Order by most recent first
+                          .limit(20))  # Show last 20 past hosted events
+                         
+        except Exception as e:
+            print(f"Error fetching user events: {e}")
+            upcoming_rsvps = []
+            past_rsvps = []
+            upcoming_hosted = []
+            past_hosted = []
+    
+    return render_template('user/my_events.html', 
+                         user=current_user,
+                         upcoming_rsvps=upcoming_rsvps,
+                         past_rsvps=past_rsvps,
+                         upcoming_hosted=upcoming_hosted,
+                         past_hosted=past_hosted,
                          now=datetime.now())
 
 
