@@ -74,12 +74,11 @@ h4 {
     text-shadow: 0 0 8px rgba(255,255,255,0.7);
 }
 
-/* Keep dropdown menu links black */
 .navbar .dropdown-menu a,
 .navbar .dropdown-menu .dropdown-item,
 .navbar-color .dropdown-menu a,
 .navbar-color .dropdown-menu .dropdown-item {
-    color: #212529 !important;
+    color: #6e3ab7 !important;
     text-shadow: none !important;
 }
 
@@ -87,9 +86,9 @@ h4 {
 .navbar .dropdown-menu .dropdown-item:hover,
 .navbar-color .dropdown-menu a:hover,
 .navbar-color .dropdown-menu .dropdown-item:hover {
-    color: #1e2125 !important;
+    color: #3F51B5 !important;
     text-shadow: none !important;
-    background-color: #f8f9fa !important;
+    background-color: #f9f9f9 !important;
 }
 
 /* Make dropdown menu bigger and scrollable */
