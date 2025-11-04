@@ -66,6 +66,9 @@ def api_admin_users_by_role(role):
             paged = sorted_users[(page-1)*per_page:page*per_page]
             user_list = []
             for user, application in paged:
+                # Get no-show count for this user
+                no_show_count = NoShow.select().where(NoShow.user == user).count()
+                
                 user_list.append({
                     'id': user.id,
                     'name': user.name,
@@ -77,7 +80,8 @@ def api_admin_users_by_role(role):
                     'last_login': user.last_login.isoformat() if user.last_login else None,
                     'has_application': bool(application),
                     'application_id': application.id if application else None,
-                    'application_status': application.status if application else None
+                    'application_status': application.status if application else None,
+                    'no_show_count': no_show_count
                 })
             return jsonify({
                 'users': user_list,
@@ -101,6 +105,10 @@ def api_admin_users_by_role(role):
         for user in users:
             # Always get the most recent application for this user
             application = UserApplication.select().where(UserApplication.user == user).order_by(UserApplication.submitted_at.desc()).first()
+            
+            # Get no-show count for this user
+            no_show_count = NoShow.select().where(NoShow.user == user).count()
+            
             user_list.append({
                 'id': user.id,
                 'name': user.name,
@@ -112,7 +120,8 @@ def api_admin_users_by_role(role):
                 'last_login': user.last_login.isoformat() if user.last_login else None,
                 'has_application': bool(application),
                 'application_id': application.id if application else None,
-                'application_status': application.status if application else None
+                'application_status': application.status if application else None,
+                'no_show_count': no_show_count
             })
         
         return jsonify({
@@ -189,11 +198,19 @@ def api_change_user_role():
             # If changing to pending, clear their application data and mark as "new"
             if new_role == 'new':
                 # Delete any existing application
+                deleted_count = 0
                 try:
                     application = UserApplication.get(UserApplication.user == user)
                     application.delete_instance()
+                    deleted_count = 1
+                    current_app.logger.info(f"Deleted application for user {user.id} ({user.email}) when marking as new")
                 except UserApplication.DoesNotExist:
-                    pass  # No application to delete
+                    current_app.logger.info(f"No application found to delete for user {user.id} ({user.email}) when marking as new")
+                
+                # Also clear any applications that might exist due to race conditions
+                additional_deleted = UserApplication.delete().where(UserApplication.user == user).execute()
+                if additional_deleted > deleted_count:
+                    current_app.logger.warning(f"Found and deleted {additional_deleted} additional applications for user {user.id}")
                 
                 # Set role to 'new' instead of 'pending' to indicate fresh start
                 user.role = 'new'
@@ -382,12 +399,11 @@ def api_mark_no_show(event_id):
     except Event.DoesNotExist:
         return jsonify({'success': False, 'message': 'Event not found'}), 404
 
-    # Check if event has passed
+    # Check if event has started (allow no-show marking once event begins)
     from datetime import datetime
     current_time = datetime.now()
-    event_end_time = event.end_time if event.end_time else event.exact_time
-    if current_time <= event_end_time:
-        return jsonify({'success': False, 'message': 'Cannot mark no-show for future events'}), 400
+    if current_time < event.exact_time:
+        return jsonify({'success': False, 'message': 'Cannot mark no-show for events that have not started yet'}), 400
 
     user_id = request.form.get('user_id')
     skip_notification = request.form.get('skip_notification') == 'true'

@@ -4,7 +4,14 @@
 
 {% block content %}
 <div class="container">
-    <h1>Your Profile</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Your Profile</h1>
+        {% if user.role not in ("new", "pending") %}
+            <a href="{{ url_for('auth.my_events') }}" class="btn btn-outline-primary">
+                <i class="fas fa-calendar-check me-1"></i>My Events
+            </a>
+        {% endif %}
+    </div>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -19,77 +26,7 @@
         {% endif %}
     {% endwith %}
 
-    {% if user.role in ("approved", "organizer", "admin") %}
-        <!-- User's RSVP Events Section (for approved users only) -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-calendar-check me-2"></i>Your upcoming events
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Event</th>
-                                <th>Date & Time</th>
-                                <th>RSVP Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for rsvp in user_rsvps %}
-                            <tr>
-                                <td>
-                                    <strong>
-                                        <a href="{{ url_for('events.event_detail', event_id=rsvp.event.id) }}" >
-                                            {{ rsvp.event.title }}
-                                        </a>
-                                    </strong>
-                                </td>
-                                <td>
-                                    <div>{{ rsvp.event.exact_time.strftime('%a, %b %d, %Y') }}</div>
-                                    <small class="text-muted">{{ rsvp.event.exact_time.strftime('%H:%M') }}</small>
-                                </td>
-                                <td>
-                                    {% if rsvp.status == 'yes' %}
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check me-1"></i>Attending
-                                        </span>
-                                    {% elif rsvp.status == 'no' %}
-                                        <span class="badge bg-danger">
-                                            <i class="fas fa-times me-1"></i>Not Attending
-                                        </span>
-                                    {% elif rsvp.status == 'maybe' %}
-                                        <span class="badge bg-warning">
-                                            <i class="fas fa-question me-1"></i>Maybe
-                                        </span>
-                                    {% elif rsvp.status == 'waitlist' %}
-                                        <span class="badge bg-secondary">
-                                            <i class="fas fa-clock me-1"></i>Waitlisted
-                                        </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="3" class="text-center">You have no upcoming events.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% if user_rsvps|length == 10 %}
-                    <div class="text-center mt-3">
-                        <small class="text-muted">Showing your 10 most recent RSVPs</small>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    {% endif %}
-
-
-        <!-- Profile Update Form for users with incomplete data -->
+    <!-- Profile Update Form for users with incomplete data -->
     {% if needs_info %}
         <div class="card mt-4 border-warning">
             <div class="card-header bg-warning text-dark">
@@ -153,7 +90,7 @@
     {% endif %}
         
     <!-- Join Community Call-to-Action for new users -->
-    {% if not user.role or user.role == "new" %}
+    {% if not needs_info and (not user.role or user.role == "new") %}
     
         <p class="mb-3">
             To access full event details and to attend our events, you'll need to complete a brief

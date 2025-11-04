@@ -30,17 +30,24 @@
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="btn-group" role="group" aria-label="Event filters">
-                <input type="radio" class="btn-check" name="filter" id="upcoming" value="upcoming" checked>
-                <label class="btn btn-outline-primary" for="upcoming">
+                <a href="{{ url_for('events.events_list', filter='upcoming') }}" 
+                   class="btn {{ 'btn-primary' if current_filter == 'upcoming' else 'btn-outline-primary' }}">
                     <i class="fas fa-calendar-alt me-1"></i>Upcoming
-                </label>
+                </a>
                 
-                <input type="radio" class="btn-check" name="filter" id="past" value="past">
-                <label class="btn btn-outline-primary" for="past">
+                <a href="{{ url_for('events.events_list', filter='past') }}" 
+                   class="btn {{ 'btn-primary' if current_filter == 'past' else 'btn-outline-primary' }}">
                     <i class="fas fa-history me-1"></i>Past Events
-                </label>
+                </a>
             </div>
         </div>
+        {% if current_user.is_authenticated %}
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('auth.my_events') }}" class="btn btn-outline-secondary">
+                My Events
+            </a>
+        </div>
+        {% endif %}
     </div>
     
     <!-- Events Display -->
@@ -48,9 +55,7 @@
         {% if events %}
             <div class="row">
                 {% for event in events %}
-                    <div class="col-12 col-md-6 col-lg-6 mb-4 event-card" 
-                         data-event-date="{{ event.exact_time.isoformat() }}"
-                         data-event-status="{{ 'past' if event.exact_time < now else 'upcoming' }}">
+                    <div class="col-12 col-md-6 col-lg-6 mb-4 event-card">
                         <div class="card h-100 {% if event.exact_time < now %}opacity-75{% endif %}">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <small class="text-muted">
@@ -66,18 +71,6 @@
                                 <div class="d-flex justify-content-between align-items-start mb-0">
                                         <div class="d-flex align-items-center w-100">
                                             <h5 class="card-title flex-grow-1 me-2 mb-0">{{ event.title }}</h5>
-                                            {% if event.description|length > 180 %}
-                                                <button type="button" 
-                                                        class="btn btn-sm btn-outline-secondary preview-btn ms-2" 
-                                                        data-bs-toggle="popover" 
-                                                        data-bs-placement="bottom" 
-                                                        data-bs-trigger="click"
-                                                        data-bs-title="Event Description"
-                                                        data-bs-content="{{ event.description|e }}"
-                                                        data-bs-html="true">
-                                                    <i class="fas fa-eye" style="font-size: 0.75rem;"></i>
-                                                </button>
-                                            {% endif %}
                                         </div>
                                 </div>
                                 <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="text-decoration-none text-dark">
@@ -105,9 +98,9 @@
                                 <div class="mb-2">
                                     <i class="fas fa-map-marker-alt me-2 text-muted"></i>
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] %}
-                                        {{ event.establishment_name }}
+                                        <span title="{{ event.establishment_name }}">{{ event.establishment_name[:40] }}{% if event.establishment_name|length > 40 %}...{% endif %}</span>
                                     {% else %}
-                                        {{ event.barrio }}
+                                        <span title="{{ event.barrio }}">{{ event.barrio[:30] }}{% if event.barrio|length > 30 %}...{% endif %}</span>
                                     {% endif %}
                                 </div>
                                 
@@ -136,36 +129,106 @@
                                             <i class="fas fa-users me-1"></i>
                                             Hosts: {{ event.organizer.name }}{% if event.co_host and event.co_host.id != event.organizer.id %}, {{ event.co_host.name }}{% endif %}
                                         </small>
-                                        {% set user_rsvp = user_rsvps.get(event.id) %}
-                                            <div class="mt-1 d-flex align-items-center rsvp-status-line" data-event-id="{{ event.id }}">
-                                                {% if user_rsvp %}
-                                                    {% if user_rsvp.status == 'yes' %}
-                                                        <i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-success">
-                                                            {% if event.exact_time < now %}I went{% else %}I'm going{% endif %}
-                                                        </span>
-                                                    {% elif user_rsvp.status == 'no' %}
-                                                        <i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-danger">
-                                                            {% if event.exact_time < now %}I didn't go{% else %}I'm not going{% endif %}
-                                                        </span>
-                                                    {% elif user_rsvp.status == 'waitlist' %}
-                                                        <i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-warning">
-                                                            {% if event.exact_time < now %}I was waitlisted{% else %}I am waitlisted{% endif %}
-                                                        </span>
-                                                    {% endif %}
-                                                {% endif %}
-                                            </div>
                                     </div>
                                 {% endif %}
                             </div>
                             
                             <div class="card-footer">
                                 <div class="d-grid gap-2">
+                                    {% if current_user.role in ['approved', 'admin', 'organizer'] and event.exact_time > now %}
+                                        <div class="attendance-header">
+                                            Do you plan to attend?
+                                        </div>
+                                        <div class="attendance-buttons-container">
+                                            {% set user_rsvp = user_rsvps.get(event.id) %}
+                                            {% set is_organizer = current_user.id == event.organizer.id %}
+                                            {% set is_co_host = event.co_host and current_user.id == event.co_host.id %}
+                                            <div class="attendance-container">
+                                                {% if is_organizer or is_co_host %}
+                                                    <!-- Disabled button for hosts/co-hosts -->
+                                                    <button class="btn btn-primary w-100" type="button" disabled>
+                                                        {% if is_organizer %}You're hosting{% else %}You're co-hosting{% endif %}
+                                                    </button>
+                                                {% elif not user_rsvp %}
+                                                    <!-- Three initial buttons for new RSVP -->
+                                                    <div class="btn-group w-100" role="group">
+                                                        <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="yes">
+                                                            Yes
+                                                        </button>
+                                                        <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="no">
+                                                            No
+                                                        </button>
+                                                        <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="maybe">
+                                                            Maybe
+                                                        </button>
+                                                    </div>
+                                                {% elif user_rsvp.status == 'yes' %}
+                                                    <!-- Status dropdown for confirmed attendance -->
+                                                    <div class="dropdown w-100">
+                                                        <button class="btn btn-rsvp-yes dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            Yes
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                                No
+                                                            </a></li>
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                                Maybe
+                                                            </a></li>
+                                                        </ul>
+                                                    </div>
+                                                {% elif user_rsvp.status == 'waitlist' %}
+                                                    <!-- Status dropdown for waitlisted -->
+                                                    <div class="dropdown w-100">
+                                                        <button class="btn btn-rsvp-waitlisted dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            Waitlisted
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                                No
+                                                            </a></li>
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                                Maybe
+                                                            </a></li>
+                                                        </ul>
+                                                    </div>
+                                                {% elif user_rsvp.status == 'maybe' %}
+                                                    <!-- Status dropdown for maybe -->
+                                                    <div class="dropdown w-100">
+                                                        <button class="btn btn-rsvp-maybe dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            Maybe
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                                Yes
+                                                            </a></li>
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                                No
+                                                            </a></li>
+                                                        </ul>
+                                                    </div>
+                                                {% elif user_rsvp.status == 'no' %}
+                                                    <!-- Status dropdown for not going -->
+                                                    <div class="dropdown w-100">
+                                                        <button class="btn btn-rsvp-no dropdown-toggle w-100" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            No
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                                Yes
+                                                            </a></li>
+                                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                                Maybe
+                                                            </a></li>
+                                                        </ul>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] %}
                                         <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-outline-primary">
-                                            <i class="fas fa-info-circle me-2"></i>View details
+                                            View details
                                         </a>
                                     {% else %}
                                         <!-- Message for non-approved users -->
@@ -186,32 +249,6 @@
                                         {% endif %}
                                     {% endif %}
                                     
-                                    {% if current_user.role in ['approved', 'admin', 'organizer'] and event.exact_time > now %}
-                                        <div class="attendance-buttons-container">
-                                            {% set user_rsvp = user_rsvps.get(event.id) %}
-                                            <div class="attendance-container">
-                                                <div class="text-center">
-                                                    <div class="btn-group w-100" role="group">
-                                                        {% if not user_rsvp %}
-                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes">
-                                                                <i class="fas fa-check me-1"></i>I want to go!
-                                                            </button>
-                                                            <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no">
-                                                                <i class="fas fa-times me-1"></i>I can't go
-                                                            </button>
-                                                        {% else %}
-                                                            <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="{{ event.id }}" data-status="yes" {% if user_rsvp.status == 'yes' or user_rsvp.status == 'waitlist' %}disabled{% endif %}>
-                                                                <i class="fas fa-check me-1"></i>I want to go!
-                                                            </button>
-                                                            <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if user_rsvp.status == 'no' %}disabled{% endif %}>
-                                                                <i class="fas fa-times me-1"></i>I can't go
-                                                            </button>
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -219,35 +256,22 @@
                 {% endfor %}
             </div>
         {% else %}
+            <!-- Empty state message -->
             <div class="alert alert-info text-center">
-                <i class="fas fa-calendar-times fa-3x mb-3 text-muted"></i>
-                <h5>No Events Yet</h5>
-                <p>There are no events scheduled at this time. Check back soon!</p>
-                {% if current_user.role in ['admin', 'organizer'] %}
-                    <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Create First Event
-                    </a>
+                <i class="fas fa-{% if current_filter == 'past' %}history{% else %}calendar-plus{% endif %} fa-3x mb-3 text-muted"></i>
+                <h5>No {{ page_title }}</h5>
+                {% if current_filter == 'past' %}
+                    <p>There are no past events to display. Once events have happened, they'll appear here.</p>
+                {% else %}
+                    <p>There are no upcoming events scheduled at this time. Check back soon for new events!</p>
+                    {% if current_user.role in ['admin', 'organizer'] %}
+                        <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create Event
+                        </a>
+                    {% endif %}
                 {% endif %}
             </div>
         {% endif %}
-        
-        <!-- Empty state messages for filtered views -->
-        <div id="no-upcoming-events" class="alert alert-info text-center" style="display: none;">
-            <i class="fas fa-calendar-plus fa-3x mb-3 text-muted"></i>
-            <h5>No Upcoming Events</h5>
-            <p>There are no upcoming events scheduled at this time. Check back soon for new events!</p>
-            {% if current_user.role in ['admin', 'organizer'] %}
-                <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Create Event
-                </a>
-            {% endif %}
-        </div>
-        
-        <div id="no-past-events" class="alert alert-secondary text-center" style="display: none;">
-            <i class="fas fa-history fa-3x mb-3 text-muted"></i>
-            <h5>No Past Events</h5>
-            <p>There are no past events to display. Once events have happened, they'll appear here.</p>
-        </div>
     </div>
 </div>
 
@@ -261,101 +285,128 @@
 {% block scripts %}
 {{ super() }}
 <script>
-// Event filtering
-document.querySelectorAll('input[name="filter"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        const filter = this.value;
-        const eventCards = document.querySelectorAll('.event-card');
-        
-        let visibleCount = 0;
-        
-        eventCards.forEach(card => {
-            const eventStatus = card.dataset.eventStatus;
-            if (filter === 'upcoming' && eventStatus === 'upcoming') {
-                card.classList.remove('hidden');
-                visibleCount++;
-            } else if (filter === 'past' && eventStatus === 'past') {
-                card.classList.remove('hidden');
-                visibleCount++;
-            } else {
-                card.classList.add('hidden');
-            }
-        });
-        
-        // Show/hide empty state messages
-        const noUpcomingMsg = document.getElementById('no-upcoming-events');
-        const noPastMsg = document.getElementById('no-past-events');
-        
-        // Hide both messages first
-        noUpcomingMsg.style.display = 'none';
-        noPastMsg.style.display = 'none';
-        
-        // Show appropriate message if no events visible
-        if (visibleCount === 0) {
-            if (filter === 'upcoming') {
-                noUpcomingMsg.style.display = 'block';
-            } else if (filter === 'past') {
-                noPastMsg.style.display = 'block';
+document.addEventListener('DOMContentLoaded', function() {
+    // Override page-specific functions for events list page
+    window.updateAttendeeInfo = function(eventId, data) {
+        // Find the event card
+        const eventCard = document.querySelector(`.event-card [data-event-id='${eventId}']`);
+        let card = eventCard ? eventCard.closest('.card') : null;
+        if (!card) return;
+
+        // Update attendee count and get maxAttendees
+        const attendeesSpan = card.querySelector('.fa-users').nextElementSibling;
+        let maxAttendees = null;
+        if (attendeesSpan && card.innerHTML.includes('attendees')) {
+            const maxAttendeesMatch = attendeesSpan.textContent.match(/\/(\d+)/);
+            maxAttendees = maxAttendeesMatch ? maxAttendeesMatch[1] : null;
+            if (data.rsvp_count !== undefined && maxAttendees) {
+                attendeesSpan.textContent = `${data.rsvp_count}/${maxAttendees} attendees`;
             }
         }
-    });
-});
 
-// Initialize filter on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Bootstrap popovers for preview buttons with custom content
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('.preview-btn'));
-    const popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-        const description = popoverTriggerEl.getAttribute('data-bs-content');
-        const customContent = `
-            <div class="popover-description">${description}</div>
-            <div class="text-end mt-3">
-                <button type="button" class="btn btn-sm btn-secondary" onclick="this.closest('.popover').previousElementSibling.click()">Close</button>
-            </div>
+        // Update pills (Full and Waitlist) to match event detail logic
+        const pillsContainer = attendeesSpan ? attendeesSpan.parentElement.querySelector('.ms-auto') : null;
+        if (pillsContainer) {
+            pillsContainer.innerHTML = '';
+            // Add Full pill if event is full (matches event detail logic)
+            if (maxAttendees && data.rsvp_count !== undefined && parseInt(data.rsvp_count) >= parseInt(maxAttendees)) {
+                const fullPill = document.createElement('span');
+                fullPill.className = 'badge bg-warning text-dark align-middle ms-2';
+                fullPill.textContent = 'Full';
+                pillsContainer.appendChild(fullPill);
+            }
+            // Add Waitlist pill if there are waitlisted users
+            if (data.waitlist_count && parseInt(data.waitlist_count) > 0) {
+                const waitlistPill = document.createElement('span');
+                waitlistPill.className = 'badge bg-info text-dark align-middle ms-2';
+                waitlistPill.textContent = 'Waitlist';
+                pillsContainer.appendChild(waitlistPill);
+            }
+        }
+    };
+    
+    window.showToast = function(message, type) {
+        // Simple toast implementation for events list page
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
-        return new bootstrap.Popover(popoverTriggerEl, {
-            container: 'body',
-            html: true,
-            sanitize: false,
-            content: customContent,
-            title: ''
-        });
-    });
+        // Insert at top of content
+        const content = document.getElementById('content');
+        content.insertBefore(alertDiv, content.firstChild);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+    };
     
-    // Close popover when clicking elsewhere
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('.preview-btn') && !e.target.closest('.popover')) {
-            popoverList.forEach(function(popover) {
-                popover.hide();
+    function updateAttendanceStatusFromButton(eventId, status, button) {
+        // Find the button group for this event
+        const buttonGroup = button.closest('.btn-group');
+        if (!buttonGroup) return;
+        
+        // Show loading state - disable all buttons in the group
+        const allButtons = buttonGroup.querySelectorAll('.attendance-btn');
+        allButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+        });
+
+        // Make AJAX request
+        fetch(`/events/${eventId}/rsvp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: `status=${status}`
+        })
+        .then(response => {
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                updateDropdownState(buttonGroup, data.status, eventId);
+                updateAttendeeInfo(eventId, data);
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'error');
+                // Restore buttons on error
+                allButtons.forEach((btn, index) => {
+                    btn.disabled = false;
+                    const originalTexts = ['Yes', 'No', 'Maybe'];
+                    btn.innerHTML = originalTexts[index];
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred while updating your attendance.', 'error');
+            // Restore buttons on error
+            allButtons.forEach((btn, index) => {
+                btn.disabled = false;
+                const originalTexts = ['Yes', 'No', 'Maybe'];
+                btn.innerHTML = originalTexts[index];
             });
-        }
-    });
-    
-    // Trigger the upcoming filter to show only upcoming events by default
-    const upcomingRadio = document.getElementById('upcoming');
-    if (upcomingRadio) {
-        upcomingRadio.checked = true;
-        upcomingRadio.dispatchEvent(new Event('change'));
-    }
-    
-    // Handle attendance confirmation buttons
-    document.querySelectorAll('.attendance-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const eventId = this.getAttribute('data-event-id');
-            const status = this.getAttribute('data-status');
-            const currentStatus = this.getAttribute('data-current');
-            
-            updateAttendanceStatus(eventId, status, this, currentStatus);
         });
-    });
-    
-    function updateAttendanceStatus(eventId, status, button, currentStatus) {
-        console.log('updateAttendanceStatus called:', {eventId, status, currentStatus});
+    }
+
+    function updateAttendanceStatus(eventId, status, dropdownItem) {
+        // Find the dropdown button for this event
+        const dropdownButton = document.querySelector(`#rsvpDropdown${eventId}`);
+        if (!dropdownButton) return;
+        
         // Show loading state
-        const originalText = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+        const originalText = dropdownButton.innerHTML;
+        dropdownButton.disabled = true;
+        dropdownButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
 
         // Make AJAX request
         fetch(`/events/${eventId}/rsvp`, {
@@ -369,20 +420,20 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                updateButtonState(button, data.status, eventId);
+                updateDropdownState(dropdownButton, data.status, eventId);
                 updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
             } else {
                 showToast(data.message, 'error');
-                button.innerHTML = originalText;
+                dropdownButton.innerHTML = originalText;
             }
-            button.disabled = false;
+            dropdownButton.disabled = false;
         })
         .catch(error => {
             console.error('Error:', error);
             showToast('An error occurred while updating your attendance.', 'error');
-            button.innerHTML = originalText;
-            button.disabled = false;
+            dropdownButton.innerHTML = originalText;
+            dropdownButton.disabled = false;
         });
     }
 
@@ -425,70 +476,117 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function updateButtonState(button, newStatus, eventId) {
-    // Update RSVP status line
-    const attendanceContainer = button.closest('.attendance-container');
-    const statusLine = document.querySelector(`.rsvp-status-line[data-event-id='${eventId}']`);
-    if (statusLine) {
-        let statusHtml = '';
+    function updateDropdownState(elementOrButton, newStatus, eventId) {
+        // Find the attendance container
+        const attendanceContainer = elementOrButton.closest('.attendance-container');
+        let dropdownHtml = '';
+        
         if (newStatus === 'yes') {
-            statusHtml = '<i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-success">I\'m going</span>';
-        } else if (newStatus === 'no') {
-            statusHtml = '<i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-danger">I\'m not going</span>';
-        } else if (newStatus === 'waitlist') {
-            statusHtml = '<i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i><span class="fw-bold text-warning">I am waitlisted</span>';
-        }
-        statusLine.innerHTML = statusHtml;
-    }
-        if (newStatus === 'yes') {
-            attendanceContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="yes" disabled>
-                            <i class="fas fa-check me-1"></i>I want to go!
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="yes">
-                            <i class="fas fa-times me-1"></i>I can't go
-                        </button>
-                    </div>
+            dropdownHtml = `
+                <div class="dropdown w-100">
+                    <button class="btn btn-rsvp-yes dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                        Yes
+                    </button>
+                    <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
+                            No
+                        </a></li>
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="maybe">
+                            Maybe
+                        </a></li>
+                    </ul>
                 </div>
             `;
         } else if (newStatus === 'no') {
-            attendanceContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="no">
-                            <i class="fas fa-check me-1"></i>I want to go!
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="no" disabled>
-                            <i class="fas fa-times me-1"></i>I can't go
-                        </button>
-                    </div>
+            dropdownHtml = `
+                <div class="dropdown w-100">
+                    <button class="btn btn-rsvp-no dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                        No
+                    </button>
+                    <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
+                            Yes
+                        </a></li>
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="maybe">
+                            Maybe
+                        </a></li>
+                    </ul>
+                </div>
+            `;
+        } else if (newStatus === 'maybe') {
+            dropdownHtml = `
+                <div class="dropdown w-100">
+                    <button class="btn btn-rsvp-maybe dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                        Maybe
+                    </button>
+                    <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
+                            Yes
+                        </a></li>
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
+                            No
+                        </a></li>
+                    </ul>
                 </div>
             `;
         } else if (newStatus === 'waitlist') {
-            attendanceContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-success btn-sm w-50 attendance-btn me-1" data-event-id="${eventId}" data-status="yes" data-current="waitlist" disabled>
-                            <i class="fas fa-check me-1"></i>I want to go!
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm w-50 attendance-btn" data-event-id="${eventId}" data-status="no" data-current="waitlist">
-                            <i class="fas fa-times me-1"></i>I can't go
-                        </button>
-                    </div>
+            dropdownHtml = `
+                <div class="dropdown w-100">
+                    <button class="btn btn-rsvp-waitlisted dropdown-toggle w-100" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
+                        Waitlisted
+                    </button>
+                    <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
+                            No
+                        </a></li>
+                        <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="maybe">
+                            Maybe
+                        </a></li>
+                    </ul>
+                </div>
+            `;
+        } else {
+            // Fallback case - restore to initial three-button state
+            dropdownHtml = `
+                <div class="btn-group w-100" role="group">
+                    <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="${eventId}" data-status="yes">
+                        Yes
+                    </button>
+                    <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="${eventId}" data-status="no">
+                        No
+                    </button>
+                    <button class="btn btn-rsvp-none attendance-btn" type="button" data-event-id="${eventId}" data-status="maybe">
+                        Maybe
+                    </button>
                 </div>
             `;
         }
         
-        // Re-attach event listeners to the new buttons
-        const newButtons = attendanceContainer.querySelectorAll('.attendance-btn');
-        newButtons.forEach(newButton => {
-            newButton.addEventListener('click', function() {
+        attendanceContainer.innerHTML = dropdownHtml;
+        
+        // Add a brief delay to check if something is overriding our change
+        setTimeout(() => {
+        }, 100);
+        
+        // Re-attach event listeners to the new dropdown items
+        const newDropdownItems = attendanceContainer.querySelectorAll('.attendance-dropdown-item');
+        newDropdownItems.forEach(newItem => {
+            newItem.addEventListener('click', function(e) {
+                e.preventDefault();
                 const eventId = this.getAttribute('data-event-id');
                 const status = this.getAttribute('data-status');
-                const currentStatus = this.getAttribute('data-current');
-                updateAttendanceStatus(eventId, status, this, currentStatus);
+                updateAttendanceStatus(eventId, status, this);
+            });
+        });
+        
+        // Re-attach event listeners to any new attendance buttons (for fallback case)
+        const newAttendanceButtons = attendanceContainer.querySelectorAll('.attendance-btn');
+        newAttendanceButtons.forEach(newButton => {
+            newButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                const eventId = this.getAttribute('data-event-id');
+                const status = this.getAttribute('data-status');
+                updateAttendanceStatusFromButton(eventId, status, this);
             });
         });
     }

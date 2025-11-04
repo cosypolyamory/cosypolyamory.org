@@ -179,6 +179,16 @@ h4 { margin: 1.2em 0 1.2em 0 !important; }
     background-color: #f8f9fa !important;
 }
 
+/* Make dropdown menu bigger and scrollable */
+.navbar .dropdown-menu,
+.navbar-color .dropdown-menu {
+    max-height: 70vh;
+    min-width: 250px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
 /* User Search Component Styles */
 .user-search-suggestions {
     position: absolute;
@@ -343,42 +353,6 @@ h4 { margin: 1.2em 0 1.2em 0 !important; }
   }
 }
 
-/* Event preview button styles */
-.preview-btn {
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.preview-btn:hover {
-    background-color: #f8f9fa;
-    border-color: #6c757d;
-}
-
-/* Popover styles */
-.popover {
-    max-width: 500px;
-}
-
-.popover-body {
-    font-size: 1rem;
-    line-height: 1.4;
-    padding: 1rem;
-}
-
-.popover-description {
-    max-height: 300px;
-    overflow-y: auto;
-    font-size: 1rem;
-    line-height: 1.4;
-    white-space: pre-wrap;
-}
-
 .btn-close {
     font-size: 0.7rem;
     padding: 0.25rem;
@@ -482,6 +456,23 @@ h4 { margin: 1.2em 0 1.2em 0 !important; }
 
 .table td {
     vertical-align: middle;
+}
+
+/* Scrollable attendance table styling */
+.table-responsive[style*="max-height"] {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.table-responsive[style*="max-height"] .table {
+    margin-bottom: 0;
+}
+
+/* Sticky header for scrollable tables */
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .badge {
@@ -642,6 +633,261 @@ h4 { margin: 1.2em 0 1.2em 0 !important; }
     .application-actions .btn i {
         margin-right: 0 !important;
     }
+}
+
+/* RSVP State Custom Colors */
+.btn-rsvp-yes {
+    background-color: #7a9b7a !important;
+    border-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.btn-rsvp-yes:hover,
+.btn-rsvp-yes:focus,
+.btn-rsvp-yes:active {
+    background-color: #6d8b6d !important;
+    border-color: #6d8b6d !important;
+    color: white !important;
+}
+
+.btn-rsvp-no {
+    background-color: #c17a7a !important;
+    border-color: #c17a7a !important;
+    color: white !important;
+}
+
+.btn-rsvp-no:hover,
+.btn-rsvp-no:focus,
+.btn-rsvp-no:active {
+    background-color: #b36d6d !important;
+    border-color: #b36d6d !important;
+    color: white !important;
+}
+
+.btn-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    border-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.btn-rsvp-maybe:hover,
+.btn-rsvp-maybe:focus,
+.btn-rsvp-maybe:active {
+    background-color: #8a6d92 !important;
+    border-color: #8a6d92 !important;
+    color: white !important;
+}
+
+.btn-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    border-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.btn-rsvp-waitlisted:hover,
+.btn-rsvp-waitlisted:focus,
+.btn-rsvp-waitlisted:active {
+    background-color: #edcb2b !important;
+    border-color: #edcb2b !important;
+    color: #333 !important;
+}
+
+/* For no RSVP state, keep blue */
+.btn-rsvp-none {
+    background-color: transparent !important;
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+}
+
+.btn-rsvp-none:hover,
+.btn-rsvp-none:focus,
+.btn-rsvp-none:active {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+}
+
+/* Badge classes using the same custom colors */
+.badge-rsvp-host {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-cohost {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.badge-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+/* Card header classes using the same custom colors */
+.card-header-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.card-header-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.card-header-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.card-header-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+/* RSVP State Custom Colors */
+.btn-rsvp-yes {
+    background-color: #7a9b7a !important;
+    border-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.btn-rsvp-yes:hover,
+.btn-rsvp-yes:focus,
+.btn-rsvp-yes:active {
+    background-color: #6d8b6d !important;
+    border-color: #6d8b6d !important;
+    color: white !important;
+}
+
+.btn-rsvp-no {
+    background-color: #c17a7a !important;
+    border-color: #c17a7a !important;
+    color: white !important;
+}
+
+.btn-rsvp-no:hover,
+.btn-rsvp-no:focus,
+.btn-rsvp-no:active {
+    background-color: #b36d6d !important;
+    border-color: #b36d6d !important;
+    color: white !important;
+}
+
+.btn-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    border-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.btn-rsvp-maybe:hover,
+.btn-rsvp-maybe:focus,
+.btn-rsvp-maybe:active {
+    background-color: #8a6d92 !important;
+    border-color: #8a6d92 !important;
+    color: white !important;
+}
+
+.btn-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    border-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.btn-rsvp-waitlisted:hover,
+.btn-rsvp-waitlisted:focus,
+.btn-rsvp-waitlisted:active {
+    background-color: #edcb2b !important;
+    border-color: #edcb2b !important;
+    color: #333 !important;
+}
+
+/* For no RSVP state, keep blue */
+.btn-rsvp-none {
+    background-color: transparent !important;
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+}
+
+.btn-rsvp-none:hover,
+.btn-rsvp-none:focus,
+.btn-rsvp-none:active {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+}
+
+/* Badge classes using the same custom colors */
+.badge-rsvp-host {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-cohost {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.badge-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+/* Card header classes using the same custom colors */
+.card-header-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.card-header-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.card-header-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.card-header-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+/* Make all input/textarea placeholders a lighter gray for field hints */
+input::placeholder,
+textarea::placeholder {
+  color: #adb5bd !important;
+  opacity: 1;
 }
 
 /* Make all input/textarea placeholders a lighter gray for field hints */

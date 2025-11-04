@@ -20,6 +20,7 @@
       {% assets "scss_all" %}
         <link rel="stylesheet" href="{{ ASSET_URL }}">
       {% endassets %}
+      <script src="{{ url_for('static', filename='js/rsvp.js') }}"></script>
     {% endblock %}
 
     <title>Cosy Polyamory: {% block title %}{% endblock %}</title>

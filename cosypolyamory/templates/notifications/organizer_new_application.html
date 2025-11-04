@@ -1,0 +1,24 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}New Application Submitted - {{ applicant_name }}{% endblock %}
+
+{% block content %}
+<h2>New Community Application Received</h2>
+<p>Hello,</p>
+<p>A new application has been submitted to the Cosy Polyamory Community:</p>
+
+<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #856404;">📝 Application Details</h3>
+    <ul style="margin-bottom: 0;">
+        <li><strong>Name:</strong> {{ applicant_name }}</li>
+        {% if applicant_pronouns %}<li><strong>Pronouns:</strong> {{ applicant_pronouns }}</li>{% endif %}
+        <li><strong>Submitted:</strong> {{ submission_date }}</li>
+    </ul>
+</div>
+
+<p><strong>Ready to review?</strong> <a href="{{ base_url }}/admin/moderate" style="color: #007bff;">Review applications here</a></p>
+
+<p>Thank you for helping maintain our welcoming community!</p>
+
+<p><strong>The Cosy Polyamory System</strong></p>
+{% endblock %}

@@ -38,6 +38,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['BASE_URL'] = os.getenv('DOMAIN', 'https://cosypolyamory.org')
 
 # Initialize database
 init_database()
@@ -117,4 +118,9 @@ assets.register('scss_all', scss)
 # Register route blueprints
 from cosypolyamory.routes import register_routes
 register_routes(app)
+
+@app.context_processor
+def inject_base_url():
+    """Make base_url available in all templates"""
+    return dict(base_url=app.config.get('BASE_URL', 'https://cosypolyamory.org'))
 

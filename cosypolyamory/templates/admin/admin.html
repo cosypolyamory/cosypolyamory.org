@@ -12,6 +12,16 @@
             </button>
         </div>
 
+        {% if pending_applications_count > 0 %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            There {{ 'is' if pending_applications_count == 1 else 'are' }} {{ pending_applications_count }}
+            <a href="{{ url_for('admin.moderate_applications') }}" class="alert-link">
+             application{{ 's' if pending_applications_count != 1 else '' }} pending review</a>.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
         <div id="search-form-container" class="mb-3" style="display: none;">
             <div class="input-group">
                 <input type="text" id="user-search-input" class="form-control" placeholder="Type to search for members...">
@@ -41,7 +51,7 @@
                 <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
-                            New <span class="badge bg-warning ms-1 tab-badge" id="pending-count">0</span>
+                            Pending Review <span class="badge bg-warning ms-1 tab-badge" id="pending-count">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -68,9 +78,6 @@
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center">
                                 <h6 class="mb-0 me-3">Pending Applications</h6>
-                                <a href="{{ url_for('admin.moderate_applications') }}" class="text-decoration-none">
-                                    <small>(review pending applications)</small>
-                                </a>
                             </div>
                             <div class="d-flex align-items-center">
                                 <span class="text-muted me-3">Showing <span id="pending-showing">0</span> of <span id="pending-total">0</span></span>
@@ -335,7 +342,7 @@ function createUserCard(user) {
         approved: 'Member',
         pending: 'Pending',
         rejected: 'Rejected',
-        new: 'New'
+        new: 'Pending Review'
     };
     let applicationInfo = '';
     // Only show application buttons for pending users
@@ -348,17 +355,15 @@ function createUserCard(user) {
             applicationInfo = `<div class="mt-1"><span class="badge bg-secondary">No application submitted</span></div>`;
         }
     }
+    
+    // Add no-show count if user has any no-shows
+    let noShowInfo = '';
+    if (user.no_show_count && user.no_show_count > 0) {
+        noShowInfo = `<div class="mt-1"><span class="badge bg-danger">${user.no_show_count} no-show${user.no_show_count > 1 ? 's' : ''}</span></div>`;
+    }
     return `
         <div class="user-card">
             <div class="row align-items-center">
-                <div class="col-12 col-sm-auto me-3 mb-2 mb-sm-0">
-                    ${user.avatar_url && user.avatar_url.trim() !== '' ? 
-                        `<img src="${user.avatar_url}" alt="${user.name} Avatar" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 50px; height: 50px;\\'><i class=\\'fas fa-user text-white\\'></i></div>';">` :
-                        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                            <i class="fas fa-user text-white"></i>
-                        </div>`
-                    }
-                </div>
                 <div class="col-12 col-sm">
                     <h6 class="mb-1">
                         <a href="javascript:void(0)" onclick="viewUser('${user.id}')" class="text-decoration-none" title="Click to view user details">
@@ -369,6 +374,7 @@ function createUserCard(user) {
                         <i class="fas fa-envelope me-1"></i>${user.email}
                     </p>
                     ${applicationInfo}
+                    ${noShowInfo}
                 </div>
                 <div class="col-12 col-sm-auto mt-2 mt-sm-0">
                     ${user.role !== 'admin' ? `
@@ -381,8 +387,6 @@ function createUserCard(user) {
                             ${(() => {
                                 let options = [];
                                 const currentUserRole = window.getCurrentUserRole();
-                                console.log(currentUserRole);
-                                console.log(user.role);
                                 
                                 // Organizer option (available to all admins/organizers)
                                 if (user.role === 'approved') {
@@ -390,7 +394,7 @@ function createUserCard(user) {
                                         <i class="fas fa-calendar me-2" style="color: #6f42c1;"></i>Make organizer
                                     </button></li>`);
                                     options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'new')">
-                                        <i class="fas fa-clock text-warning me-2"></i>Mark new (force user to reapply)
+                                        <i class="fas fa-clock text-warning me-2"></i>Mark pending review (force user to reapply)
                                     </button></li>`);
                                 }
                                 
@@ -402,7 +406,7 @@ function createUserCard(user) {
                                 }
                                 if (user.role === 'rejected') {
                                     options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'new')">
-                                        <i class="fas fa-clock text-warning me-2"></i>Mark new (force user to reapply)
+                                        <i class="fas fa-clock text-warning me-2"></i>Mark pending review (force user to reapply)
                                     </button></li>`);
                                 }
                                 
@@ -496,7 +500,6 @@ function changeRole(userId, newRole) {
 }
 
 function viewUser(userId) {
-    console.log('Opening user profile for:', userId);
     fetch(`/api/admin/user/${userId}`)
         .then(response => {
             if (!response.ok) {
@@ -505,265 +508,260 @@ function viewUser(userId) {
             return response.json();
         })
         .then(userData => {
-            // Fetch the application questions and answers
-            Promise.all([
-                fetch('/api/admin/application-questions').then(r => r.json()),
-                fetch(`/api/admin/application/user/${userId}`).then(r => r.json())
-            ])
-            .then(([questionsData, appData]) => {
-                const modalBody = document.getElementById('userModalBody');
-                
-                // Get role badge info
-                const getRoleBadgeInfo = (role) => {
-                    switch(role) {
-                        case 'admin':
-                            return { class: 'bg-danger', icon: 'fas fa-shield-alt', text: 'Administrator' };
-                        case 'organizer':
-                            return { class: 'bg-primary', icon: 'fas fa-star', text: 'Community Organizer' };
-                        case 'approved':
-                            return { class: 'bg-success', icon: 'fas fa-check-circle', text: 'Approved Member' };
-                        case 'pending':
-                            return { class: 'bg-warning', icon: 'fas fa-clock', text: 'Application Pending' };
-                        case 'rejected':
-                            return { class: 'bg-danger', icon: 'fas fa-times-circle', text: 'Rejected' };
-                        default:
-                            return { class: 'bg-secondary', icon: 'fas fa-user', text: 'New User' };
-                    }
-                };
-                
-                const roleBadge = getRoleBadgeInfo(userData.role);
-                
-                // Get provider badge info
-                const getProviderBadge = (provider) => {
-                    switch(provider) {
-                        case 'google':
-                            return 'bg-danger';
-                        case 'github':
-                            return 'bg-dark';
-                        case 'reddit':
-                            return 'bg-warning';
-                        case 'musicbrainz':
-                            return 'bg-success';
-                        default:
-                            return 'bg-secondary';
-                    }
-                };
-                
-                // Create avatar or placeholder
-                const avatarHtml = userData.avatar_url && userData.avatar_url.trim() !== '' ? 
-                    `<img src="${userData.avatar_url}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 100px; object-fit: cover;" onerror="this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 100px; height: 100px;\\'><i class=\\'fas fa-user fa-2x text-white\\'></i></div>';">` :
-                    `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
-                        <i class="fas fa-user fa-2x text-white"></i>
-                    </div>`;
-                
-                // Format pronouns
-                const pronounsText = userData.pronouns || '';
-                
-                // Create basic profile content
-                let profileContent = `
-                    <div class="row">
-                        <div class="col-md-3">
-                            ${avatarHtml}
-                        </div>
-                        <div class="col-md-9">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <h4 class="mb-0 d-flex align-items-center">
-                                        ${userData.name}
-                                        ${pronounsText ? `<small class="text-muted ms-2 fs-6">${pronounsText}</small>` : ''}
-                                    </h4>
-                                </div>
-                                <span class="badge ${roleBadge.class} fs-6">
-                                    <i class="${roleBadge.icon} me-1"></i>${roleBadge.text}
-                                </span>
-                            </div>
-                            
-                            <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>User Email:</strong></td>
-                                    <td><code>${userData.email}</code></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Provider:</strong></td>
-                                    <td>
-                                        <span class="badge ${getProviderBadge(userData.provider)}">${userData.provider ? userData.provider.charAt(0).toUpperCase() + userData.provider.slice(1) : 'Unknown'}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Member since:</strong></td>
-                                    <td>${new Date(userData.created_at).toLocaleDateString('en-US', { 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric', 
-                                        hour: '2-digit', 
-                                        minute: '2-digit' 
-                                    })}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Last Login:</strong></td>
-                                    <td>${userData.last_login ? new Date(userData.last_login).toLocaleDateString('en-US', { 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric', 
-                                        hour: '2-digit', 
-                                        minute: '2-digit' 
-                                    }) : 'Never'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>No-Show Count:</strong></td>
-                                    <td>
-                                        <span class="badge ${userData.no_show_count > 0 ? 'bg-warning' : 'bg-success'}">
-                                            <i class="fas ${userData.no_show_count > 0 ? 'fa-exclamation-triangle' : 'fa-check'} me-1"></i>
-                                            ${userData.no_show_count || 0}
-                                        </span>
-                                    </td>
-                                </tr>
-                            </table>
-                `;
-                
-                // Add application responses section if available
-                let applicationSection = '';
-                if (appData.success && appData.application && questionsData.success) {
-                    const app = appData.application;
-                    const questions = questionsData.questions;
+            // Fetch application data if available
+            fetch(`/api/admin/application/user/${userId}`)
+                .then(r => r.json())
+                .then(appData => {
+                    const modalBody = document.getElementById('userModalBody');
                     
-                    let answersHtml = '';
-                    app.answers.forEach((ans, idx) => {
-                        if (ans && ans.trim() !== '' && idx < questions.length) {
-                            answersHtml += `
-                                <div class="mb-3">
-                                    <strong>${questions[idx]}</strong>
-                                    <div class="border rounded p-2 bg-light mt-1">${ans.replace(/\n/g, '<br>')}</div>
-                                </div>
-                            `;
+                    // Get role badge info
+                    const getRoleBadgeInfo = (role) => {
+                        switch(role) {
+                            case 'admin':
+                                return { class: 'bg-danger', icon: 'fas fa-shield-alt', text: 'Administrator' };
+                            case 'organizer':
+                                return { class: 'bg-primary', icon: 'fas fa-star', text: 'Community Organizer' };
+                            case 'approved':
+                                return { class: 'bg-success', icon: 'fas fa-check-circle', text: 'Approved Member' };
+                            case 'pending':
+                                return { class: 'bg-warning', icon: 'fas fa-clock', text: 'Application Pending' };
+                            case 'rejected':
+                                return { class: 'bg-danger', icon: 'fas fa-times-circle', text: 'Rejected' };
+                            default:
+                                return { class: 'bg-secondary', icon: 'fas fa-user', text: 'Pending Review' };
                         }
-                    });
+                    };
                     
-                    if (answersHtml) {
-                        applicationSection = `
-                            <div class="mt-3">
-                                <a href="#applicationAnswers" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" aria-expanded="false" aria-controls="applicationAnswers">
-                                    <i class="fas fa-file-alt me-1"></i>Show application responses
-                                </a>
-                                <div class="collapse mt-3" id="applicationAnswers">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h6 class="mb-0">Application Responses</h6>
-                                            <small class="text-muted">Submitted ${new Date(app.submitted_at).toLocaleDateString('en-US', { 
-                                                year: 'numeric', 
-                                                month: 'long', 
-                                                day: 'numeric' 
-                                            })}</small>
-                                        </div>
-                                        <div class="card-body">
-                                            ${answersHtml}
+                    const roleBadge = getRoleBadgeInfo(userData.role);
+                    
+                    // Get provider badge info
+                    const getProviderBadge = (provider) => {
+                        switch(provider) {
+                            case 'google':
+                                return 'bg-danger';
+                            case 'github':
+                                return 'bg-dark';
+                            case 'reddit':
+                                return 'bg-warning';
+                            case 'musicbrainz':
+                                return 'bg-success';
+                            default:
+                                return 'bg-secondary';
+                        }
+                    };
+                    
+                    // Create avatar or placeholder
+                    const avatarHtml = userData.avatar_url && userData.avatar_url.trim() !== '' ? 
+                        `<img src="${userData.avatar_url}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 100px; object-fit: cover;" onerror="this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 100px; height: 100px;\\'><i class=\\'fas fa-user fa-2x text-white\\'></i></div>';">` :
+                        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-2x text-white"></i>
+                        </div>`;
+                    
+                    // Format pronouns
+                    const pronounsText = userData.pronouns || '';
+                    
+                    // Create basic profile content
+                    let profileContent = `
+                        <div class="row">
+                            <div class="col">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h4 class="mb-0 d-flex align-items-center">
+                                            ${userData.name}
+                                            ${pronounsText ? `<small class="text-muted ms-2 fs-6">${pronounsText}</small>` : ''}
+                                        </h4>
+                                    </div>
+                                    <span class="badge ${roleBadge.class} fs-6">
+                                        <i class="${roleBadge.icon} me-1"></i>${roleBadge.text}
+                                    </span>
+                                </div>
+                                
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>User Email:</strong></td>
+                                        <td>${userData.email}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Provider:</strong></td>
+                                        <td>
+                                            ${userData.provider}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Member since:</strong></td>
+                                        <td>${new Date(userData.created_at).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        })}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Last Login:</strong></td>
+                                        <td>${userData.last_login ? new Date(userData.last_login).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        }) : 'Never'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>No-Show Count:</strong></td>
+                                        <td>
+                                            <span class="badge ${userData.no_show_count > 0 ? 'bg-warning' : 'bg-success'}">
+                                                <i class="fas ${userData.no_show_count > 0 ? 'fa-exclamation-triangle' : 'fa-check'} me-1"></i>
+                                                ${userData.no_show_count || 0}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                    `;
+                    
+                    // Add application responses section if available
+                    let applicationSection = '';
+                    if (appData.success && appData.application && appData.application.questions_and_answers) {
+                        const app = appData.application;
+                        const questionsAndAnswers = app.questions_and_answers;
+                        
+                        let answersHtml = '';
+                        Object.entries(questionsAndAnswers).forEach(([questionKey, qaData]) => {
+                            if (qaData.answer && qaData.answer.trim() !== '') {
+                                answersHtml += `
+                                    <div class="mb-3">
+                                        <strong>${qaData.question}</strong>
+                                        <div class="border rounded p-2 bg-light mt-1">${qaData.answer.replace(/\n/g, '<br>')}</div>
+                                    </div>
+                                `;
+                            }
+                        });
+                        
+                        if (answersHtml) {
+                            applicationSection = `
+                                <div class="mt-3">
+                                    <a href="#applicationAnswers" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" aria-expanded="false" aria-controls="applicationAnswers">
+                                        <i class="fas fa-file-alt me-1"></i>Show application responses
+                                    </a>
+                                    <div class="collapse mt-3" id="applicationAnswers">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Application Responses</h6>
+                                                <small class="text-muted">Submitted ${new Date(app.submitted_at).toLocaleDateString('en-US', { 
+                                                    year: 'numeric', 
+                                                    month: 'long', 
+                                                    day: 'numeric' 
+                                                })}</small>
+                                            </div>
+                                            <div class="card-body">
+                                                ${answersHtml}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                            `;
+                        }
+                    }
+                    
+                    modalBody.innerHTML = profileContent + '        </div>\n    </div>' + applicationSection;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                    modal.show();
+                })
+                .catch(() => {
+                    // fallback: show user info only without application data
+                    const modalBody = document.getElementById('userModalBody');
+                    
+                    const getRoleBadgeInfo = (role) => {
+                        switch(role) {
+                            case 'admin':
+                                return { class: 'bg-danger', icon: 'fas fa-shield-alt', text: 'Administrator' };
+                            case 'organizer':
+                                return { class: 'bg-primary', icon: 'fas fa-star', text: 'Community Organizer' };
+                            case 'approved':
+                                return { class: 'bg-success', icon: 'fas fa-check-circle', text: 'Approved Member' };
+                            case 'pending':
+                                return { class: 'bg-warning', icon: 'fas fa-clock', text: 'Application Pending' };
+                            case 'rejected':
+                                return { class: 'bg-danger', icon: 'fas fa-times-circle', text: 'Rejected' };
+                            default:
+                                return { class: 'bg-secondary', icon: 'fas fa-user', text: 'Pending Review' };
+                        }
+                    };
+                    
+                    const roleBadge = getRoleBadgeInfo(userData.role);
+                    
+                    const avatarHtml = userData.avatar_url && userData.avatar_url.trim() !== '' ? 
+                        `<img src="${userData.avatar_url}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 100px; object-fit: cover;">` :
+                        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-2x text-white"></i>
+                        </div>`;
+                    
+                    const pronounsText = userData.pronouns || '';
+                    
+                    modalBody.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-3">
+                                ${avatarHtml}
                             </div>
-                        `;
-                    }
-                }
-                
-                modalBody.innerHTML = profileContent + '        </div>\n    </div>' + applicationSection;
-                
-                const modal = new bootstrap.Modal(document.getElementById('userModal'));
-                modal.show();
-            })
-            .catch(() => {
-                // fallback: show user info only without application data
-                const modalBody = document.getElementById('userModalBody');
-                
-                const getRoleBadgeInfo = (role) => {
-                    switch(role) {
-                        case 'admin':
-                            return { class: 'bg-danger', icon: 'fas fa-shield-alt', text: 'Administrator' };
-                        case 'organizer':
-                            return { class: 'bg-primary', icon: 'fas fa-star', text: 'Community Organizer' };
-                        case 'approved':
-                            return { class: 'bg-success', icon: 'fas fa-check-circle', text: 'Approved Member' };
-                        case 'pending':
-                            return { class: 'bg-warning', icon: 'fas fa-clock', text: 'Application Pending' };
-                        case 'rejected':
-                            return { class: 'bg-danger', icon: 'fas fa-times-circle', text: 'Rejected' };
-                        default:
-                            return { class: 'bg-secondary', icon: 'fas fa-user', text: 'New User' };
-                    }
-                };
-                
-                const roleBadge = getRoleBadgeInfo(userData.role);
-                
-                const avatarHtml = userData.avatar_url && userData.avatar_url.trim() !== '' ? 
-                    `<img src="${userData.avatar_url}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 100px; object-fit: cover;">` :
-                    `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
-                        <i class="fas fa-user fa-2x text-white"></i>
-                    </div>`;
-                
-                const pronounsText = userData.pronouns || '';
-                
-                modalBody.innerHTML = `
-                    <div class="row">
-                        <div class="col-md-3">
-                            ${avatarHtml}
-                        </div>
-                        <div class="col-md-9">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <h4 class="mb-0 d-flex align-items-center">
-                                        ${userData.name}
-                                        ${pronounsText ? `<small class="text-muted ms-2 fs-6">${pronounsText}</small>` : ''}
-                                    </h4>
+                            <div class="col-md-9">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h4 class="mb-0 d-flex align-items-center">
+                                            ${userData.name}
+                                            ${pronounsText ? `<small class="text-muted ms-2 fs-6">${pronounsText}</small>` : ''}
+                                        </h4>
+                                    </div>
+                                    <span class="badge ${roleBadge.class} fs-6">
+                                        <i class="${roleBadge.icon} me-1"></i>${roleBadge.text}
+                                    </span>
                                 </div>
-                                <span class="badge ${roleBadge.class} fs-6">
-                                    <i class="${roleBadge.icon} me-1"></i>${roleBadge.text}
-                                </span>
-                            </div>
-                            
-                            <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>User Email:</strong></td>
-                                    <td><code>${userData.email}</code></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Member since:</strong></td>
-                                    <td>${new Date(userData.created_at).toLocaleDateString('en-US', { 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric', 
-                                        hour: '2-digit', 
-                                        minute: '2-digit' 
-                                    })}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Last Login:</strong></td>
-                                    <td>${userData.last_login ? new Date(userData.last_login).toLocaleDateString('en-US', { 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric', 
-                                        hour: '2-digit', 
-                                        minute: '2-digit' 
-                                    }) : 'Never'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>No-Show Count:</strong></td>
-                                    <td>
-                                        <span class="badge ${userData.no_show_count > 0 ? 'bg-warning' : 'bg-success'}">
-                                            <i class="fas ${userData.no_show_count > 0 ? 'fa-exclamation-triangle' : 'fa-check'} me-1"></i>
-                                            ${userData.no_show_count || 0}
-                                        </span>
-                                    </td>
-                                </tr>
-                            </table>
-                            
-                            <div class="alert alert-warning mt-3">
-                                <small><i class="fas fa-exclamation-triangle me-1"></i>Failed to load application responses.</small>
+                                
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>User Email:</strong></td>
+                                        <td><code>${userData.email}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Member since:</strong></td>
+                                        <td>${new Date(userData.created_at).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        })}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Last Login:</strong></td>
+                                        <td>${userData.last_login ? new Date(userData.last_login).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        }) : 'Never'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>No-Show Count:</strong></td>
+                                        <td>
+                                            <span class="badge ${userData.no_show_count > 0 ? 'bg-warning' : 'bg-success'}">
+                                                <i class="fas ${userData.no_show_count > 0 ? 'fa-exclamation-triangle' : 'fa-check'} me-1"></i>
+                                                ${userData.no_show_count || 0}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <div class="alert alert-warning mt-3">
+                                    <small><i class="fas fa-exclamation-triangle me-1"></i>Failed to load application responses.</small>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-                const modal = new bootstrap.Modal(document.getElementById('userModal'));
-                modal.show();
-            });
+                    `;
+                    const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                    modal.show();
+                });
         })
         .catch(error => {
             console.error('Error in viewUser:', error);
@@ -788,8 +786,6 @@ function viewUser(userId) {
 
 // Show user modal with data directly (without API call)
 function showUserModal(userData) {
-    console.log('Showing user modal with data:', userData);
-    
     const modalBody = document.getElementById('userModalBody');
     if (!modalBody) {
         console.error('Could not find userModalBody element');
@@ -809,18 +805,8 @@ function showUserModal(userData) {
     const roleColor = roleColors[userData.role] || 'bg-secondary';
     const roleName = userData.role_display || userData.role;
     
-    // Create avatar or placeholder
-    const avatarHtml = userData.avatar_url ? 
-        `<img src="${userData.avatar_url}" alt="${userData.name}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">` :
-        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-            <i class="fas fa-user text-white"></i>
-        </div>`;
-    
     modalBody.innerHTML = `
         <div class="d-flex align-items-center mb-3">
-            <div class="me-3">
-                ${avatarHtml}
-            </div>
             <div class="flex-grow-1">
                 <h5 class="mb-1">${userData.name}</h5>
                 <p class="mb-1 text-muted">${userData.email}</p>
@@ -845,10 +831,8 @@ function showUserModal(userData) {
         </div>
     `;
     
-    console.log('About to show modal...');
     const modal = new bootstrap.Modal(document.getElementById('userModal'));
     modal.show();
-    console.log('Modal show() called');
 }
 
 function deleteUser(userId, userName) {
@@ -1005,8 +989,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function highlightUser(userId) {
-    console.log('highlightUser called with userId:', userId);
-    
     // Clear previous highlights
     clearHighlight();
     
@@ -1031,7 +1013,6 @@ function highlightUser(userId) {
     });
     
     // Show the user detail modal immediately
-    console.log('Calling viewUser with userId:', userId);
     viewUser(userId);
     
     if (!userFound) {

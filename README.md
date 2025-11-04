@@ -19,9 +19,9 @@ Web page for Barcelona's new english speaking polyamory group, complete with Mee
 ### Basic Installation
 
 ```bash
-python -m venv .ve
-source .ve/bin/activate
-pip install -r requirements.txt
+    python -m venv .ve
+    source .ve/bin/activate
+    pip install -r requirements.txt
 ```
 
 ### Configuration
@@ -30,13 +30,12 @@ pip install -r requirements.txt
 2. Configure OAuth credentials (see `DOCS/OAUTH_SETUP.md`)
 3. Configure Google Maps API key (see `GOOGLE_MAPS_SETUP.md`) # TO IMPLEMENT
 4. Make admins by running `python manage_db.py make-admin user@email.xxx`
+5. Generate sample data by running `python generate_sample_data.py`
 
 ### Running
 
-1. Generate sample data by running `python generate_sample_data.py`
-2. Run:
 ```bash
-flask --app server --debug run
+    python server.py
 ```
 
 ## Documentation

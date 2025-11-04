@@ -12,25 +12,25 @@
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div class="d-flex flex-wrap gap-2">
                             <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Events
+                                Back to Events
                             </a>
                             
                             {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) %}
                                 <a href="{{ url_for('events.edit_event', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
-                                    <i class="fas fa-edit me-2"></i>Edit Event
+                                    Edit Event
                                 </a>
                             {% endif %}
                             
-                            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and event.exact_time > now %}
+                            {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) %}
                                 <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
-                                    <i class="fas fa-users-cog me-2"></i>Manage Attendance
+                                    Manage Attendance
                                 </a>
                             {% endif %}
                         </div>
                         
                         <div class="d-flex flex-wrap gap-2">
                             <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
-                                <i class="fas fa-share me-2"></i>Share Event
+                                Share Event
                             </button>
                         </div>
                     </div>
@@ -62,7 +62,105 @@
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-12">
-                            <div class="d-flex align-items-center gap-2 justify-content-end mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <!-- Left side: Attendance and Calendar buttons -->
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if event.exact_time > now and current_user.is_authenticated %}
+                                        {% set user_rsvp = user_rsvp %}
+                                        {% set is_host_or_cohost = current_user.is_authenticated and (current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id)) %}
+                                        
+                        <!-- Attendance Section -->
+                        {% if not is_host_or_cohost %}
+                            <div class="attendance-container" style="min-width: 160px;">
+                                {% if not user_rsvp %}
+                                    <!-- Three initial buttons for new RSVP -->
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-rsvp-none btn-sm attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="yes">
+                                            Yes
+                                        </button>
+                                        <button class="btn btn-rsvp-none btn-sm attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="no">
+                                            No
+                                        </button>
+                                        <button class="btn btn-rsvp-none btn-sm attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="maybe">
+                                            Maybe
+                                        </button>
+                                    </div>
+                                {% elif user_rsvp.status == 'yes' %}
+                                    <!-- Status dropdown for confirmed attendance -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-rsvp-yes dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px;">
+                                            Yes
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                No
+                                            </a></li>
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                Maybe
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% elif user_rsvp.status == 'waitlist' %}
+                                    <!-- Status dropdown for waitlisted -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-rsvp-waitlisted dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px;">
+                                            Waitlisted
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                No
+                                            </a></li>
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                Maybe
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% elif user_rsvp.status == 'maybe' %}
+                                    <!-- Status dropdown for maybe -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-rsvp-maybe dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px;">
+                                            Maybe
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                Yes
+                                            </a></li>
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                No
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% elif user_rsvp.status == 'no' %}
+                                    <!-- Status dropdown for not going -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-rsvp-no dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px;">
+                                            No
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                Yes
+                                            </a></li>
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                Maybe
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <!-- Disabled button for hosts/co-hosts -->
+                            <button class="btn btn-outline-primary btn-sm" type="button" disabled style="min-width: 160px;">
+                                {% if current_user.id == event.organizer_id %}You're hosting{% else %}You're co-hosting{% endif %}
+                            </button>
+                        {% endif %}
+                                <!-- Add to Calendar Button -->
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#addToCalendarModal">
+                                            Add to Calendar
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Right side: Status pills -->
                                 <span id="header-pills">
                                 {% if event.exact_time < now %}
                                     <span class="badge bg-secondary fs-6">Past Event</span>
@@ -337,71 +435,54 @@
                                 <div class="card-header">
                                     <h6 class="mb-0">
                                         <i class="fas fa-users me-2"></i>
-                                        Event Attendance
+                                        Event Attendance ({{ consolidated_attendance|length }})
                                     </h6>
                                 </div>
-                                <div class="card-body">
-                                    
-                                    <!-- Attendance Buttons -->
-                                    {% if event.exact_time > now %}
-                                    <div class="mb-4" id="attendance-section">
-                                        {% set user_rsvp = user_rsvp %}
-                                        {% set is_host_or_cohost = current_user.is_authenticated and (current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id)) %}
-                                        <div class="text-center">
-                                            <div class="rsvp-status-line mt-2 mb-3">
-                                                {% if is_host_or_cohost %}
-                                                    <i class="fas fa-crown text-warning me-2" title="Host/Co-host"></i>
-                                                    <span class="fw-bold text-info">You are {% if current_user.id == event.organizer_id %}the host{% else %}a co-host{% endif %} of this event</span>
-                                                {% elif user_rsvp %}
-                                                    {% if user_rsvp.status == 'yes' %}
-                                                        <i class="fas fa-check-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-success">
-                                                            {% if event.exact_time < now %}I went{% else %}I'm going{% endif %}
-                                                        </span>
-                                                    {% elif user_rsvp.status == 'no' %}
-                                                        <i class="fas fa-times-circle text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-danger">
-                                                            {% if event.exact_time < now %}I didn't go{% else %}I'm not going{% endif %}
-                                                        </span>
-                                                    {% elif user_rsvp.status == 'waitlist' %}
-                                                        <i class="fas fa-hourglass-half text-secondary me-2" title="RSVP Status"></i>
-                                                        <span class="fw-bold text-warning">
-                                                            {% if event.exact_time < now %}I was waitlisted{% else %}I am waitlisted{% endif %}
-                                                        </span>
-                                                    {% endif %}
-                                                {% endif %}
-                                            </div>
-                                            <div class="d-flex gap-2 justify-content-center" role="group">
-                                                {% if not user_rsvp %}
-                                                    <button class="btn btn-success attendance-btn" data-event-id="{{ event.id }}" data-status="yes" {% if is_host_or_cohost %}disabled{% endif %} style="min-width: 140px;">
-                                                        <i class="fas fa-check me-2"></i>I want to go!
-                                                    </button>
-                                                    <button class="btn btn-danger attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if is_host_or_cohost %}disabled{% endif %} style="min-width: 120px;">
-                                                        <i class="fas fa-times me-2"></i>I can't go
-                                                    </button>
-                                                {% else %}
-                                                    <button class="btn btn-success attendance-btn" data-event-id="{{ event.id }}" data-status="yes" {% if user_rsvp.status == 'yes' or user_rsvp.status == 'waitlist' or is_host_or_cohost %}disabled{% endif %} style="min-width: 140px;">
-                                                        <i class="fas fa-check me-2"></i>I want to go!
-                                                    </button>
-                                                    <button class="btn btn-danger attendance-btn" data-event-id="{{ event.id }}" data-status="no" {% if user_rsvp.status == 'no' or is_host_or_cohost %}disabled{% endif %} style="min-width: 120px;">
-                                                        <i class="fas fa-times me-2"></i>I can't go
-                                                    </button>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            <!-- Add to Calendar Button -->
-                                            <div class="text-center mt-3">
-                                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#addToCalendarModal">
-                                                    <i class="fas fa-calendar-plus me-2"></i>Add to Calendar
-                                                </button>
-                                            </div>
-                                        </div>
+                                {% if consolidated_attendance %}
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                        <table class="table table-hover">
+                                            <tbody>
+                                                {% for attendance in consolidated_attendance %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div>
+                                                                <strong>{{ attendance.user.name }}</strong>
+                                                                {% if attendance.user.pronouns %}
+                                                                    <span class="text-muted">({{ attendance.user.pronouns }})</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        {% if attendance.status == 'host' %}
+                                                            <span class="badge badge-rsvp-host">Host</span>
+                                                        {% elif attendance.status == 'co-host' %}
+                                                            <span class="badge badge-rsvp-cohost">Co-host</span>
+                                                        {% elif attendance.status == 'yes' %}
+                                                            <span class="badge badge-rsvp-yes">Attending</span>
+                                                        {% elif attendance.status == 'maybe' %}
+                                                            <span class="badge badge-rsvp-maybe">Maybe</span>
+                                                        {% elif attendance.status == 'waitlist' %}
+                                                            <span class="badge badge-rsvp-waitlisted">Waitlisted</span>
+                                                        {% elif attendance.status == 'no' %}
+                                                            <span class="badge badge-rsvp-no">Not Attending</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-muted text-center py-3">
+                                        <i class="fas fa-users fa-2x mb-2"></i>
+                                        <p>No responses yet</p>
                                     </div>
                                     {% endif %}
-                                    
                                     <!-- Capacity Information -->
                                     {% if event.max_attendees %}
-                                    <div class="mb-4 border-top pt-4">
+                                    <div class="mb-4 pt-4" style="margin: 1em;">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <span class="fw-bold">Capacity:</span>
                                             <span>
@@ -421,41 +502,7 @@
                                                  style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
                                         </div>
                                     </div>
-                                    {% endif %}
-
-                                    <!-- Event Responses Lists -->
-                                    <div class="border-top pt-4">
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <h6 class="text-success mb-3" id="attendee-count-header">
-                                                    <i class="fas fa-check me-2"></i>
-                                                    Attendees ({{ rsvp_count }})
-                                                </h6>
-                                                <div style="max-height: 250px; overflow-y: auto;">
-                                                    {% include 'events/event_detail_attendees.html' %}
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4 border-start">
-                                                <h6 class="text-warning mb-3" id="waitlist-count-header">
-                                                    <i class="fas fa-user-clock me-2"></i>
-                                                    Waitlist ({{ rsvps_waitlist|length }})
-                                                </h6>
-                                                <div style="max-height: 250px; overflow-y: auto;">
-                                                    {% include 'events/event_detail_waitlist.html' %}
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4 border-start">
-                                                <h6 class="text-danger mb-3" id="not-attending-count-header">
-                                                    <i class="fas fa-times me-2"></i>
-                                                    Not Attending ({{ rsvp_no_count }})
-                                                </h6>
-                                                <div style="max-height: 250px; overflow-y: auto;">
-                                                    {% include 'events/event_detail_not_attending.html' %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -475,7 +522,6 @@
                         </div>
                     </div>
                     {% endif %}
-                    
                     
                     
                     <!-- Member-only notice -->
@@ -658,7 +704,6 @@ Log in or join our community for more details: {{ request.url }}</textarea>
 {% block scripts %}
 {{ super() }}
 <script>
-console.log('RSVP script loaded');
 document.addEventListener('DOMContentLoaded', function() {
     let eventId = "{{ event.id }}";
     let currentUserId = {% if current_user.is_authenticated %}"{{ current_user.id }}"{% else %}null{% endif %};
@@ -666,165 +711,22 @@ document.addEventListener('DOMContentLoaded', function() {
     let eventCoHostId = {% if event.co_host %}"{{ event.co_host.id }}"{% else %}null{% endif %};
     let isHostOrCohost = currentUserId && (currentUserId === eventOrganizerId || (eventCoHostId && currentUserId === eventCoHostId));
 
-    // Use event delegation instead of direct attachment
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('attendance-btn') || e.target.closest('.attendance-btn')) {
-            const button = e.target.classList.contains('attendance-btn') ? e.target : e.target.closest('.attendance-btn');
-            console.log('RSVP button clicked', button, button.getAttribute('data-status'));
-            const status = button.getAttribute('data-status');
-            if (status && !button.disabled) {
-                updateAttendanceStatus(status, button);
-            }
+    // Override page-specific functions for event detail page
+    window.updateAttendeeInfo = function(eventId, data) {
+        // Update the consolidated attendance list if provided
+        if (data.consolidated_attendance_html) {
+            const attendanceTable = document.querySelector('.table-responsive');
+            if (attendanceTable) attendanceTable.innerHTML = data.consolidated_attendance_html;
         }
-    });
-
-    function updateAttendanceStatus(status, button) {
-        // Show loading state with fixed width to prevent jiggling
-        const originalText = button.innerHTML;
-        const originalWidth = button.offsetWidth;
-        button.disabled = true;
-        button.style.width = originalWidth + 'px';
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
-
-        // Make AJAX request
-        fetch(`/events/${eventId}/rsvp`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/json'
-            },
-            body: `status=${status}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // DOM is replaced, so no need to restore button state
-                updateAttendanceUI(data);
-                
-                // Show promotion notification if someone was promoted from waitlist
-                if (data.promoted_user) {
-                    showMessage(`${data.promoted_user} has taken your spot. Lucky them!`, 'success');
-                }
-            } else {
-                showMessage(data.message, 'error');
-                // Only restore if button is still in DOM
-                if (document.body.contains(button)) {
-                    button.innerHTML = originalText;
-                    button.disabled = false;
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showMessage('An error occurred while updating your attendance.', 'error');
-            if (document.body.contains(button)) {
-                button.innerHTML = originalText;
-                button.disabled = false;
-            }
-        });
-    }
-
-    function updateAttendanceUI(data) {
-        console.log('RSVP data received - rsvp_count:', data.rsvp_count, 'rsvp_no_count:', data.rsvp_no_count);
-        if (data.waitlist_html) console.log('Has waitlist_html');
-        if (data.waitlist_count) console.log('Has waitlist_count:', data.waitlist_count);
-
-        // Update the attendance section
-        const section = document.getElementById('attendance-section');
-        if (!section) return;
-        let html = '';
         
-        // Check if user is host or co-host
-        if (isHostOrCohost) {
-            let hostTypeText = currentUserId === eventOrganizerId ? 'the host' : 'a co-host';
-            html += `<div class="text-center"><div class="rsvp-status-line mt-2 mb-3">` +
-                `<i class="fas fa-crown text-warning me-2" title="Host/Co-host"></i>` +
-                `<span class="fw-bold text-info">You are ${hostTypeText} of this event</span></div>` +
-                `<div class="d-flex gap-2 justify-content-center" role="group">` +
-                `<button class="btn btn-success attendance-btn" data-event-id="${eventId}" data-status="yes" style="min-width: 140px;" disabled>` +
-                `<i class="fas fa-check me-2"></i>I want to go!</button>` +
-                `<button class="btn btn-danger attendance-btn" data-event-id="${eventId}" data-status="no" style="min-width: 120px;" disabled>` +
-                `<i class="fas fa-times me-2"></i>I can't go</button></div></div>`;
-        } else if (data.user_rsvp) {
-            let statusLine = '';
-            if (data.user_rsvp.status === 'yes') {
-                statusLine = `<i class=\"fas fa-check-circle text-secondary me-2\" title=\"RSVP Status\"></i><span class=\"fw-bold text-success\">I'm going</span>`;
-            } else if (data.user_rsvp.status === 'no') {
-                statusLine = `<i class=\"fas fa-times-circle text-secondary me-2\" title=\"RSVP Status\"></i><span class=\"fw-bold text-danger\">I'm not going</span>`;
-            } else if (data.user_rsvp.status === 'waitlist') {
-                statusLine = `<i class=\"fas fa-hourglass-half text-secondary me-2\" title=\"RSVP Status\"></i><span class=\"fw-bold text-warning\">I am waitlisted</span>`;
-            }
-            html += `<div class=\"text-center\"><div class=\"rsvp-status-line mt-2 mb-2\">${statusLine}</div><div class=\"d-flex gap-2 justify-content-center\" role=\"group\">` +
-                `<button class=\"btn btn-success attendance-btn\" data-event-id=\"${eventId}\" data-status=\"yes\" style=\"min-width: 140px;\" ${(data.user_rsvp.status === 'yes' || data.user_rsvp.status === 'waitlist') ? 'disabled' : ''}>` +
-                `<i class=\"fas fa-check me-2\"></i>I want to go!</button>` +
-                `<button class=\"btn btn-danger attendance-btn\" data-event-id=\"${eventId}\" data-status=\"no\" style=\"min-width: 120px;\" ${(data.user_rsvp.status === 'no') ? 'disabled' : ''}>` +
-                `<i class=\"fas fa-times me-2\"></i>I can't go</button></div></div>`;
-        } else {
-            html += `<div class=\"text-center\"><div class=\"d-flex gap-2 justify-content-center\" role=\"group\">` +
-                `<button class=\"btn btn-success attendance-btn\" data-event-id=\"${eventId}\" data-status=\"yes\" style=\"min-width: 140px;\">` +
-                `<i class=\"fas fa-check me-2\"></i>I want to go!</button>` +
-                `<button class=\"btn btn-danger attendance-btn\" data-event-id=\"${eventId}\" data-status=\"no\" style=\"min-width: 120px;\">` +
-                `<i class=\"fas fa-times me-2\"></i>I can't go</button></div></div>`;
-        }
-        section.innerHTML = html;
-
-        // No need to re-attach event listeners since we're using event delegation
-
-        // Update attendee, not attending, and waitlist lists and counts
-        if (data.rsvps_html) {
-            const attendeesCol = document.querySelector('h6#attendee-count-header + div');
-            if (attendeesCol) attendeesCol.innerHTML = data.rsvps_html;
-        }
-        if (data.rsvps_no_html) {
-            const notAttendingCol = document.querySelector('h6#not-attending-count-header + div');
-            if (notAttendingCol) notAttendingCol.innerHTML = data.rsvps_no_html;
-        }
-        if (data.waitlist_html) {
-            // Find the Waitlist column by header text
-            const waitlistHeader = Array.from(document.querySelectorAll('h6')).find(h => h.textContent.includes('Waitlist'));
-            if (waitlistHeader) {
-                const waitlistCol = waitlistHeader.nextElementSibling;
-                if (waitlistCol) waitlistCol.innerHTML = data.waitlist_html;
+        // Update the attendance count in the header
+        if (data.total_attendance_count !== undefined) {
+            const attendanceHeader = document.querySelector('h6.text-dark');
+            if (attendanceHeader) {
+                attendanceHeader.innerHTML = `<i class="fas fa-users me-2"></i>Event Attendance (${data.total_attendance_count})`;
             }
         }
-        if (data.rsvp_count !== undefined) {
-            const attendeesHeader = document.getElementById('attendee-count-header');
-            if (attendeesHeader) attendeesHeader.innerHTML = `<i class="fas fa-check me-2"></i><span>Attendees (${data.rsvp_count})</span>`;
-        }
-        if (data.rsvp_no_count !== undefined) {
-            const notAttendingHeader = document.getElementById('not-attending-count-header');
-            if (notAttendingHeader) notAttendingHeader.innerHTML = `<i class="fas fa-times me-2"></i><span>Not Attending (${data.rsvp_no_count})</span>`;
-        }
-        if (data.rsvp_waitlist_count !== undefined) {
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.rsvp_waitlist_count})</span>`;
-        } else if (data.waitlist_count !== undefined) {
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.waitlist_count})</span>`;
-        } else if (data.rsvps_waitlist !== undefined) {
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${data.rsvps_waitlist.length || 0})</span>`;
-        } else if (data.waitlist_html !== undefined) {
-            // Count waitlist items from the HTML if no explicit count is provided
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = data.waitlist_html;
-            const waitlistItems = tempDiv.querySelectorAll('.d-flex.align-items-center');
-            const waitlistCount = waitlistItems.length;
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${waitlistCount})</span>`;
-        } else {
-            // If no waitlist data is provided, preserve the current count
-            console.log('No waitlist data in response - preserving current count');
-            const waitlistHeader = document.getElementById('waitlist-count-header');
-            if (waitlistHeader) {
-                // Extract current count from the header and maintain it
-                const currentText = waitlistHeader.textContent;
-                const currentCount = currentText.match(/Waitlist \((\d+)\)/);
-                if (currentCount) {
-                    waitlistHeader.innerHTML = `<i class="fas fa-user-clock me-2"></i><span>Waitlist (${currentCount[1]})</span>`;
-                }
-            }
-        }
+        
         // Update capacity pills if provided
         if (data.capacity_pills_html) {
             const pillsContainer = document.getElementById('capacity-pills');
@@ -870,9 +772,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
-    }
+    };
     
-    function showMessage(message, type) {
+    window.showToast = function(message, type) {
         // Create a simple alert message
         const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
         const alertDiv = document.createElement('div');
@@ -892,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 alertDiv.remove();
             }
         }, 3000);
-    }
+    };
 });
 
 // Copy to clipboard function for share modal
@@ -987,11 +889,14 @@ function addToYahooCalendar() {
 
 function addToAppleCalendar() {
     const event = window.eventData;
+    // Extract domain from base_url for calendar entries
+    const baseUrl = '{{ base_url }}';
+    const domain = baseUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//cosypolyamory.org//Event//EN
+PRODID:-//${domain}//Event//EN
 BEGIN:VEVENT
-UID:event-{{ event.id }}-${Date.now()}@cosypolyamory.org
+UID:event-{{ event.id }}-${Date.now()}@${domain}
 DTSTART:${event.startDate}
 DTEND:${event.endDate}
 SUMMARY:${event.title}

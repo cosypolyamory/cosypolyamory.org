@@ -272,17 +272,26 @@ def create_user_application(user, status):
         ]
     }
     
-    UserApplication.create(
+    # Create application with JSON answers
+    application = UserApplication.create(
         user=user,
-        question_1_answer=random.choice(sample_responses['question_1']),
-        question_2_answer=random.choice(sample_responses['question_2']),
-        question_3_answer=random.choice(sample_responses['question_3']),
-        question_4_answer=random.choice(sample_responses['question_4']),
-        question_5_answer=random.choice(sample_responses['question_5']),
-        question_6_answer=random.choice(sample_responses['question_6']),
-        question_7_answer=random.choice(sample_responses['question_7']),
         submitted_at=fake.date_time_between(start_date='-2M', end_date='now')
     )
+    
+    # Get current questions from environment and set answers using the new format
+    questions = UserApplication.get_questions_from_env()
+    qa_data = {}
+    
+    for i, (question_key, question_text) in enumerate(questions.items(), 1):
+        response_key = f'question_{i}'
+        if response_key in sample_responses:
+            qa_data[question_key] = {
+                'question': question_text,
+                'answer': random.choice(sample_responses[response_key])
+            }
+    
+    application.set_questions_and_answers(qa_data)
+    application.save()
 
 def create_sample_events(users):
     """Create a variety of sample events"""

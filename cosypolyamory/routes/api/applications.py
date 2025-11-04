@@ -61,15 +61,7 @@ def api_admin_application(application_id):
             'reviewed_at': application.reviewed_at.isoformat() if application.reviewed_at else None,
             'reviewed_by': application.reviewed_by.name if application.reviewed_by else None,
             'review_notes': application.review_notes,
-            'answers': [
-                application.question_1_answer,
-                application.question_2_answer,
-                application.question_3_answer,
-                application.question_4_answer,
-                application.question_5_answer,
-                application.question_6_answer,
-                application.question_7_answer,
-            ]
+            'answers': list(application.get_answers().values())
         }
         return jsonify({'success': True, 'application': data})
     except UserApplication.DoesNotExist:
@@ -134,15 +126,8 @@ def api_admin_application_by_user(user_id):
             'reviewed_at': application.reviewed_at.isoformat() if application.reviewed_at else None,
             'reviewed_by': application.reviewed_by.name if application.reviewed_by else None,
             'review_notes': application.review_notes,
-            'answers': [
-                application.question_1_answer,
-                application.question_2_answer,
-                application.question_3_answer,
-                application.question_4_answer,
-                application.question_5_answer,
-                application.question_6_answer,
-                application.question_7_answer,
-            ]
+            'answers': list(application.get_answers().values()),
+            'questions_and_answers': application.get_questions_and_answers()
         }
         return jsonify({'success': True, 'application': data})
     except User.DoesNotExist:

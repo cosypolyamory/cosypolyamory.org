@@ -28,7 +28,10 @@
             </div>
             <div class="mb-3">
                 <label for="note" class="form-label">Note Text</label>
-                <textarea class="form-control" id="note" name="note" rows="15" required>{{ note.note }}</textarea>
+                <textarea class="form-control" id="note" name="note" rows="15" required maxlength="5000">{{ note.note }}</textarea>
+                <div class="form-text">
+                    <span id="note-counter">0</span>/5000 characters
+                </div>
             </div>
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('admin.event_notes') }}" class="btn btn-secondary">Cancel</a>
@@ -37,4 +40,39 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character counter for note text
+    function updateCharacterCounter(inputId, counterId, maxLength) {
+        const input = document.getElementById(inputId);
+        const counter = document.getElementById(counterId);
+        
+        if (input && counter) {
+            function updateCount() {
+                const currentLength = input.value.length;
+                counter.textContent = currentLength;
+                
+                // Change color based on usage
+                if (currentLength > maxLength * 0.9) {
+                    counter.style.color = '#dc3545'; // Red
+                } else if (currentLength > maxLength * 0.75) {
+                    counter.style.color = '#fd7e14'; // Orange
+                } else {
+                    counter.style.color = '#6c757d'; // Gray
+                }
+            }
+            
+            // Update on page load
+            updateCount();
+            
+            // Update on input
+            input.addEventListener('input', updateCount);
+        }
+    }
+    
+    // Initialize character counter
+    updateCharacterCounter('note', 'note-counter', 5000);
+});
+</script>
 {% endblock %}

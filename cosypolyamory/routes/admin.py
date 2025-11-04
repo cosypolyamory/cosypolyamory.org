@@ -45,21 +45,9 @@ def moderate_applications():
     prev_num = page - 1 if has_prev else None
     next_num = page + 1 if has_next else None
     
-    # Get questions from environment for display
-    questions = {
-        'question_1': os.getenv('QUESTION_1', 'Error: question not defined'),
-        'question_2': os.getenv('QUESTION_2', 'Error: question not defined'),
-        'question_3': os.getenv('QUESTION_3', 'Error: question not defined'),
-        'question_4': os.getenv('QUESTION_4', 'Error: question not defined'),
-        'question_5': os.getenv('QUESTION_5', 'Error: question not defined'),
-        'question_6': os.getenv('QUESTION_6', 'Error: question not defined'),
-        'question_7': os.getenv('QUESTION_7', 'Error: question not defined'),
-    }
-    
     return render_template('admin/moderate.html',
                          pending_applications=pending_applications,
                          pending_count=total_applications,
-                         questions=questions,
                          pagination={
                              'page': page,
                              'per_page': per_page,
@@ -139,7 +127,16 @@ def reject_application(application_id):
 def admin_dashboard():
     """Admin dashboard"""
     users = list(User.select())
-    return render_template('admin/admin.html', users=users)
+    
+    # Calculate pending applications count for the notification message
+    pending_applications_count = (UserApplication.select()
+                                 .join(User)
+                                 .where(User.role == "pending")
+                                 .count())
+    
+    return render_template('admin/admin.html', 
+                         users=users, 
+                         pending_applications_count=pending_applications_count)
 
 # Event Notes Admin Routes (admins and organizers only)
 @bp.route('/event-notes')
@@ -148,27 +145,28 @@ def event_notes():
     notes = EventNote.select().order_by(EventNote.name)
     return render_template('events/event_notes.html', event_notes=notes)
 
-@bp.route('/event-notes/add', methods=['POST'])
+@bp.route('/event-notes/add', methods=['GET', 'POST'])
 @admin_or_organizer_required
 def add_event_note():
-
-    try:
-        with database.atomic():
-            name = request.form.get('name', '').strip()
-            note = request.form.get('note', '').strip()
-            if not name or not note:
-                flash('Both name and note are required.', 'error')
-                return render_template('events/add_event_note.html')
-            # Check for duplicate name
-            if EventNote.select().where(EventNote.name == name).exists():
-                flash('A note with this name already exists.', 'error')
-                return render_template('events/add_event_note.html')
-            EventNote.create(name=name, note=note)
-            flash('Event note added successfully.', 'success')
-            return redirect(url_for('admin.event_notes'))
-    except Exception as e:
-        flash(f'Error adding event note: {str(e)}', 'error')
-        return render_template('events/edit_event_note.html', note=note)
+    
+    if request.method == 'POST':
+        try:
+            with database.atomic():
+                name = request.form.get('name', '').strip()
+                note = request.form.get('note', '').strip()
+                if not name or not note:
+                    flash('Both name and note are required.', 'error')
+                    return render_template('events/add_event_note.html')
+                # Check for duplicate name
+                if EventNote.select().where(EventNote.name == name).exists():
+                    flash('A note with this name already exists.', 'error')
+                    return render_template('events/add_event_note.html')
+                EventNote.create(name=name, note=note)
+                flash('Event note added successfully.', 'success')
+                return redirect(url_for('admin.event_notes'))
+        except Exception as e:
+            flash(f'Error adding event note: {str(e)}', 'error')
+            return render_template('events/add_event_note.html')
 
     return render_template('events/add_event_note.html')
 

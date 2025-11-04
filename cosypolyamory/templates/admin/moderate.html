@@ -80,48 +80,14 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-12">
-                                    {% if application.question_1_answer %}
-                                        <div class="mb-3">
-                                            <h6 class="text-primary">{{ questions['question_1'] }}</h6>
-                                            <p>{{ application.question_1_answer | replace('\n', '<br>') | safe }}</p>
-                                        </div>
-                                    {% endif %}
-                                    {% if application.question_2_answer %}
-                                        <div class="mb-3">
-                                            <h6 class="text-primary">{{ questions['question_2'] }}</h6>
-                                            <p>{{ application.question_2_answer | replace('\n', '<br>') | safe }}</p>
-                                        </div>
-                                    {% endif %}
-                                    {% if application.question_3_answer %}
-                                        <div class="mb-3">
-                                            <h6 class="text-primary">{{ questions['question_3'] }}</h6>
-                                            <p>{{ application.question_3_answer | replace('\n', '<br>') | safe }}</p>
-                                        </div>
-                                    {% endif %}
-                                    {% if application.question_4_answer %}
-                                        <div class="mb-3">
-                                            <h6 class="text-primary">{{ questions['question_4'] }}</h6>
-                                            <p>{{ application.question_4_answer | replace('\n', '<br>') | safe }}</p>
-                                        </div>
-                                    {% endif %}
-                                    {% if application.question_5_answer %}
-                                        <div class="mb-3">
-                                            <h6 class="text-primary">{{ questions['question_5'] }}</h6>
-                                            <p>{{ application.question_5_answer | replace('\n', '<br>') | safe }}</p>
-                                        </div>
-                                    {% endif %}
-                                    {% if application.question_6_answer %}
-                                        <div class="mb-3">
-                                            <h6 class="text-primary">{{ questions['question_6'] }}</h6>
-                                            <p>{{ application.question_6_answer | replace('\n', '<br>') | safe }}</p>
-                                        </div>
-                                    {% endif %}
-                                    {% if application.question_7_answer %}
-                                        <div class="mb-3">
-                                            <h6 class="text-primary">{{ questions['question_7'] }}</h6>
-                                            <p>{{ application.question_7_answer | replace('\n', '<br>') | safe }}</p>
-                                        </div>
-                                    {% endif %}
+                                    {% for question_key, qa_data in application.get_questions_and_answers().items() %}
+                                        {% if qa_data.answer %}
+                                            <div class="mb-3">
+                                                <h6 class="text-primary">{{ qa_data.question }}</h6>
+                                                <p>{{ qa_data.answer | replace('\n', '<br>') | safe }}</p>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
                                     
                                     <div class="application-actions">
                                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" 

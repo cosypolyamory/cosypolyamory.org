@@ -1,0 +1,22 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Welcome to Cosy Polyamory! 🎉{% endblock %}
+
+{% block content %}
+<h2>Welcome to the Cosy Polyamory Community!</h2>
+<p>Hello {{ name }},</p>
+<p>Welcome! You've successfully created an account with Cosy Polyamory:</p>
+
+<div style="background-color: #e7f3ff; border: 1px solid #b8daff; color: #0c5460; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #0c5460;">🌟 What's next?</h3>
+    <p style="margin-bottom: 0;">To become a full member of our community, please submit an application. This helps us maintain a safe and welcoming environment for everyone.</p>
+</div>
+
+<p><strong>Ready to apply?</strong> <a href="{{ base_url }}/apply" style="color: #007bff;">Submit your application here</a></p>
+
+<p>Have questions about our community or the application process? Feel free to <a href="{{ base_url }}/contact" style="color: #007bff;">reach out to us</a>.</p>
+
+<p>We look forward to welcoming you to our cosy community!</p>
+
+<p><strong>The Cosy Polyamory Team</strong></p>
+{% endblock %}

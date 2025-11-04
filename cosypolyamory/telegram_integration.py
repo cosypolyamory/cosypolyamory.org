@@ -6,6 +6,7 @@ This module provides functions to send notifications from the main app to the Te
 
 import asyncio
 import logging
+import os
 from typing import Optional
 from cosypolyamory.telegram_bot import send_quick_announcement, create_bot_from_env
 
@@ -50,7 +51,8 @@ class TelegramNotificationService:
             if not bot:
                 return False
             
-            event_url = f"https://cosypolyamory.org/events/{event.id}"
+            base_url = os.getenv('DOMAIN', 'https://cosypolyamory.org')
+            event_url = f"{base_url}/events/{event.id}"
             success = await bot.send_event_notification(
                 event_title=event.title,
                 event_date=event.date.strftime('%A, %B %d, %Y'),
@@ -85,7 +87,8 @@ class TelegramNotificationService:
             if not bot:
                 return False
             
-            event_url = f"https://cosypolyamory.org/events/{event.id}"
+            base_url = os.getenv('DOMAIN', 'https://cosypolyamory.org')
+            event_url = f"{base_url}/events/{event.id}"
             success = await bot.send_event_update(
                 event_title=event.title,
                 update_type="UPDATED",

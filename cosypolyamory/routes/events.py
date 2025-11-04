@@ -22,6 +22,48 @@ from cosypolyamory.notification import send_notification_email, send_rsvp_confir
 bp = Blueprint('events', __name__, url_prefix='/events')
 
 
+def validate_event_form_data(title, description, barrio, establishment_name, tips_for_attendees, 
+                           location_notes=None, google_maps_link=None):
+    """
+    Validate event form data for character limits and required fields.
+    
+    Returns (is_valid, error_message)
+    """
+    # Required field validation
+    if not title or not title.strip():
+        return False, "Event title is required."
+    
+    if not description or not description.strip():
+        return False, "Event description is required."
+    
+    if not barrio or not barrio.strip():
+        return False, "Barrio/neighborhood is required."
+    
+    # Character limit validation
+    if len(title.strip()) > 255:
+        return False, f"Event title must be 255 characters or less. Current length: {len(title.strip())}"
+    
+    if len(description.strip()) > 5000:
+        return False, f"Event description must be 5000 characters or less. Current length: {len(description.strip())}"
+    
+    if len(barrio.strip()) > 64:
+        return False, f"Barrio/neighborhood must be 64 characters or less. Current length: {len(barrio.strip())}"
+    
+    if establishment_name and len(establishment_name.strip()) > 64:
+        return False, f"Establishment name must be 64 characters or less. Current length: {len(establishment_name.strip())}"
+    
+    if tips_for_attendees and len(tips_for_attendees.strip()) > 5000:
+        return False, f"Tips for attendees must be 5000 characters or less. Current length: {len(tips_for_attendees.strip())}"
+    
+    if location_notes and len(location_notes.strip()) > 1000:
+        return False, f"Location notes must be 1000 characters or less. Current length: {len(location_notes.strip())}"
+    
+    if google_maps_link and len(google_maps_link.strip()) > 2000:
+        return False, f"Google Maps link must be 2000 characters or less. Current length: {len(google_maps_link.strip())}"
+    
+    return True, None
+
+
 def organizer_required(f):
     """Decorator to require organizer access"""
     from functools import wraps
@@ -58,13 +100,22 @@ def approved_user_required(f):
 @bp.route('/')
 def events_list():
     """List all events with appropriate visibility"""
+    from flask import request
+    
     now_dt = datetime.now()
-
-    # Fetch upcoming events (future events)
-    upcoming_events = Event.select().where((Event.is_active == True) & (Event.exact_time >= now_dt)).order_by(Event.exact_time)
-
-    # Fetch past events (events that have already happened)
-    past_events = Event.select().where((Event.is_active == True) & (Event.exact_time < now_dt)).order_by(Event.exact_time.desc())
+    
+    # Get filter from query parameter, default to 'upcoming'
+    current_filter = request.args.get('filter', 'upcoming')
+    
+    if current_filter == 'past':
+        # Show only past events
+        events = Event.select().where((Event.is_active == True) & (Event.exact_time < now_dt)).order_by(Event.exact_time.desc())
+        page_title = "Past Events"
+    else:
+        # Show only upcoming events (default)
+        events = Event.select().where((Event.is_active == True) & (Event.exact_time >= now_dt)).order_by(Event.exact_time)
+        page_title = "Upcoming Events"
+        current_filter = 'upcoming'  # Ensure it's set to upcoming for template
 
     can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
 
@@ -74,12 +125,18 @@ def events_list():
         rsvps = RSVP.select().where(RSVP.user == current_user)
         user_rsvps = {rsvp.event.id: rsvp for rsvp in rsvps}
 
-    # Get RSVP counts for each event (both upcoming and past)
+    # Get RSVP counts for the filtered events
     rsvp_counts = {}
-    all_events = list(upcoming_events) + list(past_events)
+    rsvps_waitlist = {}
+    all_events = list(events)
     for event in all_events:
         count = RSVP.select().where(RSVP.event == event, RSVP.status == 'yes').count()
         rsvp_counts[event.id] = count
+        
+        # Get waitlist count for this event
+        waitlist_count = RSVP.select().where(RSVP.event == event, RSVP.status == 'waitlist').count()
+        if waitlist_count > 0:
+            rsvps_waitlist[event.id] = waitlist_count
 
     # Strip leading/trailing whitespace from descriptions only
     class EventWithStrippedDesc:
@@ -91,21 +148,17 @@ def events_list():
                     setattr(self, attr, getattr(event, attr))
             self.description = (event.description or "").strip()
 
-    upcoming_events_stripped = [EventWithStrippedDesc(e) for e in upcoming_events]
-    past_events_stripped = [EventWithStrippedDesc(e) for e in past_events]
-
-    # Provide both upcoming and past events to template
-    # Also keep 'events' for backward compatibility with existing template logic
-    events_stripped = upcoming_events_stripped + past_events_stripped
+    events_stripped = [EventWithStrippedDesc(e) for e in events]
 
     return render_template('events/events_list.html',
                            events=events_stripped,
-                           upcoming_events=upcoming_events_stripped,
-                           past_events=past_events_stripped,
                            can_see_details=can_see_details,
                            user_rsvps=user_rsvps,
                            rsvp_counts=rsvp_counts,
-                           now=datetime.now())
+                           rsvps_waitlist=rsvps_waitlist,
+                           current_filter=current_filter,
+                           page_title=page_title,
+                           now=now_dt)
 
 
 @bp.route('/<int:event_id>')
@@ -131,7 +184,40 @@ def event_detail(event_id):
     rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
     rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
     rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
+    rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
     rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
+    
+    # Create consolidated attendance list sorted by status priority, then by name
+    all_rsvps = list(rsvps) + list(rsvps_no) + list(rsvps_maybe) + list(rsvps_waitlist)
+    
+    # Create mock RSVP objects for host/co-host display
+    class MockRSVP:
+        def __init__(self, user, status):
+            self.user = user
+            self.status = status
+            self.created_at = event.created_at
+    
+    # Remove host and co-host from regular RSVP lists if they exist
+    all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.organizer_id]
+    if event.co_host:
+        all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.co_host.id]
+    
+    # Always add host and co-host at the beginning with their special status
+    all_rsvps.append(MockRSVP(event.organizer, 'host'))
+    if event.co_host:
+        all_rsvps.append(MockRSVP(event.co_host, 'co-host'))
+    
+    # Sort by status priority, then by first name, then by last name
+    status_priority = {'yes': 0, 'maybe': 1, 'waitlist': 2, 'no': 3, 'co-host': 4, 'host': 5}
+    
+    def sort_key(rsvp):
+        # Split the name to get first and last name
+        name_parts = rsvp.user.name.split()
+        first_name = name_parts[0] if name_parts else ''
+        last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+        return (status_priority.get(rsvp.status, 6), first_name.lower(), last_name.lower())
+    
+    consolidated_attendance = sorted(all_rsvps, key=sort_key)
     # Extract Google Maps information
     google_maps_info = extract_google_maps_info(event.google_maps_link) if event.google_maps_link else None
     is_user_waitlisted = user_rsvp and user_rsvp.status == 'waitlist'
@@ -168,7 +254,9 @@ def event_detail(event_id):
                            rsvp_no_count=rsvp_no_count,
                            rsvps=rsvps,
                            rsvps_no=rsvps_no,
+                           rsvps_maybe=rsvps_maybe,
                            rsvps_waitlist=rsvps_waitlist,
+                           consolidated_attendance=consolidated_attendance,
                            is_user_waitlisted=is_user_waitlisted,
                            can_manage_rsvps=can_manage_rsvps,
                            google_maps_api_key=os.getenv('GOOGLE_MAPS_API_KEY'),
@@ -243,17 +331,30 @@ def create_event_post():
         organizer_id = request.form.get('organizer_id')
         co_host_id = request.form.get('co_host_id', '')
 
+        # Validate form data lengths and required fields
+        is_valid, error_message = validate_event_form_data(
+            title, description, barrio, establishment_name, tips_for_attendees,
+            location_notes, google_maps_link
+        )
+        if not is_valid:
+            current_app.logger.warning(f"Event creation validation failed for user {current_user.id}: {error_message}")
+            flash(error_message, 'error')
+            return redirect(url_for('events.create_event'))
+
         # Validate organizer
         if not organizer_id:
+            current_app.logger.warning(f"Event creation failed: No organizer selected by user {current_user.id}")
             flash('Please select a primary organizer.', 'error')
             return redirect(url_for('events.create_event'))
 
         try:
             organizer = User.get_by_id(organizer_id)
             if not organizer.can_organize_events():
+                current_app.logger.warning(f"Event creation failed: User {organizer_id} cannot organize events (user {current_user.id} attempted)")
                 flash('Selected organizer does not have permission to organize events.', 'error')
                 return redirect(url_for('events.create_event'))
         except User.DoesNotExist:
+            current_app.logger.warning(f"Event creation failed: Organizer {organizer_id} not found (user {current_user.id} attempted)")
             flash('Selected organizer not found.', 'error')
             return redirect(url_for('events.create_event'))
 
@@ -262,47 +363,50 @@ def create_event_post():
             flash('You can only create events as yourself unless you are an admin.', 'error')
             return redirect(url_for('events.create_event'))
 
-        # Parse dates and times
-        date = dt.strptime(date_str, '%Y-%m-%d')
-        exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
-
-        # Check if organizer and co-host need RSVPs and if there's space for them
-        if max_attendees:
-            max_capacity = int(max_attendees)
-
-            # Check if organizer already has an RSVP for this event (shouldn't happen in create, but let's be safe)
-            organizer_needs_rsvp = True
-            cohost_needs_rsvp = bool(co_host)
-
+        # Handle co-host early, before capacity validation
+        co_host = None
+        if co_host_id:
             try:
-                # This shouldn't exist for a new event, but check anyway
-                existing_organizer_rsvp = RSVP.get((RSVP.user == organizer))
-                if existing_organizer_rsvp.status == 'yes':
-                    organizer_needs_rsvp = False
-            except RSVP.DoesNotExist:
-                pass
+                co_host = User.get_by_id(co_host_id)
+                if not co_host.can_organize_events():
+                    current_app.logger.warning(f"Event creation failed: Co-host {co_host_id} cannot organize events (user {current_user.id} attempted)")
+                    flash('Co-host must be an organizer.', 'error')
+                    return redirect(url_for('events.create_event'))
+            except User.DoesNotExist:
+                current_app.logger.warning(f"Event creation failed: Co-host {co_host_id} not found (user {current_user.id} attempted)")
+                flash('Co-host not found.', 'error')
+                return redirect(url_for('events.create_event'))
 
+        # Parse dates and times
+        try:
+            date = dt.strptime(date_str, '%Y-%m-%d')
+            exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
+        except ValueError as e:
+            flash(f'Invalid date or time format: {str(e)}', 'error')
+            return redirect(url_for('events.create_event'))
+
+        # Validate max_attendees against required host RSVPs
+        if max_attendees:
+            try:
+                max_capacity = int(max_attendees)
+                if max_capacity < 1:
+                    flash('Event capacity must be at least 1.', 'error')
+                    return redirect(url_for('events.create_event'))
+            except (ValueError, TypeError):
+                flash('Event capacity must be a valid number.', 'error')
+                return redirect(url_for('events.create_event'))
+
+            # Calculate minimum required capacity for hosts
+            required_hosts = 1  # organizer
             if co_host:
-                try:
-                    # This shouldn't exist for a new event, but check anyway
-                    existing_cohost_rsvp = RSVP.get((RSVP.user == co_host))
-                    if existing_cohost_rsvp.status == 'yes':
-                        cohost_needs_rsvp = False
-                except RSVP.DoesNotExist:
-                    pass
+                required_hosts = 2  # organizer + co-host
 
-            # Calculate how many RSVPs we need to create
-            rsvps_needed = (1 if organizer_needs_rsvp else 0) + (1 if cohost_needs_rsvp else 0)
-
-            if rsvps_needed > max_capacity:
+            if max_capacity < required_hosts:
+                current_app.logger.warning(f"Event creation failed: Capacity {max_capacity} insufficient for {required_hosts} hosts (user {current_user.id}, organizer {organizer_id}, co-host {co_host_id if co_host else 'None'})")
                 if co_host:
-                    flash(
-                        f'Cannot create event with capacity of {max_capacity}. The organizer and co-host need RSVPs but there is not enough space for them in the event.',
-                        'error')
+                    flash(f'Event capacity must be at least {required_hosts} to accommodate the organizer and co-host.', 'error')
                 else:
-                    flash(
-                        f'Cannot create event with capacity of {max_capacity}. The organizer needs an RSVP but there is not enough space in the event.',
-                        'error')
+                    flash(f'Event capacity must be at least {required_hosts} to accommodate the organizer.', 'error')
                 return redirect(url_for('events.create_event'))
 
         # Validate Google Maps link if provided
@@ -315,18 +419,6 @@ def create_event_post():
                     'error')
                 return redirect(url_for('events.create_event'))
 
-        # Handle co-host
-        co_host = None
-        if co_host_id:
-            try:
-                co_host = User.get_by_id(co_host_id)
-                if not co_host.can_organize_events():
-                    flash('Co-host must be an organizer.', 'error')
-                    return redirect(url_for('events.create_event'))
-            except User.DoesNotExist:
-                flash('Co-host not found.', 'error')
-                return redirect(url_for('events.create_event'))
-
         # Handle event note
         event_note_id = request.form.get('event_note_id')
         event_note = None
@@ -336,17 +428,6 @@ def create_event_post():
             except EventNote.DoesNotExist:
                 flash('Selected event note not found.', 'error')
                 return redirect(url_for('events.create_event'))
-
-        # Validate max_attendees against required host RSVPs
-        required_hosts = 1  # organizer
-        if co_host:
-            required_hosts = 2  # organizer + co-host
-
-        if max_attendees and int(max_attendees) < required_hosts:
-            flash(
-                f'Cannot create event with capacity of {max_attendees}. Minimum capacity must be at least {required_hosts} to accommodate the organizer{" and co-host" if co_host else ""}.',
-                'error')
-            return redirect(url_for('events.create_event'))
 
         # Handle end time from hour/minute dropdowns
         end_time_hour = request.form.get('end_time_hour')
@@ -435,10 +516,16 @@ def create_event_post():
         return redirect(url_for('events.event_detail', event_id=event.id))
 
     except ValueError as e:
-        flash(f'Error creating event: {str(e)}', 'error')
+        current_app.logger.warning(f"Value error creating event: {str(e)}")
+        flash(f'Invalid input data: {str(e)}', 'error')
+        return redirect(url_for('events.create_event'))
+    except (User.DoesNotExist, Event.DoesNotExist, EventNote.DoesNotExist) as e:
+        current_app.logger.warning(f"Database object not found when creating event: {str(e)}")
+        flash('One of the selected items (organizer, co-host, or event note) could not be found. Please try again.', 'error')
         return redirect(url_for('events.create_event'))
     except Exception as e:
-        flash(f'Unexpected error: {str(e)}', 'error')
+        current_app.logger.error(f"Unexpected error creating event: {str(e)}", exc_info=True)
+        flash('An unexpected error occurred while creating the event. Please try again or contact support if the problem persists.', 'error')
         return redirect(url_for('events.create_event'))
 
 
@@ -523,6 +610,16 @@ def edit_event_post(event_id):
         max_attendees = request.form.get('max_attendees')
         organizer_id = request.form.get('organizer_id')
         co_host_id = request.form.get('co_host_id', '')
+
+        # Validate form data lengths and required fields
+        is_valid, error_message = validate_event_form_data(
+            title, description, barrio, establishment_name, tips_for_attendees,
+            location_notes, google_maps_link
+        )
+        if not is_valid:
+            current_app.logger.warning(f"Event edit validation failed for user {current_user.id}, event {event_id}: {error_message}")
+            flash(error_message, 'error')
+            return redirect(url_for('events.edit_event', event_id=event_id))
 
         # Validate organizer
         if not organizer_id:
@@ -838,13 +935,20 @@ def edit_event_post(event_id):
         return redirect(url_for('events.event_detail', event_id=event.id))
 
     except Event.DoesNotExist:
+        current_app.logger.warning(f"Attempt to edit non-existent event {event_id}")
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
     except ValueError as e:
-        flash(f'Error updating event: {str(e)}', 'error')
+        current_app.logger.warning(f"Value error updating event {event_id}: {str(e)}")
+        flash(f'Invalid input data: {str(e)}', 'error')
+        return redirect(url_for('events.edit_event', event_id=event_id))
+    except (User.DoesNotExist, EventNote.DoesNotExist) as e:
+        current_app.logger.warning(f"Database object not found when updating event {event_id}: {str(e)}")
+        flash('One of the selected items (organizer, co-host, or event note) could not be found. Please try again.', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
     except Exception as e:
-        flash(f'Unexpected error: {str(e)}', 'error')
+        current_app.logger.error(f"Unexpected error updating event {event_id}: {str(e)}", exc_info=True)
+        flash('An unexpected error occurred while updating the event. Please try again or contact support if the problem persists.', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
 
 
@@ -917,8 +1021,10 @@ def delete_event(event_id):
         return redirect(url_for('events.events_list'))
 
     except Event.DoesNotExist:
+        current_app.logger.warning(f"Attempt to delete non-existent event {event_id} by user {current_user.id}")
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
     except Exception as e:
-        flash(f'An error occurred while deleting the event: {str(e)}', 'error')
+        current_app.logger.error(f"Unexpected error deleting event {event_id}: {str(e)}", exc_info=True)
+        flash('An unexpected error occurred while deleting the event. Please try again or contact support if the problem persists.', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
