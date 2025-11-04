@@ -71,18 +71,6 @@
                                 <div class="d-flex justify-content-between align-items-start mb-0">
                                         <div class="d-flex align-items-center w-100">
                                             <h5 class="card-title flex-grow-1 me-2 mb-0">{{ event.title }}</h5>
-                                            {% if event.description|length > 180 %}
-                                                <button type="button" 
-                                                        class="btn btn-sm btn-outline-secondary preview-btn ms-2" 
-                                                        data-bs-toggle="popover" 
-                                                        data-bs-placement="bottom" 
-                                                        data-bs-trigger="click"
-                                                        data-bs-title="Event Description"
-                                                        data-bs-content="{{ event.description|e }}"
-                                                        data-bs-html="true">
-                                                    <i class="fas fa-eye" style="font-size: 0.75rem;"></i>
-                                                </button>
-                                            {% endif %}
                                         </div>
                                 </div>
                                 <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="text-decoration-none text-dark">
@@ -297,36 +285,8 @@
 {% block scripts %}
 {{ super() }}
 <script>
-// Initialize Bootstrap popovers for preview buttons with custom content
 document.addEventListener('DOMContentLoaded', function() {
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('.preview-btn'));
-    const popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-        const description = popoverTriggerEl.getAttribute('data-bs-content');
-        const customContent = `
-            <div class="popover-description">${description}</div>
-            <div class="text-end mt-3">
-                <button type="button" class="btn btn-sm btn-secondary" onclick="this.closest('.popover').previousElementSibling.click()">Close</button>
-            </div>
-        `;
-        
-        return new bootstrap.Popover(popoverTriggerEl, {
-            container: 'body',
-            html: true,
-            sanitize: false,
-            content: customContent,
-            title: ''
-        });
-    });
-    
-    // Close popover when clicking elsewhere
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('.preview-btn') && !e.target.closest('.popover')) {
-            popoverList.forEach(function(popover) {
-                popover.hide();
-            });
-        }
-    });
-});    // Override page-specific functions for events list page
+    // Override page-specific functions for events list page
     window.updateAttendeeInfo = function(eventId, data) {
         // Find the event card
         const eventCard = document.querySelector(`.event-card [data-event-id='${eventId}']`);
