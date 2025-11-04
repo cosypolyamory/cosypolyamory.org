@@ -6,7 +6,7 @@ textarea::placeholder {
 }
 body {
   font-family: 'Montserrat', sans-serif !important;
-  background: #FCFBFB;
+  background: linear-gradient(to bottom, #FCFBFB, #fff0ff);
   color: #3F51B5;
 }
 
@@ -19,11 +19,16 @@ body {
 }
 
 #header-title { 
+    background: linear-gradient(to top, #001cba, #007be8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text; /* For Firefox */
+    color: transparent;
     text-align: left;
     margin-top: 0;
 }
-
 #header-pre-title {
+    color: #007be8;
     font-size: 150%;
     text-align: left;
     margin-bottom: 0;
