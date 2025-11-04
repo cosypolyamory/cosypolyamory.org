@@ -12,6 +12,12 @@ body {
     font-family: 'Inter', sans-serif; /* Inter is not standard */
 }
 
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+}
+
 #first-page-title {
     height: 60vh;
 }
@@ -74,6 +80,12 @@ body {
     top: 150px;
     z-index:-1;
 }
+.page-top-shape-background {
+  width: 100%;
+  position: absolute;
+  left: 0px;
+  z-index: -1; }
+
 .blob-shape-background {
     width: 70%;
     position: absolute;
@@ -99,13 +111,19 @@ body {
     margin-top: 170px;
 }
 
+#how-to-member {
+  margin-top: 100px;
+  max-width: 95vw;
+  transform: translateX(10vw);
+}
+
 #core-values-container {
     background-color: $purple;
     border-radius: 15px;
     color: $bright;
     height: 150px;
     margin-bottom: 1rem;
-    padding: 5vw;
+    padding: 1vw;
     text-align: center;
 }
 
@@ -139,8 +157,8 @@ h3 { margin: 1.3em 0 1.3em 0; }
 h4 { margin: 1.2em 0 1.2em 0 !important; }
 
 .navbar-color {
-    background-color: #5d0096;
-    border-radius: 0px 0px 10px 10px;
+    background-color: #1c0439;
+    /*border-radius: 0px 0px 10px 10px;*/
     font-weight: bold;
 }
 
