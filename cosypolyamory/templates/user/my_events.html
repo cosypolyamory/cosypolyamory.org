@@ -36,34 +36,40 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th style="width: 60%;">Event</th>
-                                        <th style="width: 25%;">Date & Time</th>
-                                        <th style="width: 15%;">Actions</th>
+                                        <th style="width: 55%;">Event</th>
+                                        <th style="width: 25%;">Status</th>
+                                        <th style="width: 20%;">Date & Time</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for event in upcoming_hosted %}
+                                    {% for event_data in upcoming_hosted %}
                                     <tr>
                                         <td>
                                             <strong>
-                                                <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="text-decoration-none">
-                                                    {{ event.title }}
+                                                <a href="{{ url_for('events.event_detail', event_id=event_data.event.id) }}" class="text-decoration-none">
+                                                    {{ event_data.event.title }}
                                                 </a>
                                             </strong>
-                                            {% if event.establishment_name %}
+                                            {% if event_data.event.establishment_name %}
                                                 <br><small class="text-muted">
-                                                    <i class="fas fa-map-marker-alt me-1"></i>{{ event.establishment_name }}
+                                                    <i class="fas fa-map-marker-alt me-1"></i>{{ event_data.event.establishment_name }}
                                                 </small>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <div>{{ event.exact_time.strftime('%a, %b %d, %Y') }}</div>
-                                            <small class="text-muted">{{ event.exact_time.strftime('%H:%M') }}</small>
+                                            {% if event_data.is_organizer %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif event_data.is_co_host %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
                                         </td>
                                         <td>
-                                            <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-sm btn-outline-primary me-1">
-                                                <i class="fas fa-eye me-1"></i>View
-                                            </a>
+                                            <div>{{ event_data.event.exact_time.strftime('%a, %b %d, %Y') }}</div>
+                                            <small class="text-muted">{{ event_data.event.exact_time.strftime('%H:%M') }}</small>
                                         </td>
                                     </tr>
                                     {% else %}
@@ -94,9 +100,9 @@
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th style="width: 60%;">Event</th>
-                                            <th style="width: 25%;">Date & Time</th>
-                                            <th style="width: 15%;">Actions</th>
+                                            <th style="width: 55%;">Event</th>
+                                            <th style="width: 25%;">Status</th>
+                                            <th style="width: 20%;">Date & Time</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -115,13 +121,27 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <div>{{ rsvp.event.exact_time.strftime('%a, %b %d, %Y') }}</div>
-                                                <small class="text-muted">{{ rsvp.event.exact_time.strftime('%H:%M') }}</small>
+                                                {% if rsvp.status == 'yes' %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>Attending
+                                                    </span>
+                                                {% elif rsvp.status == 'no' %}
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-times me-1"></i>Not Attending
+                                                    </span>
+                                                {% elif rsvp.status == 'maybe' %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-question me-1"></i>Maybe
+                                                    </span>
+                                                {% elif rsvp.status == 'waitlist' %}
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-clock me-1"></i>Waitlisted
+                                                    </span>
+                                                {% endif %}
                                             </td>
                                             <td>
-                                                <a href="{{ url_for('events.event_detail', event_id=rsvp.event.id) }}" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye me-1"></i>View
-                                                </a>
+                                                <div>{{ rsvp.event.exact_time.strftime('%a, %b %d, %Y') }}</div>
+                                                <small class="text-muted">{{ rsvp.event.exact_time.strftime('%H:%M') }}</small>
                                             </td>
                                         </tr>
                                         {% endfor %}
@@ -158,10 +178,9 @@
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th style="width: 45%;">Event</th>
+                                            <th style="width: 55%;">Event</th>
+                                            <th style="width: 25%;">Status</th>
                                             <th style="width: 20%;">Date & Time</th>
-                                            <th style="width: 20%;">RSVP Status</th>
-                                            <th style="width: 15%;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -178,10 +197,6 @@
                                                         <i class="fas fa-map-marker-alt me-1"></i>{{ rsvp.event.location }}
                                                     </small>
                                                 {% endif %}
-                                            </td>
-                                            <td>
-                                                <div>{{ rsvp.event.exact_time.strftime('%a, %b %d, %Y') }}</div>
-                                                <small class="text-muted">{{ rsvp.event.exact_time.strftime('%H:%M') }}</small>
                                             </td>
                                             <td>
                                                 {% if rsvp.status == 'yes' %}
@@ -203,9 +218,8 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <a href="{{ url_for('events.event_detail', event_id=rsvp.event.id) }}" class="btn btn-sm btn-outline-secondary">
-                                                    <i class="fas fa-eye me-1"></i>View
-                                                </a>
+                                                <div>{{ rsvp.event.exact_time.strftime('%a, %b %d, %Y') }}</div>
+                                                <small class="text-muted">{{ rsvp.event.exact_time.strftime('%H:%M') }}</small>
                                             </td>
                                         </tr>
                                         {% endfor %}

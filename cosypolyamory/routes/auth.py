@@ -546,7 +546,7 @@ def my_events():
                          .limit(20))  # Show last 20 past RSVPs
                          
             # Upcoming events the user is hosting or co-hosting
-            upcoming_hosted = (Event
+            upcoming_hosted_events = (Event
                               .select()
                               .where(
                                   (Event.exact_time >= datetime.now()) &  # Only upcoming events
@@ -554,6 +554,24 @@ def my_events():
                               )
                               .order_by(Event.exact_time.asc())  # Order by upcoming date ascending
                               .limit(20))  # Show next 20 upcoming hosted events
+            
+            # Get RSVP status for hosted events
+            upcoming_hosted = []
+            for event in upcoming_hosted_events:
+                # Check if user has RSVP'd to their own event
+                user_rsvp = None
+                try:
+                    user_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
+                except RSVP.DoesNotExist:
+                    pass
+                
+                # Create a tuple with event and rsvp status
+                upcoming_hosted.append({
+                    'event': event,
+                    'rsvp': user_rsvp,
+                    'is_organizer': event.organizer == current_user,
+                    'is_co_host': event.co_host == current_user
+                })
                               
             # Past events the user hosted or co-hosted
             past_hosted = (Event
