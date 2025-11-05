@@ -45,11 +45,16 @@ Web page for Barcelona's new english speaking polyamory group, complete with Mee
 
 ### minor issues
 #### CSS/SASS
-- workaround if sass support for css doesn't work:
-`pip install Flask-Assets libsass`
+- install Dart Sass:
+    `npm install -g sass`
+- run a compiler script:
+    `sass static/scss/style.scss static/css/style.css --watch`
 
-- how to compile the css after you modify it:
+In production, you should **precompile your SCSS to CSS** using Dart Sass before deploying or starting your Flask server.  
+
 ```bash
-export FLASK_APP=cosypolyamory/app.py
-python3 -m flask assets build
+sass static/scss/style.scss static/css/style.css --no-source-map --style=compressed
 ```
+
+- This generates a minified CSS file for faster loading.
+- You then serve the compiled CSS as a static asset in Flask.
