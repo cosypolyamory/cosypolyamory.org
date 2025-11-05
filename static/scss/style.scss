@@ -5,7 +5,9 @@ $pink-1: #FFBCFD;
 $pink-2: #FF7ECF;
 $pink-3: #A95DA8;
 $pink-4: #BF29BC;
+$purple-light: #6f42c1;
 $purple: #390177;
+$purple-dark: #1c0439;
 
 body {
     background-color: $bright;
@@ -38,7 +40,7 @@ html, body {
 .circle-bg {
     position: absolute;
     border-radius: 50%;
-    background-color: #6f42c1;
+    background-color: $purple-light;
     z-index: 7;
     width: 30px;
     height: 30px;
@@ -162,7 +164,7 @@ h3 { margin: 1.3em 0 1.3em 0; }
 h4 { margin: 1.2em 0 1.2em 0 !important; }
 
 .navbar-color {
-    background-color: #1c0439;
+    background-color: $purple-dark;
     /*border-radius: 0px 0px 10px 10px;*/
     font-weight: bold;
 }
