@@ -8,6 +8,7 @@ $pink-4: #BF29BC;
 $purple-light: #6f42c1;
 $purple: #390177;
 $purple-dark: #1c0439;
+$grey: #767676;
 
 body {
     background-color: $bright;
@@ -18,6 +19,7 @@ html, body {
     max-width: 100%;
     overflow-x: hidden;
     margin: 0;
+    position: relative;
 }
 
 #first-page-title {
@@ -28,6 +30,7 @@ html, body {
     background-color: $dark;
     color: $bright;
     margin: auto -10vw; /* extend background color to edges */
+    position: relative;
     z-index: -1;
 }
 
@@ -61,6 +64,24 @@ html, body {
 .circle-bg-12 { left: 290px; top: 623px; height: 25px; width: 25px; background-color: $pink-2; }
 .circle-bg-13 { left: 348px; top: 669px; height: 19px; width: 19px; background-color: $pink-4; }
 
+.circle {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  border-radius: 50%;
+  font-size: 30px;
+  color: #FFF;
+  text-align: center;
+  background: $purple;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.join-rule {
+    display: flex;
+    gap: 10px;
+}
+
 #title {
     color: $bright;
     margin: 15vw;
@@ -82,6 +103,18 @@ html, body {
     top: 150px;
     z-index:-1;
 }
+
+.page-middle-shape-background {
+  width: 100%;
+  position: relative;
+  top: -140px;
+  z-index: -2;
+}
+.bg-shape-div {
+  position: relative;
+  margin: auto -10vw;
+}
+
 .page-top-shape-background {
   width: 100%;
   position: absolute;
@@ -121,6 +154,9 @@ html, body {
   max-width: 95vw;
   transform: translateX(10vw);
   -webkit-transform: translateX(10vw); }
+
+#how-to-join {
+  margin-top: -100px; }
 
 #core-values-container {
     background-color: $purple;
