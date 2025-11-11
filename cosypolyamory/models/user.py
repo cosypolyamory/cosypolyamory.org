@@ -45,6 +45,8 @@ class User(UserMixin, BaseModel):
             return "Member"
         elif role == 'rejected':
             return "Rejected"
+        elif role == 'deleted':
+            return "Deleted User"
         else:
             return "Pending Approval"
     

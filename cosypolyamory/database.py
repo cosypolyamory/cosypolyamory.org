@@ -69,18 +69,21 @@ def init_database():
         
         # Create a "Deleted User" placeholder if it doesn't exist
         deleted_user, created = User.get_or_create(
-            email='deleted@system.local',
+            id='system_deleted_user',
             defaults={
-                'id': 'system_deleted_user',
-                'name': 'Deleted User',
+                'email': 'deleted@system.local',
+                'name': 'Deleted User', 
                 'avatar_url': '',
                 'provider': 'system',
-                'role': 'deleted'
+                'role': 'deleted',
+                'is_approved': True  # Allow this user to be assigned to events
             }
         )
         
         if created:
             print("✅ Created 'Deleted User' system placeholder")
+        else:
+            print("✅ 'Deleted User' system placeholder already exists")
         
         print(f"✅ Database initialized successfully: {abs_db_path}")
         database.close()
