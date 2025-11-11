@@ -32,6 +32,11 @@
                             <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
                                 Share Event
                             </button>
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('pages.event_feedback', event_id=event.id) }}" class="btn btn-outline-warning btn-sm">
+                                    Give Feedback
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -506,6 +511,21 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Event Feedback Information -->
+                    {% if current_user.is_authenticated %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-light border">
+                                <i class="fas fa-comment-dots me-2 text-muted"></i>
+                                <span class="text-muted">
+                                    If you would like to report an attendee for inappropriate behaviour or would like to give us feedback, please see our 
+                                    <a href="{{ url_for('pages.event_feedback', event_id=event.id) }}" class="text-decoration-none">event feedback page</a>.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                     {% endif %}
                     {% if not can_see_details %}
                     <div class="row mt-4 mb-4">

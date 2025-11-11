@@ -1,0 +1,162 @@
+{%- extends 'layout/base.html' -%}
+{%- block title -%}Event Feedback{% endblock %}
+{%- block content -%}
+
+<div class="row">
+  <div class="col" id="event-feedback">
+      <h2>Event Feedback</h2>
+      <div class="mb-4">
+        <h4 class="text-muted">{{ event.title }}</h4>
+        <p class="text-muted">
+          <i class="fas fa-calendar me-1"></i>{{ event.exact_time.strftime('%A, %B %d, %Y at %I:%M %p') }}
+          {% if event.establishment_name %}
+            <br><i class="fas fa-map-marker-alt me-1"></i>{{ event.establishment_name }}
+          {% endif %}
+        </p>
+      </div>
+      
+      <div class="row">
+        <div class="col-lg mb-3">
+          <div class="alert alert-light">
+            <strong><i class="fas fa-heart me-1"></i>General Feedback:</strong> Share your thoughts about the event, what went well, or suggestions for improvement.
+          </div>
+        </div>
+        <div class="col-lg mb-3">
+          <div class="alert alert-light">
+            <strong><i class="fas fa-exclamation-triangle me-1"></i>Report inappropriate behaviour:</strong> If you experienced or witnessed inappropriate behavior, please let us know so we can address it.
+          </div>
+        </div>
+      </div>
+      
+      <!-- Feedback Form -->
+      <div class="row mt-4">
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Share your feedback</h5>
+            </div>
+            <div class="card-body">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                  {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                      {{ message }}
+                      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                  {% endfor %}
+                {% endif %}
+              {% endwith %}
+              
+              <form method="POST" action="{{ url_for('pages.event_feedback', event_id=event.id) }}">
+
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="anonymous" name="anonymous" value="yes" {{ 'checked' if anonymous else '' }}>
+                    <label class="form-check-label" for="anonymous">
+                      Submit anonymously or provide your email below:
+                    </label>
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="email" class="form-label">Your Email Address <span class="text-danger" id="email-required">*</span></label>
+                  <input type="email" class="form-control" id="email" name="email" 
+                         value="{{ email or '' }}" required 
+                         placeholder="your.email@example.com">
+                  <div class="form-text" id="email-help">We'll use this to follow up if needed.</div>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="feedback_type" class="form-label">Type of Feedback <span class="text-danger">*</span></label>
+                  <select class="form-control" id="feedback_type" name="feedback_type" required>
+                    <option value="">Select feedback type...</option>
+                    <option value="general" {{ 'selected' if feedback_type == 'general' else '' }}>General Feedback</option>
+                    <option value="suggestion" {{ 'selected' if feedback_type == 'suggestion' else '' }}>Suggestion for Improvement</option>
+                    <option value="concern" {{ 'selected' if feedback_type == 'concern' else '' }}>Safety/Behavior Concern</option>
+                    <option value="violation" {{ 'selected' if feedback_type == 'violation' else '' }}>Code of Conduct Violation</option>
+                  </select>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="subject" class="form-label">Subject <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="subject" name="subject" 
+                         value="{{ subject or '' }}" required 
+                         placeholder="Brief description of your feedback">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="message" class="form-label">Details <span class="text-danger">*</span></label>
+                  <textarea class="form-control" id="message" name="message" rows="8" required 
+                            placeholder="Your feedback/report">{{ message or '' }}</textarea>
+                </div>
+                
+                <!-- Friendly Captcha -->
+                <div class="mb-3">
+                  <div class="frc-captcha" data-sitekey="{{ friendly_captcha_site_key }}"></div>
+                </div>
+                
+                <div class="mb-3">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-1"></i>Submit Feedback
+                  </button>
+                  <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-secondary ms-2">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Event
+                  </a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+
+{% endblock%}
+{% block scripts %}
+<!-- Friendly Captcha -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/friendly-challenge@0.9.12/widget.module.min.js" async defer></script>
+<script nomodule src="https://cdn.jsdelivr.net/npm/friendly-challenge@0.9.12/widget.min.js" async defer></script>
+
+<!-- Anonymous form handling -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('email');
+    const anonymousCheckbox = document.getElementById('anonymous');
+    const emailRequired = document.getElementById('email-required');
+    const emailHelp = document.getElementById('email-help');
+    const form = document.querySelector('form');
+    
+    function toggleEmailRequirement() {
+        if (anonymousCheckbox.checked) {
+            // Make email optional
+            emailInput.removeAttribute('required');
+            emailInput.value = '';
+            emailInput.disabled = true;
+            emailRequired.style.display = 'none';
+            emailHelp.className = 'form-text text-muted';
+        } else {
+            // Make email required
+            emailInput.setAttribute('required', 'required');
+            emailInput.disabled = false;
+            emailRequired.style.display = 'inline';
+            emailHelp.className = 'form-text';
+        }
+    }
+    
+    // Set initial state
+    toggleEmailRequirement();
+    
+    // Listen for checkbox changes
+    anonymousCheckbox.addEventListener('change', toggleEmailRequirement);
+    
+    // Custom form validation
+    form.addEventListener('submit', function(event) {
+        if (!anonymousCheckbox.checked && !emailInput.value.trim()) {
+            event.preventDefault();
+            alert('Please either provide your email address or check the anonymous submission option.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

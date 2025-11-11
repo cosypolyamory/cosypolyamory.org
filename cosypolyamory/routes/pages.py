@@ -9,6 +9,7 @@ import os
 import requests
 from datetime import datetime
 from cosypolyamory.models.user import User
+from cosypolyamory.models.event import Event
 from cosypolyamory.email import send_email
 
 bp = Blueprint('pages', __name__)
@@ -95,7 +96,7 @@ def contact():
                     current_app.logger.error(f"Failed to send email to {user.email}: {str(e)}")
             
             if success_count > 0:
-                flash('Thank you! Your message has been sent to our team.', 'success')
+                flash('Thank you! Your message has been sent to our organizers.', 'success')
                 return redirect(url_for('pages.contact'))
             else:
                 flash('Sorry, there was an issue sending your message. Please try again later.', 'error')
@@ -164,3 +165,99 @@ def coc():
 @bp.route('/events-guide')
 def events_guide():
     return render_template("events/events-guide.html", page="docs")
+
+
+@bp.route('/event/<int:event_id>/feedback', methods=['GET', 'POST'])
+def event_feedback(event_id):
+    """Event feedback and reporting form"""
+    try:
+        event = Event.get_by_id(event_id)
+    except Event.DoesNotExist:
+        flash('Event not found.', 'error')
+        return redirect(url_for('pages.index'))
+    
+    if request.method == 'POST':
+        # Get form data
+        email = request.form.get('email', '').strip()
+        feedback_type = request.form.get('feedback_type', '').strip()
+        subject = request.form.get('subject', '').strip()
+        message = request.form.get('message', '').strip()
+        anonymous = request.form.get('anonymous') == 'yes'
+        captcha_solution = request.form.get('frc-captcha-solution', '')
+        
+        # Validate form data
+        if not feedback_type or not subject or not message:
+            flash('Please fill in all required fields.', 'error')
+            return render_template("pages/event_feedback.html", page="feedback", 
+                                 event=event, email=email, feedback_type=feedback_type,
+                                 subject=subject, message=message, anonymous=anonymous,
+                                 friendly_captcha_site_key=os.getenv('FRIENDLY_CAPTCHA_SITE_KEY', ''))
+        
+        # Email is required unless anonymous
+        if not anonymous and (not email or '@' not in email or '.' not in email.split('@')[-1]):
+            flash('Please enter a valid email address or check the anonymous option.', 'error')
+            return render_template("pages/event_feedback.html", page="feedback", 
+                                 event=event, email=email, feedback_type=feedback_type,
+                                 subject=subject, message=message, anonymous=anonymous,
+                                 friendly_captcha_site_key=os.getenv('FRIENDLY_CAPTCHA_SITE_KEY', ''))
+        
+        # Verify captcha with Friendly Captcha
+        captcha_valid = verify_friendly_captcha(captcha_solution)
+        if not captcha_valid:
+            flash('Please complete the captcha verification.', 'error')
+            return render_template("pages/event_feedback.html", page="feedback", 
+                                 event=event, email=email, feedback_type=feedback_type,
+                                 subject=subject, message=message, anonymous=anonymous,
+                                 friendly_captcha_site_key=os.getenv('FRIENDLY_CAPTCHA_SITE_KEY', ''))
+        
+        # Send email to all admins and organizers
+        try:
+            admins_and_organizers = User.select().where(
+                (User.is_admin == True) | (User.is_organizer == True)
+            )
+            
+            # Generate HTML email using template
+            email_html = render_template('notifications/event_feedback_email.html',
+                                       event_title=event.title,
+                                       event_date=event.exact_time.strftime('%A, %B %d, %Y at %I:%M %p'),
+                                       event_location=event.establishment_name if event.establishment_name else None,
+                                       sender_email=email if not anonymous else 'Anonymous',
+                                       feedback_type=feedback_type,
+                                       subject=subject,
+                                       message=message,
+                                       is_anonymous=anonymous,
+                                       timestamp=datetime.now(),
+                                       base_url=current_app.config.get('DOMAIN', 'https://cosypolyamory.org'))
+            
+            # Create email subject with priority indicator
+            priority_prefix = "🚨 URGENT - " if feedback_type in ['concern', 'violation'] else ""
+            email_subject = f"{priority_prefix}Event Feedback: {event.title} - {feedback_type.title()}"
+            
+            success_count = 0
+            for user in admins_and_organizers:
+                try:
+                    if send_email(user.email, email_subject, email_html):
+                        success_count += 1
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send email to {user.email}: {str(e)}")
+            
+            if success_count > 0:
+                feedback_verb = "reported" if feedback_type in ['concern', 'violation'] else "submitted"
+                flash(f'Thank you! Your feedback has been {feedback_verb}. Our team will review it promptly.', 'success')
+                return redirect(url_for('events.event_detail', event_id=event.id))
+            else:
+                flash('Sorry, there was an issue sending your feedback. Please try again later.', 'error')
+                
+        except Exception as e:
+            current_app.logger.error(f"Event feedback error: {str(e)}")
+            flash('Sorry, there was an issue sending your feedback. Please try again later.', 'error')
+        
+        return render_template("pages/event_feedback.html", page="feedback", 
+                             event=event, email=email, feedback_type=feedback_type,
+                             subject=subject, message=message, anonymous=anonymous,
+                             friendly_captcha_site_key=os.getenv('FRIENDLY_CAPTCHA_SITE_KEY', ''))
+    
+    # GET request - show the feedback form
+    site_key = os.getenv('FRIENDLY_CAPTCHA_SITE_KEY', '')
+    return render_template("pages/event_feedback.html", page="feedback", 
+                         event=event, friendly_captcha_site_key=site_key)
