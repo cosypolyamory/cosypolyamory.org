@@ -8,14 +8,11 @@
       <p>
         If you would like to get in touch with us, there are a few ways:
       </p>
-      <div class="row">
-        <div class="col-lg mb-3">
-          <b>If you are part of our community</b>: if you have been accepted to our Community Chat, please ask your question or leave a comment on that channel. If you would like to reach a specific team member, see our list of Telegram handles for each of our <a href="/structure#team">team members</a>.
-        </div>
-        <div class="col-lg mb-3">
-          <b>If you need to reach us directly</b>: please use the contact form below. Your message will be sent to our organizers and administrators.
-        </div>
-      </div>
+      <p></p>
+          <b>If you're part of our community</b>: if you have been accepted to our Community Chat, please ask your question or leave a comment on that channel. If you would like to reach a specific team member, see our list of Telegram handles for each of our <a href="/structure#team">team members</a>.
+      <p></p>
+          <b>If you're not part</b>: please use the contact form below. Your message will be sent to our organizers and administrators.
+      </p>
       
       <!-- Contact Form -->
       <div class="row mt-4">
@@ -49,13 +46,13 @@
                   <label for="subject" class="form-label">Subject <span class="text-danger">*</span></label>
                   <input type="text" class="form-control" id="subject" name="subject" 
                          value="{{ subject or '' }}" required 
-                         placeholder="Brief description of your inquiry">
+                         placeholder="What are you contacting us about?">
                 </div>
                 
                 <div class="mb-3">
                   <label for="message" class="form-label">Message <span class="text-danger">*</span></label>
                   <textarea class="form-control" id="message" name="message" rows="6" required 
-                            placeholder="Please provide details about your inquiry...">{{ message or '' }}</textarea>
+                            placeholder="">{{ message or '' }}</textarea>
                 </div>
                 
                 <!-- Friendly Captcha -->
@@ -74,9 +71,6 @@
         </div>
       </div>
     </div>
-</div>
-<div class="col" id="back-to-home">
-  [ <a href="/">back to home page</a> ]
 </div>
 
 {% endblock%}

@@ -7,6 +7,7 @@ Handles routes for static content pages like home, contact, values, etc.
 from flask import Blueprint, render_template, send_file, Response, current_app, request, flash, redirect, url_for
 import os
 import requests
+from datetime import datetime
 from cosypolyamory.models.user import User
 from cosypolyamory.email import send_email
 
@@ -77,23 +78,18 @@ def contact():
                 (User.is_admin == True) | (User.is_organizer == True)
             )
             
-            email_body = f"""
-New contact form submission:
-
-From: {sender_email}
-Subject: {subject}
-
-Message:
-{message}
-
----
-This message was sent via the contact form on cosypolyamory.org
-"""
+            # Generate HTML email using template
+            email_html = render_template('notifications/contact_us_email.html',
+                                       sender_email=sender_email,
+                                       subject=subject,
+                                       message=message,
+                                       timestamp=datetime.now(),
+                                       base_url=current_app.config.get('DOMAIN', 'https://cosypolyamory.org'))
             
             success_count = 0
             for user in admins_and_organizers:
                 try:
-                    if send_email(user.email, f"Contact Form: {subject}", email_body):
+                    if send_email(user.email, f"Contact Form: {subject}", email_html):
                         success_count += 1
                 except Exception as e:
                     current_app.logger.error(f"Failed to send email to {user.email}: {str(e)}")
