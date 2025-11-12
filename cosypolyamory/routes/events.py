@@ -1028,3 +1028,4 @@ def delete_event(event_id):
         current_app.logger.error(f"Unexpected error deleting event {event_id}: {str(e)}", exc_info=True)
         flash('An unexpected error occurred while deleting the event. Please try again or contact support if the problem persists.', 'error')
         return redirect(url_for('events.edit_event', event_id=event_id))
+

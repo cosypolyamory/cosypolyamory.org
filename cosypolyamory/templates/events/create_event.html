@@ -358,17 +358,6 @@
                         </div>
                     </div>
                     
-                    <!-- Privacy Notice -->
-                    <div class="alert alert-info">
-                        <h6><i class="fas fa-info-circle me-2"></i>Privacy Information</h6>
-                        <p class="mb-2">This event will be visible with different levels of detail:</p>
-                        <ul class="mb-0">
-                            <li><strong>Public visitors:</strong> Can see title, description, area, and time period</li>
-                            <li><strong>Approved members:</strong> Can see full address, exact time, and confirm attendance</li>
-                            <li><strong>You and other organizers:</strong> Can see attendee list and manage the event</li>
-                        </ul>
-                    </div>
-                    
                     <!-- Submit -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                         <a href="{% if event %}{{ url_for('events.event_detail', event_id=event.id) }}{% else %}{{ url_for('events.events_list') }}{% endif %}" class="btn btn-outline-secondary btn-lg me-md-2">
@@ -376,11 +365,13 @@
                         </a>
                         {% if is_edit %}
                         <button type="button" class="btn btn-danger btn-lg me-md-2" onclick="confirmDeleteEvent()">
-                            <i class="fas fa-trash me-2"></i>Delete Event
+                            Delete Event
+                        </button>
+                        <button type="button" class="btn btn-info btn-lg me-md-2" onclick="confirmCloneEvent()">
+                            <i class="fas fa-clone me-2"></i>Clone Event
                         </button>
                         {% endif %}
                         <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-{% if is_edit %}save{% else %}calendar-plus{% endif %} me-2"></i>
                             {% if is_edit %}Update Event{% else %}Create Event{% endif %}
                         </button>
                     </div>
@@ -725,6 +716,74 @@ function deleteEvent() {
     form.submit();
 }
 
+function confirmCloneEvent() {
+    // Show the clone confirmation modal
+    const modal = document.getElementById('cloneEventModal');
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Handle the confirmation button click
+    document.getElementById('confirmCloneBtn').onclick = function() {
+        modalInstance.hide();
+        cloneEvent();
+    };
+}
+
+function cloneEvent() {
+    // Calculate new date (1 month from today)
+    const today = new Date();
+    let newMonth = today.getMonth() + 1;
+    let newYear = today.getFullYear();
+    let newDay = today.getDate();
+    
+    if (newMonth > 11) {
+        newMonth = 0;
+        newYear++;
+    }
+    
+    // Handle month-end edge cases
+    const daysInNewMonth = new Date(newYear, newMonth + 1, 0).getDate();
+    if (newDay > daysInNewMonth) {
+        newDay = daysInNewMonth;
+    }
+    
+    const newDate = new Date(newYear, newMonth, newDay);
+    const formattedDate = newDate.toISOString().split('T')[0];
+    
+    // Update the title to "Copy of <old title>"
+    const titleInput = document.getElementById('title');
+    const currentTitle = titleInput.value;
+    if (!currentTitle.startsWith('Copy of ')) {
+        titleInput.value = 'Copy of ' + currentTitle;
+    }
+    
+    // Update the date field
+    document.getElementById('date').value = formattedDate;
+    
+    // Scroll to top of form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Show a success message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <i class="fas fa-clone me-2"></i>
+        <strong>Event cloned!</strong> The date has been set to 1 month from today (${newDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}). 
+        Review the details and click "Update Event" to save.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert alert at the top of the form
+    const cardBody = document.querySelector('.card-body');
+    const form = document.querySelector('form');
+    cardBody.insertBefore(alertDiv, form);
+    
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 8000);
+}
+
 // Google Maps URL validation
 function validateGoogleMapsURL(url) {
     if (!url || url.trim() === '') {
@@ -1032,6 +1091,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
                     <i class="fas fa-trash me-2"></i>Delete Event
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clone Event Confirmation Modal -->
+<div class="modal fade" id="cloneEventModal" tabindex="-1" aria-labelledby="cloneEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="cloneEventModalLabel">
+                    <i class="fas fa-clone me-2"></i>Clone Event
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>This will prepare a copy of this event for you to review</strong>
+                </div>
+                
+                <p class="mb-3">The event date will be updated to <strong>1 month from today</strong>.</p>
+                
+                <p class="mb-3">All other details will remain the same:</p>
+                <ul class="mb-3">
+                    <li>Title, description, and location</li>
+                    <li>Same time of day as the original</li>
+                    <li>Same organizers and settings</li>
+                </ul>
+                
+                <div class="bg-light p-3 rounded mb-3">
+                    <h6 class="mb-2">Original Event: <strong>{{ event.title if event else '' }}</strong></h6>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        Current date: {{ event.date.strftime('%B %d, %Y at %I:%M %p') if event else '' }}
+                    </small>
+                </div>
+                
+                <p class="text-muted small"><strong>Note:</strong> You can review and modify the details before clicking "Update Event" to save the cloned event.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-info" id="confirmCloneBtn">
+                    <i class="fas fa-clone me-2"></i>Clone Event
                 </button>
             </div>
         </div>
