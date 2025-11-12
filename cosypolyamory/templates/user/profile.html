@@ -76,12 +76,11 @@
                         </label>
                         <input type="text" class="form-control" id="pronoun_singular" name="pronoun_singular" 
                                value="{% if form_data and form_data.pronoun_singular %}{{ form_data.pronoun_singular }}{% else %}{{ user.pronouns or '' }}{% endif %}" 
-                               required placeholder="they/them, she/her, he/him"
-                               pattern="^[a-zA-Z0-9]{2,15}/[a-zA-Z0-9]{2,15}$"
-                               title="Pronouns must be in format: 2-15 alphanumeric characters, slash, 2-15 alphanumeric characters (e.g., they/them)">
-                        <div class="form-text">e.g., they/them, she/her, he/him (format: word/word)</div>
+                               required placeholder="they/them/theirs">
+                        <div id="pronounValidationFeedback" class="mt-2" style="display: none;"></div>
+                        <div class="form-text">e.g., they/them/theirs, she/her, he/him — words separated by slashes</div>
                     </div>
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn btn-warning" id="completeProfileBtn">
                         <i class="fas fa-save me-2"></i>Complete Profile
                     </button>
                 </form>
@@ -243,10 +242,9 @@
                         </label>
                         <input type="text" class="form-control" id="editPronounSingular" name="pronoun_singular" 
                                value="{% if form_data and form_data.pronoun_singular %}{{ form_data.pronoun_singular }}{% else %}{{ user.pronouns or '' }}{% endif %}" 
-                               placeholder="they/them, she/her, he/him" required
-                               pattern="^[a-zA-Z0-9]{2,15}/[a-zA-Z0-9]{2,15}$"
-                               title="Pronouns must be in format: 2-15 alphanumeric characters, slash, 2-15 alphanumeric characters (e.g., they/them)">
-                        <div class="form-text">e.g., they/them, she/her, he/him (format: word/word)</div>
+                               placeholder="they/them/theirs" required>
+                        <div id="editPronounValidationFeedback" class="mt-2" style="display: none;"></div>
+                        <div class="form-text">e.g., they/them/theirs, she/her, he/him — words separated by slashes</div>
                     </div>
                     {% if user.provider in ['reddit', 'musicbrainz'] %}
                         <div class="alert alert-info">
@@ -268,8 +266,221 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle edit profile form submission
+    /**
+     * Centralized pronoun validation function
+     * Accepts: alphabetic characters, spaces, and slashes only
+     * Format: word/word/word... (2+ words separated by slashes)
+     * @param {string} input - Raw pronoun input
+     * @returns {Object} - { valid: boolean, normalized: string, error: string }
+     */
+    function validateAndNormalizePronouns(input) {
+        if (!input || !input.trim()) {
+            return { valid: false, normalized: '', error: 'Pronouns are required.' };
+        }
+        
+        const trimmed = input.trim();
+        
+        // Only allow alphabetic characters, spaces, and slashes
+        if (!/^[a-zA-Z\s\/]+$/.test(trimmed)) {
+            return { 
+                valid: false, 
+                normalized: '', 
+                error: 'Pronouns can only contain letters, spaces, and slashes.' 
+            };
+        }
+        
+        // Check for leading or trailing slashes
+        if (trimmed.startsWith('/') || trimmed.endsWith('/')) {
+            return { 
+                valid: false, 
+                normalized: '', 
+                error: 'Pronouns cannot start or end with a slash.' 
+            };
+        }
+        
+        // Normalize: remove all spaces and split by slashes
+        const normalized = trimmed.replace(/\s+/g, '');
+        const parts = normalized.split('/').filter(p => p.length > 0);
+        
+        // Must have 2-5 parts
+        if (parts.length < 2) {
+            return { 
+                valid: false, 
+                normalized: '', 
+                error: 'Pronouns must have at least 2 words separated by slashes (e.g., they/them).' 
+            };
+        }
+        
+        if (parts.length > 5) {
+            return { 
+                valid: false, 
+                normalized: '', 
+                error: 'Pronouns cannot have more than 5 words.' 
+            };
+        }
+        
+        // Each part must be 1-15 characters
+        for (const part of parts) {
+            if (part.length < 1 || part.length > 15) {
+                return { 
+                    valid: false, 
+                    normalized: '', 
+                    error: 'Each pronoun word must be 1-15 letters.' 
+                };
+            }
+        }
+        
+        return { valid: true, normalized: normalized, error: null };
+    }
+    
+    /**
+     * Setup debounced validation for a pronoun input field
+     * @param {HTMLInputElement} input - The input element
+     * @param {HTMLElement} feedback - The feedback div
+     * @param {HTMLButtonElement} submitBtn - The submit button to enable/disable
+     * @param {Function} additionalCheck - Optional callback to check other form fields
+     * @param {number} delay - Debounce delay in ms (default 500)
+     */
+    function setupPronounValidation(input, feedback, submitBtn, additionalCheck = null, delay = 500) {
+        let timeoutId = null;
+        
+        const validateInput = () => {
+            const result = validateAndNormalizePronouns(input.value);
+            
+            if (input.value.trim() === '') {
+                // Empty - disable button, hide feedback
+                if (submitBtn && !additionalCheck) submitBtn.disabled = true;
+                feedback.style.display = 'none';
+                input.classList.remove('is-invalid', 'is-valid');
+            } else if (!result.valid) {
+                // Invalid - disable button, show error
+                if (submitBtn && !additionalCheck) submitBtn.disabled = true;
+                feedback.style.display = 'block';
+                feedback.className = 'alert alert-danger mt-2';
+                feedback.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + result.error;
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+            } else {
+                // Valid - enable button, show success
+                if (submitBtn && !additionalCheck) submitBtn.disabled = false;
+                feedback.style.display = 'block';
+                feedback.className = 'alert alert-success mt-2';
+                feedback.innerHTML = '<i class="fas fa-check-circle me-2"></i>Valid! Will be saved as: <strong>' + result.normalized + '</strong>';
+                input.classList.add('is-valid');
+                input.classList.remove('is-invalid');
+            }
+            
+            // Call additional check if provided (for forms with multiple fields)
+            if (additionalCheck) {
+                additionalCheck();
+            }
+        };
+        
+        input.addEventListener('input', function() {
+            // Clear previous timeout
+            if (timeoutId) clearTimeout(timeoutId);
+            
+            // Set new timeout for debounced validation
+            timeoutId = setTimeout(validateInput, delay);
+        });
+        
+        // Validate immediately on page load if there's a value
+        if (input.value.trim()) {
+            validateInput();
+        } else if (submitBtn && !additionalCheck) {
+            submitBtn.disabled = true;
+        }
+    }
+    
+    // Setup validation for complete profile form
+    const completeProfileBtn = document.getElementById('completeProfileBtn');
+    const pronounInput = document.getElementById('pronoun_singular');
+    const pronounFeedback = document.getElementById('pronounValidationFeedback');
+    
+    if (pronounInput && pronounFeedback) {
+        setupPronounValidation(pronounInput, pronounFeedback, completeProfileBtn);
+    }
+    
+    // Setup validation for edit profile modal
     const saveBtn = document.getElementById('saveProfileBtn');
+    const editPronounInput = document.getElementById('editPronounSingular');
+    const editPronounFeedback = document.getElementById('editPronounValidationFeedback');
+    const editEmailInput = document.getElementById('editEmail');
+    const editNameInput = document.getElementById('editName');
+    
+    // Function to check if all edit form fields are valid
+    function checkEditFormValidity() {
+        if (!saveBtn) return;
+        
+        const email = editEmailInput ? editEmailInput.value.trim() : '';
+        const name = editNameInput ? editNameInput.value.trim() : '';
+        const pronouns = editPronounInput ? editPronounInput.value.trim() : '';
+        
+        // Check basic requirements
+        const hasEmail = email.length > 0 && email.includes('@') && email.includes('.');
+        const hasName = name.length > 0;
+        const pronounResult = validateAndNormalizePronouns(pronouns);
+        
+        // Enable button only if all fields are valid
+        saveBtn.disabled = !(hasEmail && hasName && pronounResult.valid);
+    }
+    
+    // Setup pronoun validation with additional form check
+    if (editPronounInput && editPronounFeedback && saveBtn) {
+        setupPronounValidation(editPronounInput, editPronounFeedback, saveBtn, checkEditFormValidity);
+    }
+    
+    // Add listeners to other fields
+    if (editEmailInput) {
+        editEmailInput.addEventListener('input', checkEditFormValidity);
+    }
+    if (editNameInput) {
+        editNameInput.addEventListener('input', checkEditFormValidity);
+    }
+    
+    // Check validity on page load
+    if (saveBtn) {
+        checkEditFormValidity();
+    }
+    
+    // Reset modal to fresh values when opened
+    const editProfileModal = document.getElementById('editProfileModal');
+    if (editProfileModal) {
+        editProfileModal.addEventListener('show.bs.modal', function() {
+            // Reset form fields to original user values
+            if (editEmailInput) {
+                editEmailInput.value = '{{ user.email }}';
+                editEmailInput.classList.remove('is-invalid', 'is-valid');
+            }
+            if (editNameInput) {
+                editNameInput.value = '{{ user.name }}';
+                editNameInput.classList.remove('is-invalid', 'is-valid');
+            }
+            if (editPronounInput) {
+                editPronounInput.value = '{{ user.pronouns or "" }}';
+                editPronounInput.classList.remove('is-invalid', 'is-valid');
+            }
+            
+            // Hide validation feedback
+            if (editPronounFeedback) {
+                editPronounFeedback.style.display = 'none';
+            }
+            
+            // Hide any error/success messages
+            if (errorDiv) errorDiv.classList.add('d-none');
+            if (successDiv) successDiv.classList.add('d-none');
+            
+            // Reset button text
+            if (saveBtn) {
+                saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Changes';
+            }
+            
+            // Re-check form validity with fresh values
+            checkEditFormValidity();
+        });
+    }
+    
+    // Handle edit profile form submission
     const form = document.getElementById('editProfileForm');
     const errorDiv = document.getElementById('editProfileError');
     const errorText = document.getElementById('editProfileErrorText');
@@ -307,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData(form);
             const email = formData.get('email').trim();
             const name = formData.get('name').trim();
-            const pronouns = formData.get('pronoun_singular').trim(); // Keep old field name for compatibility
+            const pronounsInput = formData.get('pronoun_singular');
             
             // Basic validation
             if (!email || !name) {
@@ -315,17 +526,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            if (!pronouns) {
-                showError('Pronouns are required.');
+            // Validate and normalize pronouns
+            const pronounResult = validateAndNormalizePronouns(pronounsInput);
+            if (!pronounResult.valid) {
+                showError(pronounResult.error);
                 return;
             }
             
-            // Validate pronouns format: 2-15 alphanumeric characters, slash, 2-15 alphanumeric characters
-            const pronounRegex = /^[a-zA-Z0-9]{2,15}\/[a-zA-Z0-9]{2,15}$/;
-            if (!pronounRegex.test(pronouns)) {
-                showError('Pronouns must be in format: word/word (e.g., they/them, she/her, he/him). Each part should be 2-15 alphanumeric characters.');
-                return;
-            }
+            // Set normalized pronouns (spaces removed)
+            formData.set('pronoun_singular', pronounResult.normalized);
             
             if (!email.includes('@') || !email.includes('.')) {
                 showError('Please enter a valid email address.');

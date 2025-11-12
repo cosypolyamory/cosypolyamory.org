@@ -636,14 +636,53 @@ def update_profile():
         flash(error_msg, 'error')
         return redirect(url_for('auth.profile'))
     
-    # Validate pronouns format: 2-15 alphanumeric characters, slash, 2-15 alphanumeric characters
-    pronoun_pattern = r'^[a-zA-Z0-9]{2,15}/[a-zA-Z0-9]{2,15}$'
-    if not re.match(pronoun_pattern, pronouns):
-        error_msg = 'Pronouns must be in format: word/word (e.g., they/them, she/her, he/him). Each part should be 2-15 alphanumeric characters.'
+    # Validate and normalize pronouns
+    # Only allow alphabetic characters, spaces, and slashes
+    if not re.match(r'^[a-zA-Z\s\/]+$', pronouns):
+        error_msg = 'Pronouns can only contain letters, spaces, and slashes.'
         if is_ajax:
             return jsonify({'success': False, 'error': error_msg})
         flash(error_msg, 'error')
         return redirect(url_for('auth.profile'))
+    
+    # Check for leading or trailing slashes
+    if pronouns.startswith('/') or pronouns.endswith('/'):
+        error_msg = 'Pronouns cannot start or end with a slash.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
+    # Remove all spaces and split by slashes
+    normalized_pronouns = re.sub(r'\s+', '', pronouns)
+    parts = [p for p in normalized_pronouns.split('/') if p]
+    
+    # Must have 2-5 parts
+    if len(parts) < 2:
+        error_msg = 'Pronouns must have at least 2 words separated by slashes (e.g., they/them).'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
+    if len(parts) > 5:
+        error_msg = 'Pronouns cannot have more than 5 words.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
+    # Each part must be 1-15 characters
+    for part in parts:
+        if len(part) < 1 or len(part) > 15:
+            error_msg = 'Each pronoun word must be 1-15 letters.'
+            if is_ajax:
+                return jsonify({'success': False, 'error': error_msg})
+            flash(error_msg, 'error')
+            return redirect(url_for('auth.profile'))
+    
+    # Use normalized pronouns (spaces removed)
+    pronouns = normalized_pronouns
     
     # Basic email validation
     if '@' not in email or '.' not in email:
