@@ -102,17 +102,20 @@ def create_sample_users():
     
     print("👥 Creating sample users...")
     
-    # Define pronoun options for diversity
+    # Define pronoun options for diversity (now using full slash-separated format)
     pronoun_options = [
-        ('they', 'them'),
-        ('she', 'her'),
-        ('he', 'him'),
-        ('xe', 'xem'),
-        ('ze', 'zir'),
-        ('they', 'them'),  # More common, so appears twice
-        ('she', 'her'),    # More common, so appears twice
-        ('he', 'him'),     # More common, so appears twice
-        (None, None),      # Some users don't specify pronouns
+        'they/them',
+        'she/her',
+        'he/him',
+        'xe/xem',
+        'ze/zir',
+        'they/them/theirs',
+        'she/her/hers',
+        'he/him/his',
+        'they/them',  # More common, so appears multiple times
+        'she/her',    # More common, so appears multiple times
+        'he/him',     # More common, so appears multiple times
+        None,         # Some users don't specify pronouns
     ]
     
     def get_random_pronouns():
@@ -131,7 +134,7 @@ def create_sample_users():
             'role': 'approved',
             'has_application': True,
             'application_status': 'approved',
-            'pronouns': f'{pronouns[0]}/{pronouns[1]}'
+            'pronouns': pronouns
         })
     
     # Generate organizers (3)
@@ -144,7 +147,7 @@ def create_sample_users():
             'role': 'organizer',
             'has_application': True,
             'application_status': 'approved',
-            'pronouns': f'{pronouns[0]}/{pronouns[1]}'
+            'pronouns': pronouns
         })
     
     # Generate pending applications (5)
@@ -156,7 +159,7 @@ def create_sample_users():
             'role': 'pending',
             'has_application': True,
             'application_status': 'pending',
-            'pronouns': f'{pronouns[0]}/{pronouns[1]}'
+            'pronouns': pronouns
         })
     
     # Generate users who logged in but never applied (3)
@@ -168,7 +171,7 @@ def create_sample_users():
             'role': 'new',
             'has_application': False,
             'application_status': None,
-            'pronouns': f'{pronouns[0]}/{pronouns[1]}'
+            'pronouns': pronouns
         })
     
     created_users = []

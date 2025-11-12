@@ -694,12 +694,21 @@ def edit_attendance(event_id):
                           ))
         
         # Count pronouns - parse combined format like "they/them", "she/her"
+        # Extract first two words only for graphing (e.g., "they/them" from "they/them/theirs")
         pronoun_counts = {}
         
         for user in attending_users:
             if user.pronouns:
                 pronouns = user.pronouns.strip()
-                pronoun_counts[pronouns] = pronoun_counts.get(pronouns, 0) + 1
+                # Split by slash and take only first two words
+                parts = pronouns.split('/')
+                if len(parts) >= 2:
+                    # Use first two words for the graph
+                    graph_pronouns = f"{parts[0]}/{parts[1]}"
+                else:
+                    # If only one word, use as-is (shouldn't happen with validation)
+                    graph_pronouns = pronouns
+                pronoun_counts[graph_pronouns] = pronoun_counts.get(graph_pronouns, 0) + 1
         
         pronoun_stats = {
             'pronouns': pronoun_counts
