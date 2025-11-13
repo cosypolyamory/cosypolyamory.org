@@ -358,6 +358,23 @@
                         </div>
                     </div>
                     
+                    <!-- Publish Option -->
+                    {% if not is_edit %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="publish_immediately" name="publish_immediately">
+                                <label class="form-check-label" for="publish_immediately">
+                                    <strong>Publish this event</strong>
+                                </label>
+                                <div class="form-text">
+                                    Tick this box to publish event; if left unticked the event is not visble to users.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <!-- Submit -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                         <a href="{% if event %}{{ url_for('events.event_detail', event_id=event.id) }}{% else %}{{ url_for('events.events_list') }}{% endif %}" class="btn btn-outline-secondary btn-lg me-md-2">

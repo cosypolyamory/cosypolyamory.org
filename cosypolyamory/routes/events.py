@@ -107,13 +107,21 @@ def events_list():
     # Get filter from query parameter, default to 'upcoming'
     current_filter = request.args.get('filter', 'upcoming')
     
+    # Determine which events to show based on user role
+    if current_user.is_authenticated and current_user.role in ['admin', 'organizer']:
+        # Admins and organizers can see all events (including drafts)
+        base_query = Event.select().where(Event.is_active == True)
+    else:
+        # Regular users can only see published events
+        base_query = Event.select().where((Event.is_active == True) & (Event.published == True))
+    
     if current_filter == 'past':
         # Show only past events
-        events = Event.select().where((Event.is_active == True) & (Event.exact_time < now_dt)).order_by(Event.exact_time.desc())
+        events = base_query.where(Event.exact_time < now_dt).order_by(Event.exact_time.desc())
         page_title = "Past Events"
     else:
         # Show only upcoming events (default)
-        events = Event.select().where((Event.is_active == True) & (Event.exact_time >= now_dt)).order_by(Event.exact_time)
+        events = base_query.where(Event.exact_time >= now_dt).order_by(Event.exact_time)
         page_title = "Upcoming Events"
         current_filter = 'upcoming'  # Ensure it's set to upcoming for template
 
@@ -170,6 +178,15 @@ def event_detail(event_id):
     except Event.DoesNotExist:
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
+
+    # Check if event is published or if user has permission to view drafts
+    if not event.published:
+        if not (current_user.is_authenticated and 
+                (current_user.role in ['admin', 'organizer'] or 
+                 event.organizer_id == current_user.id or 
+                 (event.co_host and event.co_host_id == current_user.id))):
+            flash('This event is not yet available.', 'error')
+            return redirect(url_for('events.events_list'))
 
     can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
     # Get user's RSVP if exists and user is authenticated
@@ -428,6 +445,9 @@ def create_event_post():
             except EventNote.DoesNotExist:
                 flash('Selected event note not found.', 'error')
                 return redirect(url_for('events.create_event'))
+        
+        # Check if event should be published immediately
+        publish_immediately = request.form.get('publish_immediately') == 'on'
 
         # Handle end time from hour/minute dropdowns
         end_time_hour = request.form.get('end_time_hour')
@@ -463,7 +483,8 @@ def create_event_post():
                 co_host=co_host,
                 tips_for_attendees=tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None,
                 max_attendees=int(max_attendees) if max_attendees else None,
-                event_note=event_note)
+                event_note=event_note,
+                published=publish_immediately)  # Create as draft or published based on checkbox
 
             # Automatically create RSVPs for organizer and co-host
             # Create or update organizer RSVP
@@ -512,7 +533,17 @@ def create_event_post():
         except Exception as e:
             current_app.logger.error(f"Failed to send Telegram announcement for new event {event.id}: {e}")
 
-        flash(f'Event "{title}" has been created successfully!', 'success')
+        if publish_immediately:
+            flash(f'Event "{title}" has been created and published! Users can now see it and RSVP.', 'success')
+            
+            # Send notifications for newly published events
+            try:
+                from cosypolyamory.telegram_integration import send_new_event_announcement
+                send_new_event_announcement(event)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send Telegram announcement for new event {event.id}: {e}")
+        else:
+            flash(f'Event "{title}" has been created as a draft! Use the "Publish" option to make it visible to users.', 'success')
         return redirect(url_for('events.event_detail', event_id=event.id))
 
     except ValueError as e:
@@ -1022,6 +1053,51 @@ def delete_event(event_id):
 
     except Event.DoesNotExist:
         current_app.logger.warning(f"Attempt to delete non-existent event {event_id} by user {current_user.id}")
+
+
+@bp.route('/<int:event_id>/publish', methods=['POST'])
+@organizer_required
+def publish_event(event_id):
+    """Toggle publish status of an event"""
+    try:
+        event = Event.get_by_id(event_id)
+        
+        # Check if user can edit this event
+        if not (current_user.role == 'admin' or 
+                event.organizer_id == current_user.id or 
+                (event.co_host and event.co_host_id == current_user.id)):
+            flash('You do not have permission to publish this event.', 'error')
+            return redirect(url_for('events.event_detail', event_id=event_id))
+        
+        # Get the action from form data
+        action = request.form.get('action', 'publish')
+        
+        if action == 'publish':
+            event.published = True
+            event.save()
+            flash(f'Event "{event.title}" has been published and is now visible to users!', 'success')
+            
+            # Send notifications for newly published events
+            try:
+                from cosypolyamory.telegram_integration import send_new_event_announcement
+                send_new_event_announcement(event)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send Telegram announcement for published event {event_id}: {e}")
+                
+        elif action == 'unpublish':
+            event.published = False
+            event.save()
+            flash(f'Event "{event.title}" has been unpublished and is no longer visible to users.', 'info')
+        
+        return redirect(url_for('events.event_detail', event_id=event_id))
+        
+    except Event.DoesNotExist:
+        flash('Event not found.', 'error')
+        return redirect(url_for('events.events_list'))
+    except Exception as e:
+        current_app.logger.error(f"Error publishing/unpublishing event {event_id}: {e}")
+        flash('An error occurred while updating the event.', 'error')
+        return redirect(url_for('events.event_detail', event_id=event_id))
         flash('Event not found.', 'error')
         return redirect(url_for('events.events_list'))
     except Exception as e:

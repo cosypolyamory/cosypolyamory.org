@@ -65,12 +65,19 @@
                                         <i class="fas fa-calendar-alt me-1"></i>Upcoming
                                     {% endif %}
                                 </small>
+                                {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %}
+                                    <span class="badge bg-warning text-dark">
+                                        Unpublished
+                                    </span>
+                                {% endif %}
                             </div>
                             
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-0">
                                         <div class="d-flex align-items-center w-100">
-                                            <h5 class="card-title flex-grow-1 me-2 mb-0">{{ event.title }}</h5>
+                                            <h5 class="card-title flex-grow-1 me-2 mb-0">
+                                                {{ event.title }}
+                                            </h5>
                                         </div>
                                 </div>
                                 <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="text-decoration-none text-dark">
@@ -109,6 +116,11 @@
                                         <i class="fas fa-users me-2 text-muted"></i>
                                         <span>{{ rsvp_counts[event.id] or 0 }}/{{ event.max_attendees }} attendees</span>
                                         <div class="ms-auto d-flex align-items-center flex-wrap">
+                                            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %}
+                                                <span class="badge bg-warning text-dark align-middle ms-2">
+                                                    Unpublished
+                                                </span>
+                                            {% endif %}
                                             {% if event.max_attendees and (rsvp_counts[event.id] or 0) >= event.max_attendees %}
                                                 <span class="badge bg-warning text-dark align-middle ms-2">Full</span>
                                             {% endif %}
@@ -308,6 +320,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const pillsContainer = attendeesSpan ? attendeesSpan.parentElement.querySelector('.ms-auto') : null;
         if (pillsContainer) {
             pillsContainer.innerHTML = '';
+            // Add Unpublished pill if event is not published (for organizers/admins only)
+            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] %}
+            const isPublished = data.published !== undefined ? data.published : true; // Assume published if not specified
+            if (!isPublished) {
+                const unpublishedPill = document.createElement('span');
+                unpublishedPill.className = 'badge bg-warning text-dark align-middle ms-2';
+                unpublishedPill.innerHTML = 'Unpublished';
+                pillsContainer.appendChild(unpublishedPill);
+            }
+            {% endif %}
             // Add Full pill if event is full (matches event detail logic)
             if (maxAttendees && data.rsvp_count !== undefined && parseInt(data.rsvp_count) >= parseInt(maxAttendees)) {
                 const fullPill = document.createElement('span');
@@ -459,6 +481,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const pillsContainer = attendeesSpan ? attendeesSpan.parentElement.querySelector('.ms-auto') : null;
         if (pillsContainer) {
             pillsContainer.innerHTML = '';
+            // Add Unpublished pill if event is not published (for organizers/admins only)
+            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] %}
+            const isPublished = data.published !== undefined ? data.published : true; // Assume published if not specified
+            if (!isPublished) {
+                const unpublishedPill = document.createElement('span');
+                unpublishedPill.className = 'badge bg-warning text-dark align-middle ms-2';
+                unpublishedPill.innerHTML = 'Unpublished';
+                pillsContainer.appendChild(unpublishedPill);
+            }
+            {% endif %}
             // Add Full pill if event is full (matches event detail logic)
             if (maxAttendees && data.rsvp_count !== undefined && parseInt(data.rsvp_count) >= parseInt(maxAttendees)) {
                 const fullPill = document.createElement('span');

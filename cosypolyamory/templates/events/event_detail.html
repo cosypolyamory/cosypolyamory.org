@@ -55,6 +55,51 @@
         {% endif %}
     {% endwith %}
 
+
+    <!-- Publish/Unpublished Status - Only for organizers -->
+    {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id or (event.co_host and event.co_host_id == current_user.id)) %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">
+                                {% if event.published %}
+                                    Published Event
+                                {% else %}
+                                    Unpublished Event
+                                {% endif %}
+                            </h6>
+                            <p class="mb-0 text-muted">
+                                {% if event.published %}
+                                    This event is visible to all users.
+                                {% else %}
+                                    This event is unpublished and only visible to organizers.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <form method="POST" action="{{ url_for('events.publish_event', event_id=event.id) }}" style="display: inline;">
+                                {% if event.published %}
+                                    <input type="hidden" name="action" value="unpublish">
+                                    <button type="submit" class="btn btn-outline-dark btn-sm">
+                                        Unpublish
+                                    </button>
+                                {% else %}
+                                    <input type="hidden" name="action" value="publish">
+                                    <button type="submit" class="btn btn-outline-success btn-sm">
+                                        Publish Event
+                                    </button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     <div class="row">
         <div class="col-12">
             <!-- Event Header -->
@@ -162,11 +207,16 @@
                                 
                                 <!-- Right side: Status pills -->
                                 <span id="header-pills">
+                                {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %}
+                                    <span class="badge bg-warning text-dark ms-2 align-middle">
+                                        Unpublished
+                                    </span>
+                                {% endif %}
                                 {% if event.exact_time < now %}
-                                    <span class="badge bg-secondary fs-6">Past Event</span>
+                                    <span class="badge bg-secondary fs-6{% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %} ms-2{% endif %}">Past Event</span>
                                 {% else %}
                                     {% if event.max_attendees and rsvp_count >= event.max_attendees %}
-                                        <span class="badge bg-warning text-dark align-middle">Full</span>
+                                        <span class="badge bg-warning text-dark align-middle{% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %} ms-2{% endif %}">Full</span>
                                     {% endif %}
                                     {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
                                         <span class="badge bg-secondary align-middle ms-2">Waitlist</span>
@@ -488,6 +538,11 @@
                                             <span>
                                                 {{ rsvp_count }}/{{ event.max_attendees }} attendees
                                                 <span id="capacity-pills">
+                                                    {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %}
+                                                        <span class="badge bg-warning text-dark ms-2 align-middle">
+                                                            Unpublished
+                                                        </span>
+                                                    {% endif %}
                                                     {% if event.max_attendees and rsvp_count >= event.max_attendees %}
                                                         <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
                                                     {% endif %}

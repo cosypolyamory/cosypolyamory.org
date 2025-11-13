@@ -35,6 +35,7 @@ class Event(BaseModel):
     event_note = ForeignKeyField(EventNote, null=True, backref='events')
     is_active = BooleanField(default=True)
     requires_approval = BooleanField(default=True)  # Only approved users can see full details
+    published = BooleanField(default=False)  # Whether event is published and visible to users
     
     # Metadata
     created_at = DateTimeField(default=datetime.now)

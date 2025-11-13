@@ -58,6 +58,9 @@
                         <h4 class="card-title mb-0">{{ event.title }}</h4>
                         <div class="d-flex align-items-center gap-2">
                             <span id="header-pills" class="d-flex align-items-start gap-2">
+                            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %}
+                                <span class="badge bg-warning text-dark">Unpublished</span>
+                            {% endif %}
                             {% if event.exact_time < now %}
                                 <span class="badge bg-secondary">Past Event</span>
                             {% else %}
