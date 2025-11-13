@@ -368,7 +368,7 @@
                             Delete Event
                         </button>
                         <button type="button" class="btn btn-info btn-lg me-md-2" onclick="confirmCloneEvent()">
-                            <i class="fas fa-clone me-2"></i>Clone Event
+                            Clone Event
                         </button>
                         {% endif %}
                         <button type="submit" class="btn btn-primary btn-lg">
@@ -1108,16 +1108,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>This will prepare a copy of this event for you to review</strong>
-                </div>
-                
-                <p class="mb-3">The event date will be updated to <strong>1 month from today</strong>.</p>
+                <p class="mb-3">All the details from this event will be copied to the new event and the event title will have
+                    "Copy of ... " prepended and date will be set to 1 month from today. </p>
                 
                 <p class="mb-3">All other details will remain the same:</p>
                 <ul class="mb-3">
-                    <li>Title, description, and location</li>
+                    <li>Description, and location</li>
                     <li>Same time of day as the original</li>
                     <li>Same organizers and settings</li>
                 </ul>
@@ -1134,10 +1130,10 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
+                    Cancel
                 </button>
                 <button type="button" class="btn btn-info" id="confirmCloneBtn">
-                    <i class="fas fa-clone me-2"></i>Clone Event
+                    Clone Event
                 </button>
             </div>
         </div>
