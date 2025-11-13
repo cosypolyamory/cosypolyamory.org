@@ -117,13 +117,13 @@ def get_template_info() -> dict:
         'account_created': 'Welcome email for new user accounts',
         'application_submitted': 'Confirmation email when user submits an application',
         'organizer_new_application': 'Notification to organizers when new application is submitted',
-        'rsvp': 'RSVP confirmation email for event attendance',
+        'rsvp': 'Confirmation email for event attendance',
         'application_approved': 'Welcome email for approved community applications',
         'application_rejected': 'Notification email for rejected applications',
         'event_reminder': 'Reminder email for upcoming events',
         'host_assigned': 'Notification when user is made host/co-host of an event',
         'host_removed': 'Notification when user is removed as host/co-host of an event',
-        'rsvp_updated': 'Notification when RSVP is removed or waitlisted', 
+        'rsvp_updated': 'Notification when attendance is updated or waitlisted', 
         'event_updated': 'Notification when an attended event is updated',
         'event_cancelled': 'Notification when an attended event is cancelled'
     }

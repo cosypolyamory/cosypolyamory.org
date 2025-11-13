@@ -89,7 +89,7 @@
                                 {% else %}
                                     <input type="hidden" name="action" value="publish">
                                     <button type="submit" class="btn btn-outline-success btn-sm">
-                                        Publish Event
+                                        Publish
                                     </button>
                                 {% endif %}
                             </form>
@@ -237,22 +237,10 @@
                         <div class="col-md-6">
                             <h6>Host</h6>
                             <div class="d-flex align-items-center mb-2">
-                                {% if event.organizer.avatar_url %}
-                                    <span class="position-relative d-inline-block me-3" style="width: 40px; height: 40px;">
-                                        <img src="{{ event.organizer.avatar_url }}" alt="{{ event.organizer.name }}"
-                                             class="rounded-circle position-absolute top-0 start-0" style="width: 40px; height: 40px; object-fit: cover; z-index:2;"
-                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center position-absolute top-0 start-0" 
-                                             style="width: 40px; height: 40px; display: none; z-index:1;">
-                                            <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                        </div>
-                                    </span>
-                                {% else %}
-                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                         style="width: 40px; height: 40px;">
-                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                    </div>
-                                {% endif %}
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-crown text-white" style="font-size: 16px;"></i>
+                                </div>
                                 <div>
                                     <strong>{{ event.organizer.name }}</strong>
                                 </div>
@@ -262,22 +250,10 @@
                         <div class="col-md-6">
                             <h6>Co-host</h6>
                             <div class="d-flex align-items-center mb-2">
-                                {% if event.co_host.avatar_url %}
-                                    <span class="position-relative d-inline-block me-3" style="width: 40px; height: 40px;">
-                                        <img src="{{ event.co_host.avatar_url }}" alt="{{ event.co_host.name }}"
-                                             class="rounded-circle position-absolute top-0 start-0" style="width: 40px; height: 40px; object-fit: cover; z-index:2;"
-                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center position-absolute top-0 start-0" 
-                                             style="width: 40px; height: 40px; display: none; z-index:1;">
-                                            <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                        </div>
-                                    </span>
-                                {% else %}
-                                    <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                         style="width: 40px; height: 40px;">
-                                        <i class="fas fa-user text-white" style="font-size: 16px;"></i>
-                                    </div>
-                                {% endif %}
+                                <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-handshake text-white" style="font-size: 16px;"></i>
+                                </div>
                                 <div>
                                     <strong>{{ event.co_host.name }}</strong>
                                 </div>
