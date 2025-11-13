@@ -1,5 +1,5 @@
-📢 **Community Announcement**
+📢 **Cosy Telegram Bot Notification**
 
 {{ message }}
 
-#CosyPolyamory
+--Team Cosy

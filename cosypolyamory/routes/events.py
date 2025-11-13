@@ -525,20 +525,13 @@ def create_event_post():
         except Exception as e:
             current_app.logger.error(f"Failed to send host assignment notifications for event {event.id}: {e}")
 
-        # Send Telegram announcement for new event
-        try:
-            from cosypolyamory.telegram_integration import notify_event_created
-            notify_event_created(event)
-        except Exception as e:
-            current_app.logger.error(f"Failed to send Telegram announcement for new event {event.id}: {e}")
-
         if publish_immediately:
             flash(f'Event "{title}" has been created and published! Users can now see it and RSVP.', 'success')
             
-            # Send notifications for newly published events
+            # Send Telegram announcement for newly published events
             try:
-                from cosypolyamory.telegram_integration import send_new_event_announcement
-                send_new_event_announcement(event)
+                from cosypolyamory.telegram_integration import notify_event_created
+                notify_event_created(event)
             except Exception as e:
                 current_app.logger.error(f"Failed to send Telegram announcement for new event {event.id}: {e}")
         else:
@@ -834,6 +827,7 @@ def edit_event_post(event_id):
             old_date = event.date
             old_organizer = event.organizer
             old_co_host = event.co_host
+            old_published = event.published
 
             # Update event
             event.title = title
@@ -949,8 +943,24 @@ def edit_event_post(event_id):
         except Exception as e:
             current_app.logger.error(f"Failed to send host change notifications for event {event.id}: {e}")
 
-        # Send Telegram announcement for event updates if there were significant changes
-        if changes:
+        # Handle publication status changes and Telegram notifications
+        if old_published != publish_immediately:
+            if publish_immediately:
+                # Event was just published
+                try:
+                    from cosypolyamory.telegram_integration import notify_event_created
+                    notify_event_created(event)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send Telegram announcement for newly published event {event.id}: {e}")
+            else:
+                # Event was unpublished - send unpublish notification
+                try:
+                    from cosypolyamory.telegram_integration import notify_event_unpublished
+                    notify_event_unpublished(event)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send Telegram unpublish notification for event {event.id}: {e}")
+        elif publish_immediately and changes:
+            # Event is published and has updates - send update notification
             try:
                 from cosypolyamory.telegram_integration import notify_event_updated
                 # Convert changes list to formatted string
@@ -1078,10 +1088,10 @@ def publish_event(event_id):
             event.save()
             flash(f'Event "{event.title}" has been published and is now visible to users!', 'success')
             
-            # Send notifications for newly published events
+            # Send Telegram notification for newly published events
             try:
-                from cosypolyamory.telegram_integration import send_new_event_announcement
-                send_new_event_announcement(event)
+                from cosypolyamory.telegram_integration import notify_event_created
+                notify_event_created(event)
             except Exception as e:
                 current_app.logger.error(f"Failed to send Telegram announcement for published event {event_id}: {e}")
                 
@@ -1089,6 +1099,13 @@ def publish_event(event_id):
             event.published = False
             event.save()
             flash(f'Event "{event.title}" has been unpublished and is no longer visible to users.', 'info')
+            
+            # Send Telegram notification for unpublished event
+            try:
+                from cosypolyamory.telegram_integration import notify_event_unpublished
+                notify_event_unpublished(event)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send Telegram unpublish notification for event {event_id}: {e}")
         
         return redirect(url_for('events.event_detail', event_id=event_id))
         

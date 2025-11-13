@@ -1,4 +1,4 @@
-🎉 **New Event Created!**
+**New Event Published!**
 
 **{{ event_title }}**
 
@@ -6,8 +6,4 @@
 🕐 **Time:** {{ event_time }}
 📍 **Location:** {{ event_location }}
 
-Join us for this exciting community gathering! 
-
-🔗 **RSVP:** {{ event_url }}
-
-#CosyPolyamory #CommunityEvent
+**Would you like to attend?** {{ event_url }}

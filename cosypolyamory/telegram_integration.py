@@ -53,7 +53,10 @@ class TelegramNotificationService:
             
             base_url = os.getenv('DOMAIN', 'https://cosypolyamory.org')
             event_url = f"{base_url}/events/{event.id}"
-            success = await bot.send_event_notification(
+            
+            # Use template system for consistency
+            message = bot.render_template(
+                "event_created.txt",
                 event_title=event.title,
                 event_date=event.date.strftime('%A, %B %d, %Y'),
                 event_time=event.exact_time.strftime('%H:%M') if event.exact_time else "TBD",
@@ -61,6 +64,7 @@ class TelegramNotificationService:
                 event_url=event_url
             )
             
+            success = await bot.send_announcement(message)
             await bot.stop()
             return success
             
@@ -89,13 +93,16 @@ class TelegramNotificationService:
             
             base_url = os.getenv('DOMAIN', 'https://cosypolyamory.org')
             event_url = f"{base_url}/events/{event.id}"
-            success = await bot.send_event_update(
+            
+            # Use template system for consistency
+            message = bot.render_template(
+                "event_updated.txt",
                 event_title=event.title,
-                update_type="UPDATED",
-                details=update_details,
+                update_details=update_details,
                 event_url=event_url
             )
             
+            success = await bot.send_announcement(message)
             await bot.stop()
             return success
             
@@ -122,23 +129,53 @@ class TelegramNotificationService:
             if not bot:
                 return False
             
-            details = f"Unfortunately, this event has been cancelled."
-            if reason:
-                details += f"\n\nReason: {reason}"
-            
-            success = await bot.send_event_update(
+            # Use template system for consistency
+            message = bot.render_template(
+                "event_cancelled.txt",
                 event_title=event.title,
-                update_type="CANCELLED",
-                details=details
+                cancellation_details=reason if reason else "No specific reason provided."
             )
             
+            success = await bot.send_announcement(message)
             await bot.stop()
             return success
             
         except Exception as e:
             logger.error(f"Failed to send event cancelled notification: {e}")
             return False
-    
+
+    async def send_event_unpublished_notification(self, event) -> bool:
+        """
+        Send notification when an event is unpublished/hidden.
+        
+        Args:
+            event: Event model instance
+            
+        Returns:
+            bool: True if notification sent successfully
+        """
+        if not self.enabled:
+            return False
+        
+        try:
+            bot = await create_bot_from_env()
+            if not bot:
+                return False
+            
+            # Use template system for consistency
+            message = bot.render_template(
+                "event_unpublished.txt",
+                event_title=event.title
+            )
+            
+            success = await bot.send_announcement(message)
+            await bot.stop()
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to send event unpublished notification: {e}")
+            return False
+
     async def send_event_reminder(self, event, hours_before: int = 24) -> bool:
         """
         Send event reminder notification.
@@ -158,21 +195,22 @@ class TelegramNotificationService:
             if not bot:
                 return False
             
-            time_text = f"{hours_before} hours" if hours_before != 1 else "1 hour"
-            details = (
-                f"Don't forget! This event is happening in {time_text}.\n\n"
-                f"📅 {event.date.strftime('%A, %B %d, %Y')}\n"
-                f"🕐 {event.exact_time.strftime('%H:%M') if event.exact_time else 'TBD'}\n"
-                f"📍 {event.establishment_name or event.barrio}\n\n"
-                "See you there! 💕"
-            )
+            time_text = f"in {hours_before} hours" if hours_before != 1 else "in 1 hour"
+            base_url = os.getenv('DOMAIN', 'https://cosypolyamory.org')
+            event_url = f"{base_url}/events/{event.id}"
             
-            success = await bot.send_event_update(
+            # Use template system for consistency
+            message = bot.render_template(
+                "event_reminder.txt",
                 event_title=event.title,
-                update_type="REMINDER",
-                details=details
+                time_text=time_text,
+                event_date=event.date.strftime('%A, %B %d, %Y'),
+                event_time=event.exact_time.strftime('%H:%M') if event.exact_time else 'TBD',
+                event_location=event.establishment_name or event.barrio,
+                event_url=event_url
             )
             
+            success = await bot.send_announcement(message)
             await bot.stop()
             return success
             
@@ -243,6 +281,21 @@ class TelegramNotificationService:
         except Exception as e:
             logger.error(f"Error in sync event cancelled notification: {e}")
             return False
+
+    def send_event_unpublished_sync(self, event) -> bool:
+        """Synchronous wrapper for event unpublished notification."""
+        try:
+            # Create a new event loop for this thread
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            return loop.run_until_complete(self.send_event_unpublished_notification(event))
+        except Exception as e:
+            logger.error(f"Error in sync event unpublished notification: {e}")
+            return False
     
     def send_custom_announcement_sync(self, message: str) -> bool:
         """Synchronous wrapper for custom announcement."""
@@ -278,6 +331,11 @@ def notify_event_updated(event, update_details: str) -> bool:
 def notify_event_cancelled(event, reason: str = "") -> bool:
     """Convenience function to notify about event cancellation."""
     return telegram_service.send_event_cancelled_sync(event, reason)
+
+
+def notify_event_unpublished(event) -> bool:
+    """Convenience function to notify about event unpublishing."""
+    return telegram_service.send_event_unpublished_sync(event)
 
 
 def send_announcement(message: str) -> bool:

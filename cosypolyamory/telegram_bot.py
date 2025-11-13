@@ -179,7 +179,7 @@ class CosyPolyTelegramBot:
                 
             await self.bot.send_message(
                 chat_id=target_chat,
-                text=f"📢 **Cosy Polyamory Announcement**\n\n{message}",
+                text=f"📢 **Cosy Telegram Bot Notification**\n\n{message}",
                 parse_mode='Markdown'
             )
             logger.info(f"Announcement sent successfully to chat {target_chat}")

@@ -1,0 +1,11 @@
+⏰ **Event Reminder**
+
+Don't forget! **{{ event_title }}** is happening {{ time_text }}!
+
+📅 **Date:** {{ event_date }}
+🕐 **Time:** {{ event_time }}
+📍 **Location:** {{ event_location }}
+
+See you there! 💕
+
+**Event Link:** {{ event_url }}

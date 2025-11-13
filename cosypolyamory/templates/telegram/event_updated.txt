@@ -1,4 +1,4 @@
-📝 **Event Updated!**
+**Event Updated!**
 
 **{{ event_title }}** has been updated with the following changes:
 
@@ -6,6 +6,4 @@
 
 Please check the event page for full details.
 
-🔗 **Event Link:** {{ event_url }}
-
-#CosyPolyamory #EventUpdate
+**Event Link:** {{ event_url }}
