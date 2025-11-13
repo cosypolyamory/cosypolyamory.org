@@ -185,7 +185,6 @@ def event_detail(event_id):
                 (current_user.role in ['admin', 'organizer'] or 
                  event.organizer_id == current_user.id or 
                  (event.co_host and event.co_host_id == current_user.id))):
-            flash('This event is not yet available.', 'error')
             return redirect(url_for('events.events_list'))
 
     can_see_details = current_user.is_authenticated and current_user.can_see_full_event_details()
@@ -641,6 +640,7 @@ def edit_event_post(event_id):
         max_attendees = request.form.get('max_attendees')
         organizer_id = request.form.get('organizer_id')
         co_host_id = request.form.get('co_host_id', '')
+        publish_immediately = request.form.get('publish_immediately') == 'on'
 
         # Validate form data lengths and required fields
         is_valid, error_message = validate_event_form_data(
@@ -851,6 +851,7 @@ def edit_event_post(event_id):
             event.tips_for_attendees = tips_for_attendees.strip() if tips_for_attendees and tips_for_attendees.strip() else None
             event.max_attendees = int(max_attendees) if max_attendees else None
             event.event_note = event_note
+            event.published = publish_immediately
             event.save()
 
             # Check for significant changes that warrant notifications

@@ -359,21 +359,24 @@
                     </div>
                     
                     <!-- Publish Option -->
-                    {% if not is_edit %}
                     <div class="row mb-3">
                         <div class="col-12">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="publish_immediately" name="publish_immediately">
+                                <input class="form-check-input" type="checkbox" id="publish_immediately" name="publish_immediately"
+                                    {% if is_edit and event.published %}checked{% endif %}>
                                 <label class="form-check-label" for="publish_immediately">
-                                    <strong>Publish this event</strong>
+                                    <strong>{% if is_edit %}Publish{% else %}Publish this event{% endif %}</strong>
                                 </label>
                                 <div class="form-text">
-                                    Tick this box to publish event; if left unticked the event is not visble to users.
+                                    {% if is_edit %}
+                                        Tick this box to make the event visible to users; if unticked the event will be unpublished.
+                                    {% else %}
+                                        Tick this box to publish event; if left unticked the event is not visible to users.
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {% endif %}
                     
                     <!-- Submit -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
