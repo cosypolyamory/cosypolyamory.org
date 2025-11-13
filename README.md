@@ -42,3 +42,14 @@ Web page for Barcelona's new english speaking polyamory group, complete with Mee
 
 - [OAuth Setup Guide](docs/OAUTH_SETUP.md) - Configure Google and GitHub authentication
 - [Google Maps Setup](GOOGLE_MAPS_SETUP.md) - Configure embedded maps for events # TO IMPLEMENT
+
+### minor issues
+#### CSS/SASS
+- workaround if sass support for css doesn't work:
+`pip install Flask-Assets libsass`
+
+- how to compile the css after you modify it:
+```bash
+export FLASK_APP=cosypolyamory/app.py
+python3 -m flask assets build
+```

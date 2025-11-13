@@ -7,3 +7,7 @@ mayhem_cat/cache
 config.py
 .env
 *.db
+# sass cache
+static/.webassets-cache
+# compiled CSS
+static/css/style.css 

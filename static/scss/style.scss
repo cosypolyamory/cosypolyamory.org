@@ -1,58 +1,171 @@
-/* Make all input/textarea placeholders a lighter gray for field hints */
-input::placeholder,
-textarea::placeholder {
-  color: #adb5bd !important;
-  opacity: 1;
-}
+/* color palette */
+$dark:   #1C003A;
+$bright: #FFE3D8;
+$pink-1: #FFBCFD;
+$pink-2: #FF7ECF;
+$pink-3: #A95DA8;
+$pink-4: #BF29BC;
+$purple-light: #6f42c1;
+$purple: #390177;
+$purple-dark: #1c0439;
+
 body {
-  font-family: 'Montserrat', sans-serif !important;
-  background: #FCFBFB;
+    background-color: $bright;
+    font-family: 'Inter', sans-serif; /* Inter is not standard */
 }
 
-.coming-soon {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: flex-start;
-  flex-wrap: nowrap;
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    margin: 0;
 }
 
-#header-title { 
+#first-page-title {
+    height: 60vh;
+}
+
+.page-odd {
+    background-color: $dark;
+    color: $bright;
+    margin: auto -10vw; /* extend background color to edges */
+    z-index: -1;
+}
+
+.circles-bg-container {
+    position: relative;
+    top: -60px;
+    left: 25px;
+}
+
+.circle-bg {
+    position: absolute;
+    border-radius: 50%;
+    background-color: $purple-light;
+    z-index: 7;
+    width: 30px;
+    height: 30px;
+}
+
+.circle-bg-01 { left: 314px; top: 098px; height: 13px; width: 13px; background-color: $pink-2; }
+.circle-bg-02 { left: 218px; top: 108px; height: 19px; width: 19px; background-color: $pink-4; }
+.circle-bg-03 { left: 046px; top: 165px; height: 12px; width: 12px; background-color: $pink-2; }
+.circle-bg-04 { left: 348px; top: 199px; height: 25px; width: 25px; background-color: $pink-2; }
+.circle-bg-05 { left: 268px; top: 232px; height: 13px; width: 13px; background-color: $pink-2; }
+.circle-bg-06 { left: 016px; top: 246px; height: 19px; width: 19px; background-color: $pink-1; }
+.circle-bg-07 { left: 335px; top: 264px; height: 13px; width: 13px; background-color: $pink-2; }
+.circle-bg-08 { left: 100px; top: 277px; height: 13px; width: 13px; background-color: $pink-3; }
+
+.circle-bg-09 { left: 236px; top: 534px; height: 17px; width: 17px; background-color: $pink-1; }
+.circle-bg-10 { left: 322px; top: 552px; height: 25px; width: 25px; background-color: $pink-2; }
+.circle-bg-11 { left: -15px; top: 563px; height: 61px; width: 61px; background-color: $pink-2; }
+.circle-bg-12 { left: 290px; top: 623px; height: 25px; width: 25px; background-color: $pink-2; }
+.circle-bg-13 { left: 348px; top: 669px; height: 19px; width: 19px; background-color: $pink-4; }
+
+#title {
+    color: $bright;
+    margin: 15vw;
+    text-align: left;
+    position: relative;
+    top: 20vh;
+    z-index: 1;
+}
+
+#title h1 {
+    font-size: 250%;
+    font-weight: 900;
+    line-height: 1.5;
+}
+
+.page-bottom-shape-background {
+    width: 100%;
+    position: relative;
+    top: 150px;
+    z-index:-1;
+}
+.page-top-shape-background {
+  width: 100%;
+  position: absolute;
+  left: 0px;
+  z-index: -1;
+  transform: scaleY(-1);
+  -webkit-transform: scaleY(-1);
+}
+
+.blob-shape-background {
+    width: 70%;
+    position: absolute;
+    top: 386px;
+    right: 13px;
+    z-index: 0;
+}
+
+.circle-line-shape-background {
+    width: 50%;
+    position: absolute;
+    top: 184px;
+    left: 24px;
+    z-index: 0;
+}
+
+#title h3 {
+    font-size: 80%;
+    margin: 8em 0 1.3em 0;
+}
+
+#who-we-are {
+    margin-top: 170px;
+}
+
+#how-to-member {
+  margin-top: 100px;
+  max-width: 95vw;
+  transform: translateX(10vw);
+  -webkit-transform: translateX(10vw); }
+
+#core-values-container {
+    background-color: $purple;
+    border-radius: 15px;
+    color: $bright;
+    height: 150px;
+    margin-bottom: 1rem;
+    padding: 1vw;
     text-align: center;
-    margin-top: 0;
 }
 
-#header-pre-title {
-    font-size: 150%;
-    text-align: center;
-    margin-bottom: 0;
+.value-box {
+    width: 100px;
 }
 
-.logo {
-    text-align: center;
-    margin: 1.5em 0 0 0;
-    max-width: 250px;
+.value-heart {
+    width: 40px;
+    height: 40px;
 }
 
-h1,h2 {
-    margin: 1.5em 0 1.5em 0;
+.fill-pink-1{ fill: $pink-1; }
+.fill-pink-2{ fill: $pink-2; }
+.fill-pink-4{ fill: $pink-4; }
+
+.call-to-action-button {
+    margin: 1rem 0;
+    background-color: $pink-4;
+    border-radius: 50px;;
+    font-weight: 600;
+    width: 100%;
+    border: none;
+    outline: none;
 }
 
 .header-paragraph {
   font-size: 150%;
 }
 
-h3 {
-    margin: 1.3em 0 1.3em 0 !important;
-}
-
-h4 {
-    margin: 1.2em 0 1.2em 0 !important;
-}
+h2 { font-weight: 800; }
+h3 { margin: 1.3em 0 1.3em 0; }
+h4 { margin: 1.2em 0 1.2em 0 !important; }
 
 .navbar-color {
-    background-color: #5d0096;
-    border-radius: 0px 0px 10px 10px;
+    background-color: $purple-dark;
+    /*border-radius: 0px 0px 10px 10px;*/
     font-weight: bold;
 }
 
@@ -218,8 +331,8 @@ h4 {
 }
 
 /* Additional event card filtering */
-.event-card.hidden { 
-  display: none !important; 
+.event-card.hidden {
+  display: none !important;
 }
 
 /* Event card styling for consistent layout */
@@ -243,7 +356,7 @@ h4 {
     max-width: 95% !important;
     width: 95% !important;
   }
-  
+
   .container-md {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -258,7 +371,7 @@ h4 {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
-  
+
   .container-md {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
@@ -290,7 +403,7 @@ h4 {
         padding-right: 0 !important;
         max-width: 100% !important;
     }
-    
+
     /* Override the col-md-8 mx-auto wrapper from base template */
     #content {
         max-width: 100% !important;
@@ -299,33 +412,33 @@ h4 {
         padding-left: 8px !important;
         padding-right: 8px !important;
     }
-    
+
     .container {
         padding-left: 0 !important;
         padding-right: 0 !important;
         max-width: 100% !important;
     }
-    
+
     .row {
         margin-left: -4px !important;
         margin-right: -4px !important;
     }
-    
+
     .row > [class*="col-"] {
         padding-left: 4px !important;
         padding-right: 4px !important;
     }
-    
+
     /* Reduce card padding on mobile */
     .card-body {
         padding: 0.75rem !important;
     }
-    
+
     /* Reduce margins between elements */
     .mb-4 {
         margin-bottom: 0.75rem !important;
     }
-    
+
     /* Chart container responsive sizing */
     .chart-container {
         height: 250px; /* Mobile optimized height */
@@ -519,13 +632,13 @@ h4 {
     .application-actions {
         gap: 0.5rem !important;
     }
-    
+
     .application-actions .btn {
         min-width: 70px !important;
         padding: 0.375rem 0.5rem !important;
         font-size: 0.8rem !important;
     }
-    
+
     .application-actions .btn i {
         margin-right: 0.25rem !important;
     }
@@ -537,11 +650,11 @@ h4 {
         min-width: 40px !important;
         padding: 0.375rem 0.5rem !important;
     }
-    
+
     .application-actions .btn .btn-text {
         display: none !important;
     }
-    
+
     .application-actions .btn i {
         margin-right: 0 !important;
     }
@@ -669,4 +782,142 @@ h4 {
 .card-header-rsvp-no {
     background-color: #c17a7a !important;
     color: white !important;
+}
+
+/* RSVP State Custom Colors */
+.btn-rsvp-yes {
+    background-color: #7a9b7a !important;
+    border-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.btn-rsvp-yes:hover,
+.btn-rsvp-yes:focus,
+.btn-rsvp-yes:active {
+    background-color: #6d8b6d !important;
+    border-color: #6d8b6d !important;
+    color: white !important;
+}
+
+.btn-rsvp-no {
+    background-color: #c17a7a !important;
+    border-color: #c17a7a !important;
+    color: white !important;
+}
+
+.btn-rsvp-no:hover,
+.btn-rsvp-no:focus,
+.btn-rsvp-no:active {
+    background-color: #b36d6d !important;
+    border-color: #b36d6d !important;
+    color: white !important;
+}
+
+.btn-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    border-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.btn-rsvp-maybe:hover,
+.btn-rsvp-maybe:focus,
+.btn-rsvp-maybe:active {
+    background-color: #8a6d92 !important;
+    border-color: #8a6d92 !important;
+    color: white !important;
+}
+
+.btn-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    border-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.btn-rsvp-waitlisted:hover,
+.btn-rsvp-waitlisted:focus,
+.btn-rsvp-waitlisted:active {
+    background-color: #edcb2b !important;
+    border-color: #edcb2b !important;
+    color: #333 !important;
+}
+
+/* For no RSVP state, keep blue */
+.btn-rsvp-none {
+    background-color: transparent !important;
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+}
+
+.btn-rsvp-none:hover,
+.btn-rsvp-none:focus,
+.btn-rsvp-none:active {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+}
+
+/* Badge classes using the same custom colors */
+.badge-rsvp-host {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-cohost {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.badge-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+/* Card header classes using the same custom colors */
+.card-header-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.card-header-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.card-header-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.card-header-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+/* Make all input/textarea placeholders a lighter gray for field hints */
+input::placeholder,
+textarea::placeholder {
+  color: #adb5bd !important;
+  opacity: 1;
+}
+
+/* Make all input/textarea placeholders a lighter gray for field hints */
+input::placeholder,
+textarea::placeholder {
+  color: #adb5bd !important;
+  opacity: 1;
 }

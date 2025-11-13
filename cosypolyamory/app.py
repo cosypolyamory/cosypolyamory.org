@@ -12,6 +12,7 @@ from flask import Flask, render_template, send_file, session, redirect, url_for,
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
+from flask_assets import Environment, Bundle
 
 # Import database and models
 from cosypolyamory.database import init_database
@@ -104,6 +105,15 @@ def load_user(user_id):
         return User.get(User.id == user_id)
     except User.DoesNotExist:
         return None
+
+# Initialize Flask-Assets
+assets = Environment(app)
+scss = Bundle(
+    'scss/style.scss',
+    filters='libsass',
+    output='css/style.css'
+)
+assets.register('scss_all', scss)
 
 # Register route blueprints
 from cosypolyamory.routes import register_routes
