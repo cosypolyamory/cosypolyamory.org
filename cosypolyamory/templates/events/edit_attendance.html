@@ -7,15 +7,20 @@
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card bg-light">
-                <div class="card-body py-3">
-                    <div class="d-flex flex-wrap gap-2">
-                        <div class="d-flex flex-wrap gap-2">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                        <!-- Primary Navigation -->
+                        <div>
                             <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Event
+                                Back to Event
                             </a>
-                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-dark btn-sm">
-                                <i class="fas fa-list me-2"></i>Events
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-secondary btn-sm">
+                                All Events
                             </a>
                         </div>
                     </div>

@@ -6,29 +6,31 @@
 <div class="container">
     {% if is_edit %}
     <!-- Header Navigation for Edit Event -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card bg-light">
-                <div class="card-body py-3">
-                    <div class="d-flex flex-wrap gap-2">
-                        <div class="d-flex flex-wrap gap-2">
-                            <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Event
-                            </a>
-                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-dark btn-sm">
-                                <i class="fas fa-list me-2"></i>All Events
-                            </a>
-                            {% if (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) and event.exact_time > now %}
-                            <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
-                                <i class="fas fa-users-cog me-2"></i>Edit Attendance
-                            </a>
-                            {% endif %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                            <!-- Primary Navigation -->
+                            <div>
+                                <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                                    Back to Event
+                                </a>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) and event.exact_time > now %}
+                                    <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-outline-dark btn-sm">
+                                        Manage Attendance
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
     {% endif %}
     
     <h1>{% if is_edit %}Edit Event{% else %}Create New Event{% endif %}</h1>
