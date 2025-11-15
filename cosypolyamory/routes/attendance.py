@@ -58,6 +58,356 @@ def approved_user_required(f):
     return decorated_function
 
 
+
+# Manage attendance API:
+# This API end point takes a POST'ed JSON doc with the following fields:
+# - Attendance yes: ordered list of tuple(user, notify) (first come first serve)
+# - Attendance no: ordered list of tuple(user, notify).
+# - Attendance maybe: ordered list of tuple(user, notify).
+# - remove_attendance: list of user_ids to completely remove RSVPs from
+# Use the current user's role to sanity check the request
+#   - organizers and admins can carry out all actions.
+#   - approved members can only act on their own behalf.
+# 
+#  - Update the attendance list by first applying the attendance no's, and then the attendance yes's. Then apply maybes.
+#  - If the additions would make the event go over capacity (adding a co-host for example), reject all, abort the DB transaction
+#    set an informative flash message. If a user say attendance yes, when the event is full, add them to the waitlist instead.
+#  - ensure that the host and optional co-host has an attendance yes. If not, add them.
+#  - if the event is not at capacity and people are on the waitlist, promote the waitlisted people, first come first serve until the event is full.
+#  - If the above make the event go over capacity, reject, abort DB, send flash.
+#  - If all is within limits, commit the transaction.
+#  - Send notifications according to the actions that where just taken. If a user rsvp'ed for the first time, send a rsvp confirmation email. otherwise send an RSVP change email.
+#
+# Features that we do not want to support anymore:
+#  - RSVP notes.
+#  - Host prevention logic. Automatically adding them replaces this feature
+#  - Return HTML from back end. Will refactor front end.
+#  - Remove all waitlist promotion logic in the front end.
+
+@bp.route('/<int:event_id>/manage_attendance', methods=['POST'])
+@login_required
+def manage_attendance(event_id):
+    """
+    API endpoint to manage event attendance.
+    
+    Expects JSON with:
+    - attendance_yes: list of user IDs who are attending
+    - attendance_no: list of user IDs who are not attending
+    - attendance_maybe: list of user IDs with maybe status
+    
+    Returns JSON with success status and any relevant messages.
+    """
+    try:
+        event = Event.get_by_id(event_id)
+    except Event.DoesNotExist:
+        return jsonify({'success': False, 'error': 'Event not found'}), 404
+    
+    # Check permissions based on user role
+    is_admin_or_organizer = (current_user.role in ['admin', 'organizer'] or 
+                              event.organizer_id == current_user.id or 
+                              (event.co_host and event.co_host_id == current_user.id))
+    
+    # Parse JSON request
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
+    
+    attendance_yes = data.get('attendance_yes', [])
+    attendance_no = data.get('attendance_no', [])
+    attendance_maybe = data.get('attendance_maybe', [])
+    remove_attendance = data.get('remove_attendance', [])
+    
+    # Parse tuples of (user_id, notify) or plain user_id
+    def parse_attendance_list(items):
+        """Convert list of (user_id, notify) tuples or plain user_ids to [(user_id, notify)]"""
+        result = []
+        for item in items:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                # Tuple format: (user_id, notify)
+                result.append((int(item[0]), bool(item[1])))
+            elif isinstance(item, (list, tuple)) and len(item) == 1:
+                # Single-element tuple: (user_id,) - default notify to True
+                result.append((int(item[0]), True))
+            else:
+                # Plain user_id - default notify to True
+                result.append((int(item), True))
+        return result
+    
+    # Validate and parse input
+    try:
+        attendance_yes = parse_attendance_list(attendance_yes)
+        attendance_no = parse_attendance_list(attendance_no)
+        attendance_maybe = parse_attendance_list(attendance_maybe)
+        # Parse remove_attendance as plain list of user IDs
+        remove_attendance = [int(uid) for uid in remove_attendance]
+    except (ValueError, TypeError) as e:
+        return jsonify({'success': False, 'error': f'Invalid user ID or notify format: {str(e)}'}), 400
+    
+    # If not admin/organizer, validate user can only change their own RSVP
+    if not is_admin_or_organizer:
+        all_user_ids = set([uid for uid, _ in attendance_yes + attendance_no + attendance_maybe] + remove_attendance)
+        if len(all_user_ids) != 1 or current_user.id not in all_user_ids:
+            return jsonify({'success': False, 'error': 'You can only manage your own attendance'}), 403
+    
+    # Start transaction
+    try:
+        with database.atomic():
+            # Track changes for notifications
+            promoted_users = []
+            updated_rsvps = []
+            removed_users = []
+            
+            # Step 0: Remove RSVPs completely (before status updates)
+            for user_id in remove_attendance:
+                try:
+                    user = User.get_by_id(user_id)
+                    try:
+                        rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                        was_attending = rsvp.status == 'yes'
+                        rsvp.delete_instance()
+                        removed_users.append((user, was_attending))
+                    except RSVP.DoesNotExist:
+                        # No RSVP to remove, continue
+                        pass
+                except User.DoesNotExist:
+                    database.rollback()
+                    return jsonify({'success': False, 'error': f'User {user_id} not found'}), 400
+            
+            # Step 1: Apply attendance_no updates first (add/update users to 'no' status)
+            for user_id, notify in attendance_no:
+                try:
+                    user = User.get_by_id(user_id)
+                    rsvp, created = RSVP.get_or_create(
+                        event=event,
+                        user=user,
+                        defaults={'status': 'no', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                    )
+                    if created:
+                        # New RSVP created
+                        updated_rsvps.append({'user': user, 'old_status': None, 'new_status': 'no', 'notify': notify})
+                    elif rsvp.status != 'no':
+                        # Existing RSVP status changed
+                        old_status = rsvp.status
+                        rsvp.status = 'no'
+                        rsvp.updated_at = datetime.now()
+                        rsvp.save()
+                        updated_rsvps.append({'user': user, 'old_status': old_status, 'new_status': 'no', 'notify': notify})
+                except User.DoesNotExist:
+                    database.rollback()
+                    return jsonify({'success': False, 'error': f'User {user_id} not found'}), 400
+            
+            # Step 2: Apply attendance_yes updates (add/update users to 'yes' status)
+            # If event is full, automatically add to waitlist instead
+            for user_id, notify in attendance_yes:
+                try:
+                    user = User.get_by_id(user_id)
+                    
+                    # Check if event is full - if so, add to waitlist instead of 'yes'
+                    current_yes_count = RSVP.select().where(
+                        (RSVP.event == event) & (RSVP.status == 'yes')
+                    ).count()
+                    
+                    desired_status = 'yes'
+                    if event.max_attendees and current_yes_count >= event.max_attendees:
+                        # Check if this user already has 'yes' status (don't demote them)
+                        try:
+                            existing = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                            if existing.status != 'yes':
+                                desired_status = 'waitlist'
+                        except RSVP.DoesNotExist:
+                            desired_status = 'waitlist'
+                    
+                    rsvp, created = RSVP.get_or_create(
+                        event=event,
+                        user=user,
+                        defaults={'status': desired_status, 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                    )
+                    if created:
+                        # New RSVP created
+                        updated_rsvps.append({'user': user, 'old_status': None, 'new_status': desired_status, 'notify': notify})
+                    elif rsvp.status != desired_status:
+                        # Existing RSVP status changed
+                        old_status = rsvp.status
+                        rsvp.status = desired_status
+                        rsvp.updated_at = datetime.now()
+                        rsvp.save()
+                        updated_rsvps.append({'user': user, 'old_status': old_status, 'new_status': desired_status, 'notify': notify})
+                except User.DoesNotExist:
+                    database.rollback()
+                    return jsonify({'success': False, 'error': f'User {user_id} not found'}), 400
+            
+            # Step 3: Apply attendance_maybe updates (add/update users to 'maybe' status)
+            for user_id, notify in attendance_maybe:
+                try:
+                    user = User.get_by_id(user_id)
+                    rsvp, created = RSVP.get_or_create(
+                        event=event,
+                        user=user,
+                        defaults={'status': 'maybe', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                    )
+                    if created:
+                        # New RSVP created
+                        updated_rsvps.append({'user': user, 'old_status': None, 'new_status': 'maybe', 'notify': notify})
+                    elif rsvp.status != 'maybe':
+                        # Existing RSVP status changed
+                        old_status = rsvp.status
+                        rsvp.status = 'maybe'
+                        rsvp.updated_at = datetime.now()
+                        rsvp.save()
+                        updated_rsvps.append({'user': user, 'old_status': old_status, 'new_status': 'maybe', 'notify': notify})
+                except User.DoesNotExist:
+                    database.rollback()
+                    return jsonify({'success': False, 'error': f'User {user_id} not found'}), 400
+            
+            # Step 4: Check capacity 
+            current_yes_count = RSVP.select().where(
+                (RSVP.event == event) & (RSVP.status == 'yes')
+            ).count()
+            
+            if event.max_attendees and current_yes_count > event.max_attendees:
+                database.rollback()
+                return jsonify({
+                    'success': False, 
+                    'error': f'Cannot update attendance: would exceed event capacity ({current_yes_count} attending, max {event.max_attendees})'
+                }), 400
+            
+            # Step 5: Ensure hosts have RSVPs and promote waitlist (always done per updated spec)
+            # Ensure organizer has 'yes' RSVP
+            organizer_rsvp, created = RSVP.get_or_create(
+                event=event,
+                user=event.organizer,
+                defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+            )
+            if created:
+                # New host RSVP created - add to tracking with notify=False (hosts don't need their own confirmation)
+                updated_rsvps.append({'user': event.organizer, 'old_status': None, 'new_status': 'yes', 'notify': False})
+            elif organizer_rsvp.status != 'yes':
+                # Existing RSVP status changed
+                old_status = organizer_rsvp.status
+                organizer_rsvp.status = 'yes'
+                organizer_rsvp.updated_at = datetime.now()
+                organizer_rsvp.save()
+                updated_rsvps.append({'user': event.organizer, 'old_status': old_status, 'new_status': 'yes', 'notify': False})
+            
+            # Ensure co-host has 'yes' RSVP if there is one
+            if event.co_host:
+                cohost_rsvp, created = RSVP.get_or_create(
+                    event=event,
+                    user=event.co_host,
+                    defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                )
+                if created:
+                    # New co-host RSVP created - add to tracking with notify=False
+                    updated_rsvps.append({'user': event.co_host, 'old_status': None, 'new_status': 'yes', 'notify': False})
+                elif cohost_rsvp.status != 'yes':
+                    # Existing RSVP status changed
+                    old_status = cohost_rsvp.status
+                    cohost_rsvp.status = 'yes'
+                    cohost_rsvp.updated_at = datetime.now()
+                    cohost_rsvp.save()
+                    updated_rsvps.append({'user': event.co_host, 'old_status': old_status, 'new_status': 'yes', 'notify': False})
+            
+            # Recount after adding hosts
+            current_yes_count = RSVP.select().where(
+                (RSVP.event == event) & (RSVP.status == 'yes')
+            ).count()
+            
+            # Check capacity again after adding hosts
+            if event.max_attendees and current_yes_count > event.max_attendees:
+                database.rollback()
+                return jsonify({
+                    'success': False, 
+                    'error': f'Cannot update attendance: adding required host RSVPs would exceed event capacity ({current_yes_count} attending, max {event.max_attendees})'
+                }), 400
+            
+            # Promote waitlisted users if there's capacity
+            if event.max_attendees:
+                available_spots = event.max_attendees - current_yes_count
+                if available_spots > 0:
+                    waitlisted = RSVP.select().where(
+                        (RSVP.event == event) & (RSVP.status == 'waitlist')
+                    ).order_by(RSVP.created_at).limit(available_spots)
+                    
+                    for rsvp in waitlisted:
+                        rsvp.status = 'yes'
+                        rsvp.updated_at = datetime.now()
+                        rsvp.save()
+                        promoted_users.append(rsvp.user)
+            
+            # Final capacity check
+            final_yes_count = RSVP.select().where(
+                (RSVP.event == event) & (RSVP.status == 'yes')
+            ).count()
+            
+            if event.max_attendees and final_yes_count > event.max_attendees:
+                database.rollback()
+                return jsonify({
+                    'success': False, 
+                    'error': f'Cannot update attendance: final state would exceed event capacity ({final_yes_count} attending, max {event.max_attendees})'
+                }), 400
+        
+        # Transaction committed successfully
+        # Now send notifications for all status changes (after transaction is complete)
+        # Only send notifications if the notify flag is True
+        for rsvp_update in updated_rsvps:
+            if rsvp_update['notify']:
+                user = rsvp_update['user']
+                old_status = rsvp_update['old_status']
+                new_status = rsvp_update['new_status']
+                try:
+                    # Send appropriate notification based on status change
+                    if new_status == 'yes' and old_status is None:
+                        # New RSVP with 'yes' status - send confirmation email
+                        rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                        send_rsvp_confirmation(user, event, rsvp)
+                    elif new_status == 'yes' and old_status != 'yes':
+                        # Existing RSVP changed to 'yes' - send update notification
+                        send_rsvp_update_notification(user, event, new_status)
+                    elif old_status and new_status != old_status:
+                        # Any other status change - send update notification
+                        send_rsvp_update_notification(user, event, new_status)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send RSVP notification to {user.email}: {e}")
+        
+        # Send waitlist promotion notifications (always notify on promotion)
+        for user in promoted_users:
+            try:
+                send_waitlist_promotion_notification(user, event)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send waitlist promotion notification to {user.email}: {e}")
+        
+        # Send removal notifications (always notify on removal)
+        for user, was_attending in removed_users:
+            try:
+                send_rsvp_update_notification(user, event, 'removed')
+            except Exception as e:
+                current_app.logger.error(f"Failed to send removal notification to {user.email}: {e}")
+        
+        response_data = {
+            'success': True,
+            'message': 'Attendance updated successfully',
+            'current_attending': RSVP.select().where(
+                (RSVP.event == event) & (RSVP.status == 'yes')
+            ).count()
+        }
+        
+        if promoted_users:
+            response_data['promoted_count'] = len(promoted_users)
+            response_data['promoted_users'] = [{'id': u.id, 'name': u.name} for u in promoted_users]
+        
+        if updated_rsvps:
+            response_data['updated_count'] = len(updated_rsvps)
+        
+        if removed_users:
+            response_data['removed_count'] = len(removed_users)
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error managing attendance for event {event_id}: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'An unexpected error occurred'}), 500
+
+
 @bp.route('/<int:event_id>/rsvp', methods=['POST'])
 @approved_user_required
 def rsvp_event(event_id):
