@@ -60,29 +60,45 @@ def approved_user_required(f):
 
 
 # Manage attendance API:
-# This API end point takes a POST'ed JSON doc with the following fields:
-# - Attendance yes: ordered list of tuple(user, notify) (first come first serve)
-# - Attendance no: ordered list of tuple(user, notify).
-# - Attendance maybe: ordered list of tuple(user, notify).
-# - remove_attendance: list of user_ids to completely remove RSVPs from
-# Use the current user's role to sanity check the request
-#   - organizers and admins can carry out all actions.
-#   - approved members can only act on their own behalf.
+# This is the ONLY endpoint that should modify event attendance/RSVPs.
 # 
-#  - Update the attendance list by first applying the attendance no's, and then the attendance yes's. Then apply maybes.
-#  - If the additions would make the event go over capacity (adding a co-host for example), reject all, abort the DB transaction
-#    set an informative flash message. If a user say attendance yes, when the event is full, add them to the waitlist instead.
-#  - ensure that the host and optional co-host has an attendance yes. If not, add them.
-#  - if the event is not at capacity and people are on the waitlist, promote the waitlisted people, first come first serve until the event is full.
-#  - If the above make the event go over capacity, reject, abort DB, send flash.
-#  - If all is within limits, commit the transaction.
-#  - Send notifications according to the actions that where just taken. If a user rsvp'ed for the first time, send a rsvp confirmation email. otherwise send an RSVP change email.
+# This API endpoint takes a POST'ed JSON doc with the following fields:
+# - attendance_yes: list of (user_id, notify) tuples - users attending (FCFS order)
+# - attendance_no: list of (user_id, notify) tuples - users not attending
+# - attendance_maybe: list of (user_id, notify) tuples - users with maybe status
+# - remove_attendance: list of (user_id, notify) tuples - completely remove RSVPs from event
 #
-# Features that we do not want to support anymore:
-#  - RSVP notes.
-#  - Host prevention logic. Automatically adding them replaces this feature
-#  - Return HTML from back end. Will refactor front end.
-#  - Remove all waitlist promotion logic in the front end.
+# Each tuple contains (user_id, notify) where notify is a boolean indicating whether
+# to send notification emails for this change. Plain user_id integers are also accepted
+# and will default to notify=True.
+#
+# Permission model:
+#   - Organizers and admins can manage all attendees
+#   - Approved members can only manage their own attendance
+#
+# Transaction-safe processing order:
+#   Step 0: Remove RSVPs (remove_attendance list)
+#   Step 1: Apply attendance_no updates (clear spots)
+#   Step 2: Apply attendance_yes updates (auto-waitlist if full)
+#   Step 3: Apply attendance_maybe updates
+#   Step 4: Validate capacity constraints
+#   Step 5: Ensure host/co-host have 'yes' RSVPs (always enforced)
+#   Step 6: Promote waitlisted users FCFS if capacity available
+#   Step 7: Final capacity validation
+#   
+# All changes are wrapped in database.atomic() transaction - any capacity violation
+# triggers automatic rollback. Notifications are sent AFTER successful commit.
+#
+# Auto-waitlist behavior: Users RSVPing 'yes' to full events are automatically moved
+# to waitlist status instead, except for existing 'yes' attendees.
+#
+# Notification types:
+#   - New 'yes' RSVP: send_rsvp_confirmation
+#   - Status change: send_rsvp_update_notification  
+#   - Waitlist promotion: send_waitlist_promotion_notification
+#   - RSVP removal: send_rsvp_update_notification with 'removed' status
+#
+# Returns JSON with success status, counts, and list of promoted users if applicable.
 
 @bp.route('/<int:event_id>/manage_attendance', methods=['POST'])
 @login_required
@@ -138,14 +154,14 @@ def manage_attendance(event_id):
         attendance_yes = parse_attendance_list(attendance_yes)
         attendance_no = parse_attendance_list(attendance_no)
         attendance_maybe = parse_attendance_list(attendance_maybe)
-        # Parse remove_attendance as plain list of user IDs
-        remove_attendance = [int(uid) for uid in remove_attendance]
+        # Parse remove_attendance - support both plain IDs and tuples with notify flag
+        remove_attendance = parse_attendance_list(remove_attendance)
     except (ValueError, TypeError) as e:
         return jsonify({'success': False, 'error': f'Invalid user ID or notify format: {str(e)}'}), 400
     
     # If not admin/organizer, validate user can only change their own RSVP
     if not is_admin_or_organizer:
-        all_user_ids = set([uid for uid, _ in attendance_yes + attendance_no + attendance_maybe] + remove_attendance)
+        all_user_ids = set([uid for uid, _ in attendance_yes + attendance_no + attendance_maybe + remove_attendance])
         if len(all_user_ids) != 1 or current_user.id not in all_user_ids:
             return jsonify({'success': False, 'error': 'You can only manage your own attendance'}), 403
     
@@ -158,14 +174,14 @@ def manage_attendance(event_id):
             removed_users = []
             
             # Step 0: Remove RSVPs completely (before status updates)
-            for user_id in remove_attendance:
+            for user_id, notify in remove_attendance:
                 try:
                     user = User.get_by_id(user_id)
                     try:
                         rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
                         was_attending = rsvp.status == 'yes'
                         rsvp.delete_instance()
-                        removed_users.append((user, was_attending))
+                        removed_users.append((user, was_attending, notify))
                     except RSVP.DoesNotExist:
                         # No RSVP to remove, continue
                         pass
@@ -376,20 +392,31 @@ def manage_attendance(event_id):
             except Exception as e:
                 current_app.logger.error(f"Failed to send waitlist promotion notification to {user.email}: {e}")
         
-        # Send removal notifications (always notify on removal)
-        for user, was_attending in removed_users:
-            try:
-                send_rsvp_update_notification(user, event, 'removed')
-            except Exception as e:
-                current_app.logger.error(f"Failed to send removal notification to {user.email}: {e}")
+        # Send removal notifications (only if notify flag is True)
+        for user, was_attending, notify in removed_users:
+            if notify:
+                try:
+                    send_rsvp_update_notification(user, event, 'removed')
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send removal notification to {user.email}: {e}")
         
         response_data = {
             'success': True,
             'message': 'Attendance updated successfully',
-            'current_attending': RSVP.select().where(
+            'rsvp_count': RSVP.select().where(
                 (RSVP.event == event) & (RSVP.status == 'yes')
+            ).count(),
+            'waitlist_count': RSVP.select().where(
+                (RSVP.event == event) & (RSVP.status == 'waitlist')
             ).count()
         }
+        
+        # Include current user's status if they were affected
+        try:
+            user_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
+            response_data['user_status'] = user_rsvp.status
+        except RSVP.DoesNotExist:
+            response_data['user_status'] = None
         
         if promoted_users:
             response_data['promoted_count'] = len(promoted_users)
@@ -406,554 +433,6 @@ def manage_attendance(event_id):
     except Exception as e:
         current_app.logger.error(f"Error managing attendance for event {event_id}: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'An unexpected error occurred'}), 500
-
-
-@bp.route('/<int:event_id>/rsvp', methods=['POST'])
-@approved_user_required
-def rsvp_event(event_id):
-    """RSVP to an event"""
-    from flask import jsonify
-
-    try:
-        event = Event.get_by_id(event_id)
-
-        # Prevent hosts and co-hosts from RSVPing to their own events
-        if current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id):
-            message = 'Hosts and co-hosts cannot RSVP to their own events.'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': False, 'message': message}), 403
-            flash(message, 'error')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-        status = request.form.get('status')
-        notes = request.form.get('notes', '')
-
-        # Handle RSVP cancellation (empty status)
-        if status == '' or status is None:
-            try:
-                with database.atomic():
-                    rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
-                    was_attending = rsvp.status == 'yes'
-                    rsvp.delete_instance()
-
-                    # If user was attending and event has capacity, promote next waitlisted user
-                    promoted_user = None
-                    if was_attending and event.max_attendees:
-                        next_waitlisted = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(
-                            RSVP.created_at).first()
-                        if next_waitlisted:
-                            next_waitlisted.status = 'yes'
-                            next_waitlisted.updated_at = datetime.now()
-                            next_waitlisted.save()
-                            promoted_user = next_waitlisted.user.name
-                            # Send notification to promoted user
-                            send_waitlist_promotion_notification(next_waitlisted.user, event)
-
-                message = 'Attendance cancelled'
-                if promoted_user:
-                    message += f'. {promoted_user} has been moved from waitlist to attending.'
-
-                if request.headers.get('Accept') == 'application/json':
-                    # Recalculate lists and counts
-                    rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                    rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
-                    rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
-                    rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
-                    rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
-                    rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(
-                        RSVP.created_at)
-                    
-                    # Create consolidated attendance list 
-                    all_rsvps = list(rsvps) + list(rsvps_no) + list(rsvps_maybe) + list(rsvps_waitlist)
-                    
-                    # Create mock RSVP objects for host/co-host display
-                    class MockRSVP:
-                        def __init__(self, user, status):
-                            self.user = user
-                            self.status = status
-                            self.created_at = event.created_at
-                    
-                    # Remove host and co-host from regular RSVP lists if they exist
-                    all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.organizer_id]
-                    if event.co_host:
-                        all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.co_host.id]
-                    
-                    # Always add host and co-host at the beginning with their special status
-                    all_rsvps.append(MockRSVP(event.organizer, 'host'))
-                    if event.co_host:
-                        all_rsvps.append(MockRSVP(event.co_host, 'co-host'))
-                    
-                    # Sort by status priority, then by first name, then by last name
-                    status_priority = {'yes': 0, 'maybe': 1, 'waitlist': 2, 'no': 3, 'co-host': 4, 'host': 5}
-                    
-                    def sort_key(rsvp):
-                        # Split the name to get first and last name
-                        name_parts = rsvp.user.name.split()
-                        first_name = name_parts[0] if name_parts else ''
-                        last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
-                        return (status_priority.get(rsvp.status, 6), first_name.lower(), last_name.lower())
-                    
-                    consolidated_attendance = sorted(all_rsvps, key=sort_key)
-                    
-                    from flask import render_template
-                    attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps)
-                    not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
-                    waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist)
-                    consolidated_attendance_html = render_template('events/_consolidated_attendance.html', 
-                                                                 consolidated_attendance=consolidated_attendance)
-                    capacity_pills_html = render_template('events/_capacity_pills.html',
-                                                          rsvp_count=rsvp_count,
-                                                          event=event,
-                                                          rsvps_waitlist=rsvps_waitlist)
-                    header_pills_html = render_template('events/_header_pills.html',
-                                                        rsvp_count=rsvp_count,
-                                                        event=event,
-                                                        rsvps_waitlist=rsvps_waitlist,
-                                                        now=datetime.now())
-                    return jsonify({
-                        'success': True,
-                        'message': message,
-                        'status': None,
-                        'user_rsvp': None,
-                        'rsvp_count': rsvp_count,
-                        'rsvp_no_count': rsvp_no_count,
-                        'rsvps_html': attendees_html,
-                        'rsvps_no_html': not_attending_html,
-                        'waitlist_html': waitlist_html,
-                        'consolidated_attendance_html': consolidated_attendance_html,
-                        'capacity_pills_html': capacity_pills_html,
-                        'header_pills_html': header_pills_html,
-                        'promoted_user': promoted_user
-                    })
-                flash(message, 'success')
-            except RSVP.DoesNotExist:
-                message = 'No attendance record found to cancel.'
-                if request.headers.get('Accept') == 'application/json':
-                    return jsonify({'success': False, 'message': message})
-                flash(message, 'info')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-        if status not in ['yes', 'no', 'maybe']:
-            message = 'Invalid attendance status.'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': False, 'message': message})
-            flash(message, 'error')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-        # Enforce event capacity and waitlist
-        from peewee import fn
-        rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-        # If user is already RSVP'd, update their status
-        try:
-            with database.atomic():
-                rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
-                prev_status = rsvp.status
-                if status == 'yes':
-                    if event.max_attendees and rsvp_count >= event.max_attendees and prev_status != 'yes':
-                        rsvp.status = 'waitlist'
-                        message = 'Event is full. You have been added to the waitlist.'
-                    else:
-                        rsvp.status = 'yes'
-                        message = 'Attendance confirmed: Going'
-                elif status == 'no':
-                    rsvp.status = 'no'
-                    message = 'Attendance confirmed: Not Going'
-                elif status == 'maybe':
-                    rsvp.status = 'maybe'
-                    message = 'Attendance confirmed: Maybe'
-                rsvp.notes = notes
-                rsvp.updated_at = datetime.now()
-                rsvp.save()
-
-                # Automatic waitlist promotion when user changes from attending to not attending
-                promoted_user = None
-                if prev_status == 'yes' and rsvp.status != 'yes' and event.max_attendees:
-                    yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                    if yes_count < event.max_attendees:
-                        next_waitlisted = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(
-                            RSVP.created_at).first()
-                        if next_waitlisted:
-                            next_waitlisted.status = 'yes'
-                            next_waitlisted.updated_at = datetime.now()
-                            next_waitlisted.save()
-                            promoted_user = next_waitlisted.user.name
-                            # Send notification to promoted user
-                            send_waitlist_promotion_notification(next_waitlisted.user, event)
-                            message += f' {promoted_user} has been moved from waitlist to attending.'
-        except RSVP.DoesNotExist:
-            # New RSVP
-            with database.atomic():
-                if status == 'yes' and event.max_attendees and rsvp_count >= event.max_attendees:
-                    rsvp = RSVP.create(event=event, user=current_user, status='waitlist', notes=notes)
-                    message = 'Event is full. You have been added to the waitlist.'
-                else:
-                    rsvp = RSVP.create(event=event, user=current_user, status=status, notes=notes)
-                    status_text = 'Going' if status == 'yes' else 'Not Going' if status == 'no' else 'Maybe'
-                    message = f'Attendance confirmed: {status_text}'
-
-        # Prepare response
-        rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-        rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
-        rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
-        rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
-        rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
-        rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
-        
-        # Create consolidated attendance list sorted by status priority, then by name
-        all_rsvps = list(rsvps) + list(rsvps_no) + list(rsvps_maybe) + list(rsvps_waitlist)
-        
-        # Create mock RSVP objects for host/co-host display
-        class MockRSVP:
-            def __init__(self, user, status):
-                self.user = user
-                self.status = status
-                self.created_at = event.created_at
-        
-        # Remove host and co-host from regular RSVP lists if they exist
-        all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.organizer_id]
-        if event.co_host:
-            all_rsvps = [rsvp for rsvp in all_rsvps if rsvp.user.id != event.co_host.id]
-        
-        # Always add host and co-host at the beginning with their special status
-        all_rsvps.append(MockRSVP(event.organizer, 'host'))
-        if event.co_host:
-            all_rsvps.append(MockRSVP(event.co_host, 'co-host'))
-        
-        # Sort by status priority, then by first name, then by last name
-        status_priority = {'yes': 0, 'maybe': 1, 'waitlist': 2, 'no': 3, 'co-host': 4, 'host': 5}
-        
-        def sort_key(rsvp):
-            # Split the name to get first and last name
-            name_parts = rsvp.user.name.split()
-            first_name = name_parts[0] if name_parts else ''
-            last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
-            return (status_priority.get(rsvp.status, 6), first_name.lower(), last_name.lower())
-        
-        consolidated_attendance = sorted(all_rsvps, key=sort_key)
-        
-        from flask import render_template
-        attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps)
-        not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no)
-        waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist)
-        consolidated_attendance_html = render_template('events/_consolidated_attendance.html', 
-                                                     consolidated_attendance=consolidated_attendance)
-        capacity_pills_html = render_template('events/_capacity_pills.html',
-                                              rsvp_count=rsvp_count,
-                                              event=event,
-                                              rsvps_waitlist=rsvps_waitlist)
-        header_pills_html = render_template('events/_header_pills.html',
-                                            rsvp_count=rsvp_count,
-                                            event=event,
-                                            rsvps_waitlist=rsvps_waitlist,
-                                            now=datetime.now())
-        user_rsvp = {'status': rsvp.status} if rsvp else None
-        if request.headers.get('Accept') == 'application/json':
-            response_data = {
-                'success': True,
-                'message': message,
-                'status': rsvp.status,
-                'user_rsvp': user_rsvp,
-                'rsvp_count': rsvp_count,
-                'rsvp_no_count': rsvp_no_count,
-                'waitlist_count': rsvps_waitlist.count() if hasattr(rsvps_waitlist, 'count') else len(rsvps_waitlist),
-                'rsvps_html': attendees_html,
-                'rsvps_no_html': not_attending_html,
-                'waitlist_html': waitlist_html,
-                'consolidated_attendance_html': consolidated_attendance_html,
-                'total_attendance_count': len(consolidated_attendance),
-                'capacity_pills_html': capacity_pills_html,
-                'header_pills_html': header_pills_html
-            }
-            # Add promoted user info if someone was promoted
-            if 'promoted_user' in locals() and promoted_user:
-                response_data['promoted_user'] = promoted_user
-
-            if status == 'yes':
-                # Send RSVP confirmation email
-                send_rsvp_confirmation(current_user, event, rsvp)
-
-            return jsonify(response_data)
-
-        flash(message, 'success')
-
-        return redirect(url_for('events.event_detail', event_id=event_id))
-
-    except Event.DoesNotExist:
-        message = 'Event not found.'
-        if request.headers.get('Accept') == 'application/json':
-            return jsonify({'success': False, 'message': message})
-        flash(message, 'error')
-        return redirect(url_for('events.events_list'))
-
-
-@bp.route('/<int:event_id>/admin/rsvp/<user_id>/remove', methods=['POST'])
-@approved_user_required
-def admin_remove_rsvp(event_id, user_id):
-    """Remove a user's RSVP (admin/organizer only)"""
-    from flask import jsonify
-
-    try:
-        event = Event.get_by_id(event_id)
-        target_user = User.get_by_id(user_id)
-
-        # Check permissions: admin, organizer, or event host
-        if not (current_user.role == 'admin' or current_user.can_organize_events() or current_user.id == event.organizer_id):
-            message = 'Permission denied. Only administrators, organizers, or event hosts can remove RSVPs.'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': False, 'message': message})
-            flash(message, 'error')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-        # Find and remove the RSVP
-        try:
-            rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == target_user))
-            prev_status = rsvp.status
-
-            # Check if notifications should be skipped
-            skip_notification = request.form.get('skip_notification', 'false').lower() == 'true'
-
-            rsvp.delete_instance()
-
-            # Send removal notification unless skipped
-            if not skip_notification:
-                send_rsvp_update_notification(target_user, event, 'removed')
-
-            message = f'RSVP removed for {target_user.name}'
-
-            if request.headers.get('Accept') == 'application/json':
-                # Recalculate lists and counts for real-time update
-                rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
-                rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
-                rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
-                rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
-                rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
-
-                from flask import render_template
-                attendees_html = render_template('events/event_detail_attendees.html', rsvps=rsvps, event=event)
-                not_attending_html = render_template('events/event_detail_not_attending.html', rsvps_no=rsvps_no, event=event)
-                waitlist_html = render_template('events/event_detail_waitlist.html', rsvps_waitlist=rsvps_waitlist, event=event)
-                maybe_html = render_template('events/event_detail_maybe.html', rsvps_maybe=rsvps_maybe, event=event)
-                capacity_pills_html = render_template('events/_capacity_pills.html',
-                                                      rsvp_count=rsvp_count,
-                                                      event=event,
-                                                      rsvps_waitlist=rsvps_waitlist)
-                header_pills_html = render_template('events/_header_pills.html',
-                                                    rsvp_count=rsvp_count,
-                                                    event=event,
-                                                    rsvps_waitlist=rsvps_waitlist,
-                                                    now=datetime.now())
-
-                return jsonify({
-                    'success': True,
-                    'message': message,
-                    'rsvp_count': rsvp_count,
-                    'rsvp_no_count': rsvp_no_count,
-                    'waitlist_count': rsvps_waitlist.count() if hasattr(rsvps_waitlist, 'count') else len(rsvps_waitlist),
-                    'maybe_count': rsvps_maybe.count() if hasattr(rsvps_maybe, 'count') else len(rsvps_maybe),
-                    'rsvps_html': attendees_html,
-                    'rsvps_no_html': not_attending_html,
-                    'waitlist_html': waitlist_html,
-                    'maybe_html': maybe_html,
-                    'capacity_pills_html': capacity_pills_html,
-                    'header_pills_html': header_pills_html
-                })
-
-            flash(message, 'success')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-        except RSVP.DoesNotExist:
-            message = f'No RSVP found for {target_user.name}'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': False, 'message': message})
-            flash(message, 'info')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-    except Event.DoesNotExist:
-        message = 'Event not found.'
-        if request.headers.get('Accept') == 'application/json':
-            return jsonify({'success': False, 'message': message})
-        flash(message, 'error')
-        return redirect(url_for('events.events_list'))
-    except User.DoesNotExist:
-        message = 'User not found.'
-        if request.headers.get('Accept') == 'application/json':
-            return jsonify({'success': False, 'message': message})
-        flash(message, 'error')
-        return redirect(url_for('events.event_detail', event_id=event_id))
-    except Exception as e:
-        message = f'Error removing RSVP: {str(e)}'
-        if request.headers.get('Accept') == 'application/json':
-            return jsonify({'success': False, 'message': message})
-        flash(message, 'error')
-        return redirect(url_for('events.event_detail', event_id=event_id))
-
-
-@bp.route('/<int:event_id>/admin/rsvp/<user_id>/move', methods=['POST'])
-@approved_user_required
-def admin_move_rsvp(event_id, user_id):
-    """Move a user's RSVP to a different status (admin/organizer only)"""
-    from flask import jsonify
-
-    try:
-        event = Event.get_by_id(event_id)
-        target_user = User.get_by_id(user_id)
-        new_status = request.form.get('status')
-
-        # Check permissions: admin, organizer, or event host
-        if not (current_user.role == 'admin' or current_user.can_organize_events() or current_user.id == event.organizer_id):
-            message = 'Permission denied. Only administrators, organizers, or event hosts can move RSVPs.'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': False, 'message': message})
-            flash(message, 'error')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-        # Validate status
-        if new_status not in ['yes', 'no', 'maybe', 'waitlist']:
-            message = 'Invalid status. Must be yes, no, maybe, or waitlist.'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': False, 'message': message})
-            flash(message, 'error')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-        # Find and update the RSVP
-        try:
-            rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == target_user))
-            prev_status = rsvp.status
-
-            # Check current event capacity
-            current_yes_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-            is_event_full = event.max_attendees and current_yes_count >= event.max_attendees
-
-            # Allow organizers to move people to waitlist regardless of capacity status
-            # (removed previous restriction that prevented waitlist moves when event not full)
-
-            # Handle capacity constraints when moving to 'yes'
-            if new_status == 'yes' and prev_status != 'yes':
-                if is_event_full:
-                    # Silently move to waitlist instead when event is full
-                    new_status = 'waitlist'
-                    message = f'{target_user.name} moved to waitlist (event is full).'
-                else:
-                    message = f'{target_user.name} moved to attending.'
-            elif new_status == 'no':
-                message = f'{target_user.name} moved to not attending.'
-            elif new_status == 'maybe':
-                message = f'{target_user.name} moved to maybe attending.'
-            elif new_status == 'waitlist':
-                message = f'{target_user.name} moved to waitlist.'
-            else:
-                message = f'{target_user.name} status updated.'
-
-            rsvp.status = new_status
-            rsvp.updated_at = datetime.now()
-            rsvp.save()
-
-            # Check if notifications should be skipped
-            skip_notification = request.form.get('skip_notification', 'false').lower() == 'true'
-
-            # Send status update notification unless skipped
-            if not skip_notification:
-                send_rsvp_update_notification(target_user, event, new_status)
-
-            if request.headers.get('Accept') == 'application/json':
-                # Recalculate lists and counts for real-time update
-                rsvp_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).count()
-                rsvp_no_count = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).count()
-                rsvps = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'yes')).order_by(RSVP.created_at)
-                rsvps_no = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at)
-                rsvps_waitlist = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'waitlist')).order_by(RSVP.created_at)
-                rsvps_maybe = RSVP.select().where((RSVP.event == event) & (RSVP.status == 'maybe')).order_by(RSVP.created_at)
-
-                # Check if current user can manage RSVPs
-                can_manage_rsvps = (current_user.role == 'admin' or current_user.can_organize_events()
-                                    or current_user.id == event.organizer_id)
-
-                from flask import render_template
-                try:
-                    attendees_html = render_template('events/event_detail_attendees.html',
-                                                     rsvps=rsvps,
-                                                     event=event,
-                                                     can_manage_rsvps=can_manage_rsvps)
-                    not_attending_html = render_template('events/event_detail_not_attending.html',
-                                                         rsvps_no=rsvps_no,
-                                                         event=event,
-                                                         can_manage_rsvps=can_manage_rsvps)
-                    waitlist_html = render_template('events/event_detail_waitlist.html',
-                                                    rsvps_waitlist=rsvps_waitlist,
-                                                    event=event,
-                                                    can_manage_rsvps=can_manage_rsvps)
-                    maybe_html = render_template('events/event_detail_maybe.html',
-                                                 rsvps_maybe=rsvps_maybe,
-                                                 event=event,
-                                                 can_manage_rsvps=can_manage_rsvps)
-                    capacity_pills_html = render_template('events/_capacity_pills.html',
-                                                          rsvp_count=rsvp_count,
-                                                          event=event,
-                                                          rsvps_waitlist=rsvps_waitlist)
-                    header_pills_html = render_template('events/_header_pills.html',
-                                                        rsvp_count=rsvp_count,
-                                                        event=event,
-                                                        rsvps_waitlist=rsvps_waitlist,
-                                                        now=datetime.now())
-
-                    return jsonify({
-                        'success': True,
-                        'message': message,
-                        'new_status': new_status,
-                        'rsvp_count': rsvp_count,
-                        'rsvp_no_count': rsvp_no_count,
-                        'rsvp_waitlist_count': rsvps_waitlist.count(),
-                        'waitlist_count': rsvps_waitlist.count(),
-                        'maybe_count': rsvps_maybe.count(),
-                        'rsvps_html': attendees_html,
-                        'rsvps_no_html': not_attending_html,
-                        'waitlist_html': waitlist_html,
-                        'maybe_html': maybe_html,
-                        'capacity_pills_html': capacity_pills_html,
-                        'header_pills_html': header_pills_html
-                    })
-                except Exception as template_error:
-                    # Fallback to simple response if template rendering fails
-                    return jsonify({
-                        'success': True,
-                        'message': message,
-                        'new_status': new_status,
-                        'rsvp_count': rsvp_count,
-                        'rsvp_no_count': rsvp_no_count,
-                        'rsvp_waitlist_count': rsvps_waitlist.count(),
-                        'template_error': str(template_error)
-                    })
-
-            flash(message, 'success')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-        except RSVP.DoesNotExist:
-            message = f'No RSVP found for {target_user.name}'
-            if request.headers.get('Accept') == 'application/json':
-                return jsonify({'success': False, 'message': message})
-            flash(message, 'info')
-            return redirect(url_for('events.event_detail', event_id=event_id))
-
-    except Event.DoesNotExist:
-        message = 'Event not found.'
-        if request.headers.get('Accept') == 'application/json':
-            return jsonify({'success': False, 'message': message})
-        flash(message, 'error')
-        return redirect(url_for('events.events_list'))
-    except User.DoesNotExist:
-        message = 'User not found.'
-        if request.headers.get('Accept') == 'application/json':
-            return jsonify({'success': False, 'message': message})
-        flash(message, 'error')
-        return redirect(url_for('events.event_detail', event_id=event_id))
-    except Exception as e:
-        message = f'Error moving RSVP: {str(e)}'
-        if request.headers.get('Accept') == 'application/json':
-            return jsonify({'success': False, 'message': message})
-        flash(message, 'error')
-        return redirect(url_for('events.event_detail', event_id=event_id))
 
 
 @bp.route('/<int:event_id>/admin/attendance')
