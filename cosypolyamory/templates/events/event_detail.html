@@ -127,9 +127,9 @@
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-12">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
                                 <!-- Left side: Attendance and Calendar buttons -->
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex flex-column flex-sm-row align-items-start gap-2">
                                     {% if event.exact_time > now and current_user.is_authenticated %}
                                         {% set user_rsvp = user_rsvp %}
                                         {% set is_host_or_cohost = current_user.is_authenticated and (current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id)) %}
