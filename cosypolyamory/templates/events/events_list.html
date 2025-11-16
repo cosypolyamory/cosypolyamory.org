@@ -234,6 +234,19 @@
                                                             </a></li>
                                                         </ul>
                                                     </div>
+                                                {% elif user_rsvp.status == 'banned' %}
+                                                    <!-- Normal buttons for banned users that show modal on click -->
+                                                    <div class="btn-group w-100" role="group">
+                                                        <button class="btn btn-rsvp-none banned-user-btn" type="button" data-event-id="{{ event.id }}" data-status="yes">
+                                                            Yes
+                                                        </button>
+                                                        <button class="btn btn-rsvp-none banned-user-btn" type="button" data-event-id="{{ event.id }}" data-status="no">
+                                                            No
+                                                        </button>
+                                                        <button class="btn btn-rsvp-none banned-user-btn" type="button" data-event-id="{{ event.id }}" data-status="maybe">
+                                                            Maybe
+                                                        </button>
+                                                    </div>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -284,6 +297,26 @@
                 {% endif %}
             </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Banned User Modal -->
+<div class="modal fade" id="bannedUserModal" tabindex="-1" aria-labelledby="bannedUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="bannedUserModalLabel">
+                    <i class="fas fa-ban me-2"></i>Cannot RSVP to This Event
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">We're sorry but you can't join this event. You should know why, but if you don't, please contact an organiser.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -660,6 +693,15 @@ document.addEventListener('DOMContentLoaded', function() {
             closeBtn.addEventListener('click', () => toast.remove());
         }
     }
+
+    // Handle banned user button clicks
+    document.querySelectorAll('.banned-user-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('bannedUserModal'));
+            modal.show();
+        });
+    });
 });
 </script>
 {% endblock %}

@@ -182,6 +182,11 @@
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
+                                                <button class="dropdown-item text-danger" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'banned', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-ban me-2"></i>Ban from Event
+                                                </button>
+                                            </li>
+                                            <li>
                                                 <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-trash me-2"></i>Remove RSVP
                                                 </button>
@@ -289,6 +294,11 @@
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
+                                                <button class="dropdown-item text-danger" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'banned', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-ban me-2"></i>Ban from Event
+                                                </button>
+                                            </li>
+                                            <li>
                                                 <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-trash me-2"></i>Remove RSVP
                                                 </button>
@@ -372,6 +382,11 @@
                                                 </button>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'banned', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-ban me-2"></i>Ban from Event
+                                                </button>
+                                            </li>
                                             <li>
                                                 <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-trash me-2"></i>Remove RSVP
@@ -461,6 +476,11 @@
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
+                                                <button class="dropdown-item text-danger" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'banned', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-ban me-2"></i>Ban from Event
+                                                </button>
+                                            </li>
+                                            <li>
                                                 <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
                                                     <i class="fas fa-trash me-2"></i>Remove RSVP
                                                 </button>
@@ -481,6 +501,84 @@
                         <div class="p-4 text-center text-muted">
                             <i class="fas fa-user-times fa-2x mb-2"></i>
                             <p class="mb-0">No one marked as not attending</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Banned Users -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-ban me-2"></i>
+                        Banned from Event ({{ banned_count }})
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if rsvps_banned %}
+                        <div class="list-group list-group-flush">
+                            {% for rsvp in rsvps_banned %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-danger text-light">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            Banned {{ rsvp.updated_at.strftime('%m/%d/%Y at %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    {% if not event_has_passed %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                            Manage
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-check me-2 text-success"></i>Move to Attending
+                                                </button>
+                                            </li>
+                                            {% endif %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'maybe', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-question-circle me-2 text-info"></i>Move to Maybe
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-hourglass-half me-2 text-warning"></i>Move to Waitlist
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-times me-2 text-danger"></i>Move to Not Attending
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-trash me-2"></i>Remove RSVP
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-user-shield fa-2x mb-2"></i>
+                            <p class="mb-0">No users banned from this event</p>
                         </div>
                     {% endif %}
                 </div>
@@ -591,7 +689,8 @@ function moveRSVP(eventId, userId, newStatus, userName) {
     // Set up the confirmation modal
     const statusText = newStatus === 'yes' ? 'Attending' : 
                       newStatus === 'waitlist' ? 'Waitlist' :
-                      newStatus === 'no' ? 'Not Attending' : newStatus;
+                      newStatus === 'no' ? 'Not Attending' :
+                      newStatus === 'banned' ? 'Banned from Event' : newStatus;
     
     document.getElementById('confirmMoveText').textContent = `Move ${userName} to ${statusText}?`;
     
@@ -626,6 +725,9 @@ function executeMoveRSVP(eventId, userId, newStatus, userName) {
     } else if (newStatus === 'waitlist') {
         // Explicitly move to waitlist using the attendance_waitlist parameter
         attendanceData.attendance_waitlist = [[userId, !skipNotification]];
+    } else if (newStatus === 'banned') {
+        // Ban user from the event
+        attendanceData.attendance_banned = [[userId, !skipNotification]];
     }
     
     fetch(`/events/${eventId}/manage_attendance`, {

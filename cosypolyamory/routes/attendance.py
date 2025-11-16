@@ -249,14 +249,16 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                 try:
                     user = User.get_by_id(user_id)
                     
-                    # Check if user is banned from this event
-                    try:
-                        existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
-                        if existing_rsvp.status == 'banned':
-                            database.rollback()
-                            return False, {'error': f'User {user.name} is banned from this event and cannot RSVP'}, 403
-                    except RSVP.DoesNotExist:
-                        pass  # No existing RSVP, user is not banned
+                    # Check if user is banned from this event (only block if non-admin trying to self-RSVP)
+                    # Admins/organizers can override bans by explicitly moving users
+                    if not is_admin_or_organizer:
+                        try:
+                            existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                            if existing_rsvp.status == 'banned':
+                                database.rollback()
+                                return False, {'error': f'You are banned from this event and cannot RSVP'}, 403
+                        except RSVP.DoesNotExist:
+                            pass  # No existing RSVP, user is not banned
                     
                     # Check if event is full - if so, add to waitlist instead of 'yes'
                     current_yes_count = RSVP.select().where(
@@ -297,14 +299,15 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                 try:
                     user = User.get_by_id(user_id)
                     
-                    # Check if user is banned from this event
-                    try:
-                        existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
-                        if existing_rsvp.status == 'banned':
-                            database.rollback()
-                            return False, {'error': f'User {user.name} is banned from this event and cannot RSVP'}, 403
-                    except RSVP.DoesNotExist:
-                        pass  # No existing RSVP, user is not banned
+                    # Check if user is banned from this event (only block if non-admin trying to self-RSVP)
+                    if not is_admin_or_organizer:
+                        try:
+                            existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                            if existing_rsvp.status == 'banned':
+                                database.rollback()
+                                return False, {'error': f'You are banned from this event and cannot RSVP'}, 403
+                        except RSVP.DoesNotExist:
+                            pass  # No existing RSVP, user is not banned
                     
                     rsvp, created = RSVP.get_or_create(
                         event=event,
@@ -330,14 +333,15 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                 try:
                     user = User.get_by_id(user_id)
                     
-                    # Check if user is banned from this event
-                    try:
-                        existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
-                        if existing_rsvp.status == 'banned':
-                            database.rollback()
-                            return False, {'error': f'User {user.name} is banned from this event and cannot RSVP'}, 403
-                    except RSVP.DoesNotExist:
-                        pass  # No existing RSVP, user is not banned
+                    # Check if user is banned from this event (only block if non-admin trying to self-RSVP)
+                    if not is_admin_or_organizer:
+                        try:
+                            existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                            if existing_rsvp.status == 'banned':
+                                database.rollback()
+                                return False, {'error': f'You are banned from this event and cannot RSVP'}, 403
+                        except RSVP.DoesNotExist:
+                            pass  # No existing RSVP, user is not banned
                     
                     rsvp, created = RSVP.get_or_create(
                         event=event,
@@ -609,11 +613,14 @@ def edit_attendance(event_id):
 
     rsvps_not_attending = list(RSVP.select().where((RSVP.event == event) & (RSVP.status == 'no')).order_by(RSVP.created_at))
 
+    rsvps_banned = list(RSVP.select().where((RSVP.event == event) & (RSVP.status == 'banned')).order_by(RSVP.created_at))
+
     # Calculate counts
     rsvp_count = len(rsvps_attending)
     maybe_count = len(rsvps_maybe)
     waitlist_count = len(rsvps_waitlist)
     not_attending_count = len(rsvps_not_attending)
+    banned_count = len(rsvps_banned)
 
     # Prepare host information for template
     organizer_id = event.organizer_id
@@ -644,7 +651,7 @@ def edit_attendance(event_id):
     if not event_has_passed:
         # Collect all unique user IDs from RSVPs
         all_user_ids = set()
-        for rsvp in rsvps_attending + rsvps_maybe + rsvps_waitlist + rsvps_not_attending:
+        for rsvp in rsvps_attending + rsvps_maybe + rsvps_waitlist + rsvps_not_attending + rsvps_banned:
             all_user_ids.add(rsvp.user.id)
         
         # Get no-show counts for each user
@@ -698,10 +705,12 @@ def edit_attendance(event_id):
                            rsvps_maybe=rsvps_maybe,
                            rsvps_waitlist=rsvps_waitlist,
                            rsvps_not_attending=rsvps_not_attending,
+                           rsvps_banned=rsvps_banned,
                            rsvp_count=rsvp_count,
                            maybe_count=maybe_count,
                            waitlist_count=waitlist_count,
                            not_attending_count=not_attending_count,
+                           banned_count=banned_count,
                            organizer_id=organizer_id,
                            co_host_id=co_host_id,
                            event_has_started=event_has_started,
