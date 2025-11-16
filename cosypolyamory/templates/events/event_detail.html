@@ -297,36 +297,83 @@
                     {% endif %}
                     
                     <!-- Event Details Section -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <h6><i class="fas fa-calendar-day me-2 text-primary"></i>Date</h6>
-                            <p>{{ event.exact_time.strftime('%A, %b %d, %Y') }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
-                            {% if can_see_details %}
-                                <p>
-                                    {% if event.end_time %}
-                                        {{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}
-                                    {% else %}
+                    {% if event.end_time and event.exact_time.date() != event.end_time.date() %}
+                        {# Multi-day event: Show two rows #}
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-calendar-day me-2 text-primary"></i>Start Date</h6>
+                                <p>{{ event.exact_time.strftime('%A, %b %d, %Y') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-clock me-2 text-primary"></i>Start Time</h6>
+                                {% if can_see_details %}
+                                    <p>
                                         {{ event.exact_time.strftime('%H:%M') }}
-                                    {% endif %}
-                                    {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
-                                    {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
-                                </p>
-                            {% else %}
-                                <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
-                            {% endif %}
+                                        {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
+                                        {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                    </p>
+                                {% else %}
+                                    <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="col-md-5">
-                            <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
-                            {% if can_see_details %}
-                                <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
-                            {% else %}
-                                <p>{{ event.barrio }}</p>
-                            {% endif %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-calendar-day me-2 text-primary"></i>End Date</h6>
+                                <p>{{ event.end_time.strftime('%A, %b %d, %Y') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-clock me-2 text-primary"></i>End Time</h6>
+                                {% if can_see_details %}
+                                    <p>{{ event.end_time.strftime('%H:%M') }}</p>
+                                {% else %}
+                                    <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
+                                {% if can_see_details %}
+                                    <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
+                                {% else %}
+                                    <p>{{ event.barrio }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        {# Single-day event: Show one row #}
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <h6><i class="fas fa-calendar-day me-2 text-primary"></i>Date</h6>
+                                <p>{{ event.exact_time.strftime('%A, %b %d, %Y') }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
+                                {% if can_see_details %}
+                                    <p>
+                                        {% if event.end_time %}
+                                            {{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}
+                                        {% else %}
+                                            {{ event.exact_time.strftime('%H:%M') }}
+                                        {% endif %}
+                                        {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
+                                        {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                    </p>
+                                {% else %}
+                                    <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-5">
+                                <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
+                                {% if can_see_details %}
+                                    <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
+                                {% else %}
+                                    <p>{{ event.barrio }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
                     
                     <!-- Description Section -->
                     <div class="row mb-4">
