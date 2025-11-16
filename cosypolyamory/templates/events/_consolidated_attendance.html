@@ -8,9 +8,9 @@
                 <div class="d-flex align-items-center">
                     <div class="me-2">
                         {% if attendance.status == 'host' %}
-                            <i class="fas fa-crown fa-lg text-custom-primary" title="Host"></i>
+                            <i class="fas fa-crown fa-lg text-warning" title="Host"></i>
                         {% elif attendance.status == 'co-host' %}
-                            <i class="fas fa-star fa-lg text-custom-secondary" title="Co-host"></i>
+                            <i class="fas fa-star fa-lg text-warning" title="Co-host"></i>
                         {% elif attendance.status == 'yes' %}
                             <i class="fas fa-check-circle fa-lg text-success" title="Attending"></i>
                         {% elif attendance.status == 'maybe' %}
