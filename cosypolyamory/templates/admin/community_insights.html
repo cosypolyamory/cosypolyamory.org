@@ -10,11 +10,8 @@
             <div class="card bg-light">
                 <div class="card-body py-3">
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{{ url_for('events.events_list') }}" class="btn btn-dark btn-sm">
+                        <a href="{{ url_for('events.events_list') }}" class="btn btn-secondary btn-sm">
                             <i class="fas fa-list me-2"></i>Events
-                        </a>
-                        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-cog me-2"></i>Admin Dashboard
                         </a>
                     </div>
                 </div>
@@ -99,7 +96,7 @@
                                     <td>{{ loop.index }}</td>
                                     <td>{{ attendee.name }}</td>
                                     <td class="text-center">
-                                        <span class="badge bg-light text-dark fs-6">{{ attendee.count }}</span>
+                                        <span class="badge bg-primary fs-6">{{ attendee.count }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -141,7 +138,7 @@
                                     <td>{{ loop.index }}</td>
                                     <td>{{ organizer.name }}</td>
                                     <td class="text-center">
-                                        <span class="badge bg-light text-dark fs-6">{{ organizer.count }}</span>
+                                        <span class="badge bg-primary fs-6">{{ organizer.count }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -186,7 +183,7 @@
                                     <td>{{ loop.index }}</td>
                                     <td>{{ flake.name }}</td>
                                     <td class="text-center">
-                                        <span class="badge bg-light text-dark fs-6">{{ flake.count }}</span>
+                                        <span class="badge bg-primary fs-6">{{ flake.count }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}

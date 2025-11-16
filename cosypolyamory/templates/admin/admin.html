@@ -630,7 +630,7 @@ function viewUser(userId) {
                             if (qaData.answer && qaData.answer.trim() !== '') {
                                 answersHtml += `
                                     <div class="mb-3">
-                                        <strong>${qaData.question}</strong>
+                                        <div class="fw-bold">${qaData.question}</div>
                                         <div class="border rounded p-2 bg-light mt-1">${qaData.answer.replace(/\n/g, '<br>')}</div>
                                     </div>
                                 `;
