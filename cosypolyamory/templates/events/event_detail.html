@@ -850,9 +850,16 @@ document.addEventListener('DOMContentLoaded', function() {
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
-        // Insert the message at the top of the attendance section
-        const attendanceSection = document.getElementById('attendance-section');
-        attendanceSection.insertBefore(alertDiv, attendanceSection.firstChild);
+        // Insert the message at the top of the page container
+        const container = document.querySelector('.container');
+        if (container && container.firstChild) {
+            container.insertBefore(alertDiv, container.firstChild);
+        } else if (container) {
+            container.appendChild(alertDiv);
+        } else {
+            // Fallback: insert at top of body
+            document.body.insertBefore(alertDiv, document.body.firstChild);
+        }
         
         // Auto-dismiss after 3 seconds
         setTimeout(() => {
