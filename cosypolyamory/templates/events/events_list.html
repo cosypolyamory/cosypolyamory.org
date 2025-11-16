@@ -148,7 +148,7 @@
                                                 <span class="badge bg-warning text-dark align-middle ms-2">Full</span>
                                             {% endif %}
                                             {% if rsvps_waitlist and rsvps_waitlist.get(event.id) %}
-                                                <span class="badge bg-secondary align-middle ms-2">Waitlist</span>
+                                                <span class="badge badge-rsvp-waitlisted align-middle ms-2">Waitlist</span>
                                             {% endif %}
                                         </div>
                                         <div class="progress mt-1 w-100" style="height: 4px;">
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add Waitlist pill if there are waitlisted users
             if (data.waitlist_count && parseInt(data.waitlist_count) > 0) {
                 const waitlistPill = document.createElement('span');
-                waitlistPill.className = 'badge bg-info text-dark align-middle ms-2';
+                waitlistPill.className = 'badge badge-rsvp-waitlisted align-middle ms-2';
                 waitlistPill.textContent = 'Waitlist';
                 pillsContainer.appendChild(waitlistPill);
             }
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add Waitlist pill only if waitlist_count > 0
             if (data.waitlist_count && data.waitlist_count > 0) {
                 const waitlistPill = document.createElement('span');
-                waitlistPill.className = 'badge bg-secondary align-middle ms-2';
+                waitlistPill.className = 'badge badge-rsvp-waitlisted align-middle ms-2';
                 waitlistPill.textContent = 'Waitlist';
                 pillsContainer.appendChild(waitlistPill);
             }

@@ -252,7 +252,7 @@
                                         <span class="badge bg-warning text-dark align-middle{% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %} ms-2{% endif %}">Full</span>
                                     {% endif %}
                                     {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
-                                        <span class="badge bg-secondary align-middle ms-2">Waitlist</span>
+                                        <span class="badge badge-rsvp-waitlisted align-middle ms-2">Waitlist</span>
                                     {% endif %}
                                     <span class="badge bg-primary fs-6 ms-2">Upcoming</span>
                                 {% endif %}
@@ -603,7 +603,7 @@
                                                         <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
                                                     {% endif %}
                                                     {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
-                                                        <span class="badge bg-secondary ms-2 align-middle">Waitlist</span>
+                                                        <span class="badge badge-rsvp-waitlisted ms-2 align-middle">Waitlist</span>
                                                     {% endif %}
                                                 </span>
                                             </span>
