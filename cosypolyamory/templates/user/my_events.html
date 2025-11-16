@@ -62,7 +62,7 @@
                                                     <i class="fas fa-crown me-1"></i>Host
                                                 </span>
                                             {% elif event_data.is_co_host %}
-                                                <span class="badge bg-info">
+                                                <span class="badge bg-primary">
                                                     <i class="fas fa-user-friends me-1"></i>Co-Host
                                                 </span>
                                             {% endif %}
@@ -114,27 +114,27 @@
                                                         {{ rsvp.event.title }}
                                                     </a>
                                                 </strong>
-                                                {% if rsvp.event.location %}
+                                                {% if rsvp.event.establishment_name %}
                                                     <br><small class="text-muted">
-                                                        <i class="fas fa-map-marker-alt me-1"></i>{{ rsvp.event.location }}
+                                                        <i class="fas fa-map-marker-alt me-1"></i>{{ rsvp.event.establishment_name }}
                                                     </small>
                                                 {% endif %}
                                             </td>
                                             <td>
                                                 {% if rsvp.status == 'yes' %}
-                                                    <span class="badge bg-success">
+                                                    <span class="badge badge-rsvp-yes">
                                                         <i class="fas fa-check me-1"></i>Attending
                                                     </span>
                                                 {% elif rsvp.status == 'no' %}
-                                                    <span class="badge bg-danger">
+                                                    <span class="badge badge-rsvp-no">
                                                         <i class="fas fa-times me-1"></i>Not Attending
                                                     </span>
                                                 {% elif rsvp.status == 'maybe' %}
-                                                    <span class="badge bg-warning">
+                                                    <span class="badge badge-rsvp-maybe">
                                                         <i class="fas fa-question me-1"></i>Maybe
                                                     </span>
                                                 {% elif rsvp.status == 'waitlist' %}
-                                                    <span class="badge bg-secondary">
+                                                    <span class="badge badge-rsvp-waitlisted">
                                                         <i class="fas fa-clock me-1"></i>Waitlisted
                                                     </span>
                                                 {% endif %}
@@ -192,9 +192,9 @@
                                                         {{ rsvp.event.title }}
                                                     </a>
                                                 </strong>
-                                                {% if rsvp.event.location %}
+                                                {% if rsvp.event.establishment_name %}
                                                     <br><small class="text-muted">
-                                                        <i class="fas fa-map-marker-alt me-1"></i>{{ rsvp.event.location }}
+                                                        <i class="fas fa-map-marker-alt me-1"></i>{{ rsvp.event.establishment_name }}
                                                     </small>
                                                 {% endif %}
                                             </td>
@@ -212,7 +212,7 @@
                                                         <i class="fas fa-question me-1"></i>Maybe
                                                     </span>
                                                 {% elif rsvp.status == 'waitlist' %}
-                                                    <span class="badge bg-secondary">
+                                                    <span class="badge badge-rsvp-waitlisted">
                                                         <i class="fas fa-clock me-1"></i>Waitlisted
                                                     </span>
                                                 {% endif %}

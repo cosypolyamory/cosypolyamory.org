@@ -227,7 +227,7 @@
                             </div>
                         {% else %}
                             <!-- Disabled button for hosts/co-hosts -->
-                            <button class="btn btn-outline-primary btn-sm" type="button" disabled style="min-width: 160px;">
+                            <button class="btn btn-primary btn-sm" type="button" disabled style="min-width: 160px;">
                                 {% if current_user.id == event.organizer_id %}You're hosting{% else %}You're co-hosting{% endif %}
                             </button>
                         {% endif %}
@@ -668,7 +668,7 @@
                                         <i class="fas fa-edit me-2"></i>Apply to Join Community
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-primary">
+                                    <a href="{{ url_for('auth.profile') }}" class="btn btn-primary">
                                         <i class="fas fa-clock me-2"></i>Check Application Status
                                     </a>
                                 {% endif %}
@@ -1175,7 +1175,7 @@ function formatDateForOutlook(dateString) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
