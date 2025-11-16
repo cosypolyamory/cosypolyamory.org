@@ -814,6 +814,11 @@ h4 {
     border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Add visible borders between secondary buttons in btn-group */
+.btn-group .btn-secondary + .btn-secondary {
+    border-left: 1px solid #adb5bd !important;
+}
+
 /* Add visible borders between RSVP buttons */
 .btn-group .btn-rsvp-none + .btn-rsvp-none,
 .btn-group .btn-rsvp-none + .btn-rsvp-yes,
