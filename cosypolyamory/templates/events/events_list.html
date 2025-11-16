@@ -29,14 +29,14 @@
     <!-- Filter/Sort Options -->
     <div class="row mb-4">
         <div class="col-md-6">
-            <div class="btn-group" role="group" aria-label="Event filters">
+            <div class="btn-group event-filter-group" role="group" aria-label="Event filters">
                 <a href="{{ url_for('events.events_list', filter='upcoming') }}" 
-                   class="btn {{ 'btn-primary' if current_filter == 'upcoming' else 'btn-outline-primary' }}">
+                   class="btn {{ 'btn-custom-secondary' if current_filter == 'upcoming' else 'btn-outline-custom-secondary' }}">
                     <i class="fas fa-calendar-alt me-1"></i>Upcoming
                 </a>
                 
                 <a href="{{ url_for('events.events_list', filter='past') }}" 
-                   class="btn {{ 'btn-primary' if current_filter == 'past' else 'btn-outline-primary' }}">
+                   class="btn {{ 'btn-custom-secondary' if current_filter == 'past' else 'btn-outline-custom-secondary' }}">
                     <i class="fas fa-history me-1"></i>Past Events
                 </a>
             </div>

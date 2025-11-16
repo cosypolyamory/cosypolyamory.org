@@ -12,7 +12,7 @@
                     <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
                         <!-- Primary Navigation -->
                         <div>
-                            <a href="{{ url_for('events.events_list') }}" class="btn btn-outline-primary btn-sm">
+                            <a href="{{ url_for('events.events_list') }}" class="btn btn-custom-secondary btn-sm">
                                 Back to Events
                             </a>
                         </div>
@@ -24,10 +24,10 @@
                             {% if current_user.is_authenticated %}
                                 <div class="btn-group" role="group">
                                     </button>
-                                        <a href="{{ url_for('pages.event_feedback', event_id=event.id) }}" class="btn btn-outline-secondary btn-sm">
+                                        <a href="{{ url_for('pages.event_feedback', event_id=event.id) }}" class="btn btn-custom-secondary btn-sm">
                                             Feedback
                                         </a>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
+                                    <button type="button" class="btn btn-custom-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
                                         Share
                                 </div>
                             {% endif %}
@@ -35,7 +35,7 @@
                             <!-- Event Management Dropdown (for organizers) -->
                             {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) %}
                                 <div class="dropdown">
-                                    <button class="btn btn-outline-dark btn-sm dropdown-toggle" type="button" id="eventManagementDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-custom-secondary btn-sm dropdown-toggle" type="button" id="eventManagementDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         Manage Event
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventManagementDropdown">
@@ -103,12 +103,12 @@
                             <form method="POST" action="{{ url_for('events.publish_event', event_id=event.id) }}" style="display: inline;">
                                 {% if event.published %}
                                     <input type="hidden" name="action" value="unpublish">
-                                    <button type="submit" class="btn btn-outline-dark btn-sm">
+                                    <button type="submit" class="btn btn-custom-primary btn-sm">
                                         Unpublish
                                     </button>
                                 {% else %}
                                     <input type="hidden" name="action" value="publish">
-                                    <button type="submit" class="btn btn-outline-success btn-sm">
+                                    <button type="submit" class="btn btn-custom-primary btn-sm">
                                         Publish
                                     </button>
                                 {% endif %}
@@ -232,7 +232,7 @@
                             </button>
                         {% endif %}
                                 <!-- Add to Calendar Button -->
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#addToCalendarModal">
+                                        <button type="button" class="btn btn-custom-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#addToCalendarModal">
                                             Add to Calendar
                                         </button>
                                     {% endif %}
@@ -520,7 +520,7 @@
                             
                             {% if event.google_maps_link %}
                             <div class="mt-2">
-                                <a href="{{ event.google_maps_link }}" target="_blank" class="btn btn-primary btn-sm">
+                                <a href="{{ event.google_maps_link }}" target="_blank" class="btn btn-custom-secondary btn-sm">
                                     <i class="fas fa-external-link-alt me-1"></i>Open in Google Maps
                                 </a>
                             </div>

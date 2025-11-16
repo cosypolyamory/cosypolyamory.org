@@ -704,26 +704,27 @@ h4 {
     cursor: not-allowed;
 }
 
-/* Secondary button: Mid-range grey */
+/* Secondary button: Very light grey with dark text */
 .btn-custom-secondary {
-    background-color: #6c757d !important;
-    border-color: #6c757d !important;
-    color: white !important;
+    background-color: #e9ecef !important;
+    border-color: #e9ecef !important;
+    color: #212529 !important;
     font-weight: 500;
 }
 
 .btn-custom-secondary:hover,
 .btn-custom-secondary:focus,
 .btn-custom-secondary:active {
-    background-color: #5a6268 !important;
-    border-color: #5a6268 !important;
-    color: white !important;
+    background-color: #dee2e6 !important;
+    border-color: #dee2e6 !important;
+    color: #212529 !important;
 }
 
 .btn-custom-secondary:disabled,
 .btn-custom-secondary.disabled {
-    background-color: #868e96 !important;
-    border-color: #868e96 !important;
+    background-color: #f8f9fa !important;
+    border-color: #f8f9fa !important;
+    color: #6c757d !important;
     opacity: 0.65;
     cursor: not-allowed;
 }
@@ -746,15 +747,28 @@ h4 {
 
 .btn-outline-custom-secondary {
     background-color: transparent !important;
-    border-color: #6c757d !important;
-    color: #6c757d !important;
+    border-color: #dee2e6 !important;
+    color: #212529 !important;
     font-weight: 500;
 }
 
 .btn-outline-custom-secondary:hover,
 .btn-outline-custom-secondary:focus,
 .btn-outline-custom-secondary:active {
-    background-color: #6c757d !important;
-    border-color: #6c757d !important;
-    color: white !important;
+    background-color: #e9ecef !important;
+    border-color: #e9ecef !important;
+    color: #212529 !important;
+}
+
+/* Event filter button group - add visible borders between buttons */
+.event-filter-group .btn-custom-secondary + .btn-custom-secondary,
+.event-filter-group .btn-custom-secondary + .btn-outline-custom-secondary,
+.event-filter-group .btn-outline-custom-secondary + .btn-custom-secondary {
+    border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Ensure dropdown toggles with custom buttons maintain consistent styling */
+.btn-custom-secondary.dropdown-toggle::after,
+.btn-custom-primary.dropdown-toggle::after {
+    vertical-align: middle;
 }
