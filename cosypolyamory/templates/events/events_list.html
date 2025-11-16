@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Community Events</h1>
         {% if current_user.role in ['admin', 'organizer'] %}
-            <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
+            <a href="{{ url_for('events.create_event') }}" class="btn btn-custom-primary">
                 <i class="fas fa-plus me-2"></i>Create Event
             </a>
         {% endif %}
@@ -43,7 +43,7 @@
         </div>
         {% if current_user.is_authenticated %}
         <div class="col-md-6 text-end">
-            <a href="{{ url_for('auth.my_events') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('auth.my_events') }}" class="btn btn-custom-secondary">
                 My Events
             </a>
         </div>
@@ -275,7 +275,7 @@
                                         </div>
                                     {% endif %}
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] %}
-                                        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-outline-primary">
+                                        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-custom-primary">
                                             View details
                                         </a>
                                     {% else %}
@@ -313,7 +313,7 @@
                 {% else %}
                     <p>There are no upcoming events scheduled at this time. Check back soon for new events!</p>
                     {% if current_user.role in ['admin', 'organizer'] %}
-                        <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
+                        <a href="{{ url_for('events.create_event') }}" class="btn btn-custom-primary">
                             <i class="fas fa-plus me-2"></i>Create Event
                         </a>
                     {% endif %}

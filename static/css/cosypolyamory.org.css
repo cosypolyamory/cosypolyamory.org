@@ -604,19 +604,24 @@ h4 {
     color: #333 !important;
 }
 
-/* For no RSVP state, keep blue */
+/* For no RSVP state, use custom secondary (filled grey) */
 .btn-rsvp-none {
-    background-color: transparent !important;
-    border-color: #0d6efd !important;
-    color: #0d6efd !important;
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: white !important;
 }
 
 .btn-rsvp-none:hover,
 .btn-rsvp-none:focus,
 .btn-rsvp-none:active {
-    background-color: #0d6efd !important;
-    border-color: #0d6efd !important;
+    background-color: #5a6268 !important;
+    border-color: #5a6268 !important;
     color: white !important;
+}
+
+/* Add visible borders between no-RSVP buttons in button groups */
+.btn-group .btn-rsvp-none + .btn-rsvp-none {
+    border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
 /* Badge classes using the same custom colors */
@@ -668,5 +673,88 @@ h4 {
 
 .card-header-rsvp-no {
     background-color: #c17a7a !important;
+    color: white !important;
+}
+
+/* Custom Button Colors - Site-wide consistency */
+/* NOTE: These are distinct from Bootstrap's .btn-primary and .btn-secondary */
+/* Use .btn-custom-primary and .btn-custom-secondary for site-wide button harmonization */
+
+/* Primary button: Softer purple derived from navbar (#5d0096) */
+.btn-custom-primary {
+    background-color: #7a4da8 !important;
+    border-color: #7a4da8 !important;
+    color: white !important;
+    font-weight: 500;
+}
+
+.btn-custom-primary:hover,
+.btn-custom-primary:focus,
+.btn-custom-primary:active {
+    background-color: #6a3f94 !important;
+    border-color: #6a3f94 !important;
+    color: white !important;
+}
+
+.btn-custom-primary:disabled,
+.btn-custom-primary.disabled {
+    background-color: #9d7dba !important;
+    border-color: #9d7dba !important;
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Secondary button: Mid-range grey */
+.btn-custom-secondary {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: white !important;
+    font-weight: 500;
+}
+
+.btn-custom-secondary:hover,
+.btn-custom-secondary:focus,
+.btn-custom-secondary:active {
+    background-color: #5a6268 !important;
+    border-color: #5a6268 !important;
+    color: white !important;
+}
+
+.btn-custom-secondary:disabled,
+.btn-custom-secondary.disabled {
+    background-color: #868e96 !important;
+    border-color: #868e96 !important;
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Outline variants for lighter touch */
+.btn-outline-custom-primary {
+    background-color: transparent !important;
+    border-color: #7a4da8 !important;
+    color: #7a4da8 !important;
+    font-weight: 500;
+}
+
+.btn-outline-custom-primary:hover,
+.btn-outline-custom-primary:focus,
+.btn-outline-custom-primary:active {
+    background-color: #7a4da8 !important;
+    border-color: #7a4da8 !important;
+    color: white !important;
+}
+
+.btn-outline-custom-secondary {
+    background-color: transparent !important;
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+    font-weight: 500;
+}
+
+.btn-outline-custom-secondary:hover,
+.btn-outline-custom-secondary:focus,
+.btn-outline-custom-secondary:active {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
     color: white !important;
 }
