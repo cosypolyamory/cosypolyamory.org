@@ -391,6 +391,11 @@ document.addEventListener('DOMContentLoaded', function() {
             body: `status=${status}`
         })
         .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to update RSVP');
+                });
+            }
             return response.json();
         })
         .then(data => {
@@ -410,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('An error occurred while updating your attendance.', 'error');
+            showToast(error.message || 'An error occurred while updating your attendance.', 'error');
             // Restore buttons on error
             allButtons.forEach((btn, index) => {
                 btn.disabled = false;
@@ -439,7 +444,14 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: `status=${status}`
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to update RSVP');
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 updateDropdownState(dropdownButton, data.status, eventId);
@@ -453,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('An error occurred while updating your attendance.', 'error');
+            showToast(error.message || 'An error occurred while updating your attendance.', 'error');
             dropdownButton.innerHTML = originalText;
             dropdownButton.disabled = false;
         });
