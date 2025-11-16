@@ -46,27 +46,27 @@
         {% endwith %}
         
         <!-- User Management Tabs -->
-        <div class="card mt-2" style="min-height: 80vh;">
+        <div class="card mt-2">
             <div class="card-header">
                 <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
-                            Pending Review <span class="badge bg-warning ms-1 tab-badge" id="pending-count">0</span>
+                            Pending Review <span class="badge bg-primary ms-1 tab-badge" id="pending-count">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab" aria-controls="members" aria-selected="false">
-                            Members <span class="badge bg-success ms-1 tab-badge" id="members-count">0</span>
+                            Members <span class="badge bg-primary ms-1 tab-badge" id="members-count">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="organizers-tab" data-bs-toggle="tab" data-bs-target="#organizers" type="button" role="tab" aria-controls="organizers" aria-selected="false">
-                            Organizers <span class="badge bg-purple ms-1 tab-badge" id="organizers-count">0</span>
+                            Organizers <span class="badge bg-primary ms-1 tab-badge" id="organizers-count">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab" aria-controls="rejected" aria-selected="false">
-                            Rejected <span class="badge bg-danger ms-1 tab-badge" id="rejected-count">0</span>
+                            Rejected <span class="badge bg-primary ms-1 tab-badge" id="rejected-count">0</span>
                         </button>
                     </li>
                 </ul>
@@ -348,18 +348,18 @@ function createUserCard(user) {
     // Only show application buttons for pending users
     if (user.role === 'pending' || user.role === 'new') {
         if (user.has_application && user.application_id) {
-            applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-warning\">Application submitted</span></div>`;
+            applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-primary\">Application submitted</span></div>`;
         } else if (user.has_application && !user.application_id) {
-            applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-warning\">Application data unavailable</span></div>`;
+            applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-primary\">Application data unavailable</span></div>`;
         } else {
-            applicationInfo = `<div class="mt-1"><span class="badge bg-secondary">No application submitted</span></div>`;
+            applicationInfo = `<div class="mt-1"><span class="badge bg-secondary text-dark">No application submitted</span></div>`;
         }
     }
     
     // Add no-show count if user has any no-shows
     let noShowInfo = '';
     if (user.no_show_count && user.no_show_count > 0) {
-        noShowInfo = `<div class="mt-1"><span class="badge bg-danger">${user.no_show_count} no-show${user.no_show_count > 1 ? 's' : ''}</span></div>`;
+        noShowInfo = `<div class="mt-1"><span class="badge bg-secondary text-dark">${user.no_show_count} no-show${user.no_show_count > 1 ? 's' : ''}</span></div>`;
     }
     return `
         <div class="user-card">
@@ -518,15 +518,15 @@ function viewUser(userId) {
                     const getRoleBadgeInfo = (role) => {
                         switch(role) {
                             case 'admin':
-                                return { class: 'bg-danger', icon: 'fas fa-shield-alt', text: 'Administrator' };
+                                return { class: 'bg-secondary', icon: 'fas fa-shield-alt', text: 'Administrator' };
                             case 'organizer':
-                                return { class: 'bg-primary', icon: 'fas fa-star', text: 'Community Organizer' };
+                                return { class: 'bg-secondary', icon: 'fas fa-star', text: 'Community Organizer' };
                             case 'approved':
-                                return { class: 'bg-success', icon: 'fas fa-check-circle', text: 'Approved Member' };
+                                return { class: 'bg-secondary', icon: 'fas fa-check-circle', text: 'Approved Member' };
                             case 'pending':
-                                return { class: 'bg-warning', icon: 'fas fa-clock', text: 'Application Pending' };
+                                return { class: 'bg-secondary', icon: 'fas fa-clock', text: 'Application Pending' };
                             case 'rejected':
-                                return { class: 'bg-danger', icon: 'fas fa-times-circle', text: 'Rejected' };
+                                return { class: 'bg-secondary', icon: 'fas fa-times-circle', text: 'Rejected' };
                             default:
                                 return { class: 'bg-secondary', icon: 'fas fa-user', text: 'Pending Review' };
                         }
@@ -538,13 +538,13 @@ function viewUser(userId) {
                     const getProviderBadge = (provider) => {
                         switch(provider) {
                             case 'google':
-                                return 'bg-danger';
+                                return 'bg-secondary';
                             case 'github':
-                                return 'bg-dark';
+                                return 'bg-secondary';
                             case 'reddit':
-                                return 'bg-warning';
+                                return 'bg-secondary';
                             case 'musicbrainz':
-                                return 'bg-success';
+                                return 'bg-secondary';
                             default:
                                 return 'bg-secondary';
                         }

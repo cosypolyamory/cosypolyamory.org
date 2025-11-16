@@ -558,10 +558,7 @@ h4 {
 }
 
 .user-list {
-    max-height: 75vh;
-    overflow-y: auto;
     padding-bottom: 50px;
-    overflow: visible;
 }
 
 /* Role and tab badge styles */
