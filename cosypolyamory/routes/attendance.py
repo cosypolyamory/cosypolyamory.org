@@ -100,7 +100,7 @@ def approved_user_required(f):
 #
 # Returns JSON with success status, counts, and list of promoted users if applicable.
 
-def process_attendance_changes(event_id, attendance_data, requesting_user_id=None):
+def process_attendance_changes(event_id, attendance_data, requesting_user_id=None, no_auto_promote=False):
     """
     Core function to process attendance changes for an event.
     
@@ -115,6 +115,8 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
             - remove_attendance: list of (user_id, notify) tuples or plain user IDs
         requesting_user_id: ID of user making the request (for permission checks)
                            If None, admin privileges are assumed
+        no_auto_promote: If True, skip automatic host RSVP assignment and waitlist promotion
+                        (default: False)
     
     Returns:
         Tuple of (success: bool, data: dict, status_code: int)
@@ -298,67 +300,68 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                     'error': f'Cannot update attendance: would exceed event capacity ({current_yes_count} attending, max {event.max_attendees})'
                 }, 400
             
-            # Step 5: Ensure hosts have RSVPs and promote waitlist (always done per updated spec)
-            # Ensure organizer has 'yes' RSVP
-            organizer_rsvp, created = RSVP.get_or_create(
-                event=event,
-                user=event.organizer,
-                defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
-            )
-            if created:
-                # New host RSVP created - add to tracking with notify=False (hosts don't need their own confirmation)
-                updated_rsvps.append({'user': event.organizer, 'old_status': None, 'new_status': 'yes', 'notify': False})
-            elif organizer_rsvp.status != 'yes':
-                # Existing RSVP status changed
-                old_status = organizer_rsvp.status
-                organizer_rsvp.status = 'yes'
-                organizer_rsvp.updated_at = datetime.now()
-                organizer_rsvp.save()
-                updated_rsvps.append({'user': event.organizer, 'old_status': old_status, 'new_status': 'yes', 'notify': False})
-            
-            # Ensure co-host has 'yes' RSVP if there is one
-            if event.co_host:
-                cohost_rsvp, created = RSVP.get_or_create(
+            # Step 5: Ensure hosts have RSVPs and promote waitlist (skip if no_auto_promote is True)
+            if not no_auto_promote:
+                # Ensure organizer has 'yes' RSVP
+                organizer_rsvp, created = RSVP.get_or_create(
                     event=event,
-                    user=event.co_host,
+                    user=event.organizer,
                     defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
                 )
                 if created:
-                    # New co-host RSVP created - add to tracking with notify=False
-                    updated_rsvps.append({'user': event.co_host, 'old_status': None, 'new_status': 'yes', 'notify': False})
-                elif cohost_rsvp.status != 'yes':
+                    # New host RSVP created - add to tracking with notify=False (hosts don't need their own confirmation)
+                    updated_rsvps.append({'user': event.organizer, 'old_status': None, 'new_status': 'yes', 'notify': False})
+                elif organizer_rsvp.status != 'yes':
                     # Existing RSVP status changed
-                    old_status = cohost_rsvp.status
-                    cohost_rsvp.status = 'yes'
-                    cohost_rsvp.updated_at = datetime.now()
-                    cohost_rsvp.save()
-                    updated_rsvps.append({'user': event.co_host, 'old_status': old_status, 'new_status': 'yes', 'notify': False})
-            
-            # Recount after adding hosts
-            current_yes_count = RSVP.select().where(
-                (RSVP.event == event) & (RSVP.status == 'yes')
-            ).count()
-            
-            # Check capacity again after adding hosts
-            if event.max_attendees and current_yes_count > event.max_attendees:
-                database.rollback()
-                return False, {
-                    'error': f'Cannot update attendance: adding required host RSVPs would exceed event capacity ({current_yes_count} attending, max {event.max_attendees})'
-                }, 400
-            
-            # Promote waitlisted users if there's capacity
-            if event.max_attendees:
-                available_spots = event.max_attendees - current_yes_count
-                if available_spots > 0:
-                    waitlisted = RSVP.select().where(
-                        (RSVP.event == event) & (RSVP.status == 'waitlist')
-                    ).order_by(RSVP.created_at).limit(available_spots)
-                    
-                    for rsvp in waitlisted:
-                        rsvp.status = 'yes'
-                        rsvp.updated_at = datetime.now()
-                        rsvp.save()
-                        promoted_users.append(rsvp.user)
+                    old_status = organizer_rsvp.status
+                    organizer_rsvp.status = 'yes'
+                    organizer_rsvp.updated_at = datetime.now()
+                    organizer_rsvp.save()
+                    updated_rsvps.append({'user': event.organizer, 'old_status': old_status, 'new_status': 'yes', 'notify': False})
+                
+                # Ensure co-host has 'yes' RSVP if there is one
+                if event.co_host:
+                    cohost_rsvp, created = RSVP.get_or_create(
+                        event=event,
+                        user=event.co_host,
+                        defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                    )
+                    if created:
+                        # New co-host RSVP created - add to tracking with notify=False
+                        updated_rsvps.append({'user': event.co_host, 'old_status': None, 'new_status': 'yes', 'notify': False})
+                    elif cohost_rsvp.status != 'yes':
+                        # Existing RSVP status changed
+                        old_status = cohost_rsvp.status
+                        cohost_rsvp.status = 'yes'
+                        cohost_rsvp.updated_at = datetime.now()
+                        cohost_rsvp.save()
+                        updated_rsvps.append({'user': event.co_host, 'old_status': old_status, 'new_status': 'yes', 'notify': False})
+                
+                # Recount after adding hosts
+                current_yes_count = RSVP.select().where(
+                    (RSVP.event == event) & (RSVP.status == 'yes')
+                ).count()
+                
+                # Check capacity again after adding hosts
+                if event.max_attendees and current_yes_count > event.max_attendees:
+                    database.rollback()
+                    return False, {
+                        'error': f'Cannot update attendance: adding required host RSVPs would exceed event capacity ({current_yes_count} attending, max {event.max_attendees})'
+                    }, 400
+                
+                # Promote waitlisted users if there's capacity
+                if event.max_attendees:
+                    available_spots = event.max_attendees - current_yes_count
+                    if available_spots > 0:
+                        waitlisted = RSVP.select().where(
+                            (RSVP.event == event) & (RSVP.status == 'waitlist')
+                        ).order_by(RSVP.created_at).limit(available_spots)
+                        
+                        for rsvp in waitlisted:
+                            rsvp.status = 'yes'
+                            rsvp.updated_at = datetime.now()
+                            rsvp.save()
+                            promoted_users.append(rsvp.user)
             
             # Final capacity check
             final_yes_count = RSVP.select().where(
@@ -456,6 +459,7 @@ def manage_attendance(event_id):
     - attendance_no: list of (user_id, notify) tuples or plain user IDs  
     - attendance_maybe: list of (user_id, notify) tuples or plain user IDs
     - remove_attendance: list of (user_id, notify) tuples or plain user IDs
+    - no_auto_promote: optional boolean to skip automatic host RSVPs and waitlist promotion
     
     Returns JSON with success status and any relevant messages.
     """
@@ -464,11 +468,15 @@ def manage_attendance(event_id):
     if not data:
         return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
     
+    # Extract no_auto_promote flag from data
+    no_auto_promote = data.get('no_auto_promote', False)
+    
     # Call the core processing function
     success, response_data, status_code = process_attendance_changes(
         event_id, 
         data, 
-        requesting_user_id=current_user.id
+        requesting_user_id=current_user.id,
+        no_auto_promote=no_auto_promote
     )
     
     # Convert to JSON response
