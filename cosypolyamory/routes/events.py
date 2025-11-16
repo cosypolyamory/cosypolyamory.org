@@ -394,13 +394,18 @@ def create_event_post():
                 flash('Co-host not found.', 'error')
                 return redirect(url_for('events.create_event'))
 
-        # Parse dates and times
-        try:
-            date = dt.strptime(date_str, '%Y-%m-%d')
-            exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
-        except ValueError as e:
-            flash(f'Invalid date or time format: {str(e)}', 'error')
-            return redirect(url_for('events.create_event'))
+        # Parse dates and times - will be set properly in multiday section below
+        date = None
+        exact_time = None
+        
+        # Initial parsing for single day events
+        if not request.form.get('is_multiday'):
+            try:
+                date = dt.strptime(date_str, '%Y-%m-%d')
+                exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
+            except ValueError as e:
+                flash(f'Invalid date or time format: {str(e)}', 'error')
+                return redirect(url_for('events.create_event'))
 
         # Validate max_attendees is a valid number
         if max_attendees:
@@ -440,17 +445,57 @@ def create_event_post():
         end_time_hour = request.form.get('end_time_hour')
         end_time_minute = request.form.get('end_time_minute')
         end_time = None
-
-        if end_time_hour and end_time_minute:
+        
+        # Check if this is a multi-day event
+        is_multiday = request.form.get('is_multiday') == 'on'
+        
+        if is_multiday:
+            # Use start_date and end_date for multi-day events
+            start_date_str = request.form.get('start_date')
+            end_date_str = request.form.get('end_date')
+            
+            if not start_date_str or not end_date_str:
+                flash('Start date and end date are required for multi-day events.', 'error')
+                return redirect(url_for('events.create_event'))
+            
             try:
-                end_time_str = f"{end_time_hour}:{end_time_minute}"
-                end_time = datetime.strptime(f"{date_str} {end_time_str}", "%Y-%m-%d %H:%M")
-            except Exception:
-                flash('Invalid end time format.', 'error')
+                # Parse start datetime
+                date = dt.strptime(start_date_str, '%Y-%m-%d')
+                exact_time = dt.strptime(f"{start_date_str} {time_str}", '%Y-%m-%d %H:%M')
+                
+                # Parse end datetime
+                if end_time_hour and end_time_minute:
+                    end_time_str = f"{end_time_hour}:{end_time_minute}"
+                    end_time = dt.strptime(f"{end_date_str} {end_time_str}", "%Y-%m-%d %H:%M")
+                else:
+                    flash('End time is required for all events.', 'error')
+                    return redirect(url_for('events.create_event'))
+                
+                # Validate that end is after start
+                if end_time <= exact_time:
+                    flash('Event end date/time must be after start date/time.', 'error')
+                    return redirect(url_for('events.create_event'))
+                    
+            except ValueError as e:
+                flash(f'Invalid date or time format: {str(e)}', 'error')
                 return redirect(url_for('events.create_event'))
         else:
-            flash('End time is required for all events.', 'error')
-            return redirect(url_for('events.create_event'))
+            # Single day event - use the date field for both start and end
+            if end_time_hour and end_time_minute:
+                try:
+                    end_time_str = f"{end_time_hour}:{end_time_minute}"
+                    end_time = datetime.strptime(f"{date_str} {end_time_str}", "%Y-%m-%d %H:%M")
+                    
+                    # Validate that end is after start
+                    if end_time <= exact_time:
+                        flash('Event end time must be after start time.', 'error')
+                        return redirect(url_for('events.create_event'))
+                except Exception:
+                    flash('Invalid end time format.', 'error')
+                    return redirect(url_for('events.create_event'))
+            else:
+                flash('End time is required for all events.', 'error')
+                return redirect(url_for('events.create_event'))
 
         # Create event
         event = Event.create(
@@ -638,24 +683,67 @@ def edit_event_post(event_id):
             return redirect(url_for('events.edit_event', event_id=event_id))
 
         # Parse dates and times
-        date = dt.strptime(date_str, '%Y-%m-%d')
-        exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
-
-        # Parse end_time from form dropdowns
-        end_time_hour = request.form.get('end_time_hour')
-        end_time_minute = request.form.get('end_time_minute')
-        end_time = None
-
-        if end_time_hour and end_time_minute:
+        # Check if this is a multi-day event
+        is_multiday = request.form.get('is_multiday') == 'on'
+        
+        if is_multiday:
+            # Use start_date and end_date for multi-day events
+            start_date_str = request.form.get('start_date')
+            end_date_str = request.form.get('end_date')
+            
+            if not start_date_str or not end_date_str:
+                flash('Start date and end date are required for multi-day events.', 'error')
+                return redirect(url_for('events.edit_event', event_id=event_id))
+            
             try:
-                end_time_str = f"{end_time_hour}:{end_time_minute}"
-                end_time = dt.strptime(f"{date_str} {end_time_str}", "%Y-%m-%d %H:%M")
-            except Exception:
-                flash('Invalid end time format.', 'error')
+                # Parse start datetime
+                date = dt.strptime(start_date_str, '%Y-%m-%d')
+                exact_time = dt.strptime(f"{start_date_str} {time_str}", '%Y-%m-%d %H:%M')
+                
+                # Parse end datetime
+                end_time_hour = request.form.get('end_time_hour')
+                end_time_minute = request.form.get('end_time_minute')
+                
+                if end_time_hour and end_time_minute:
+                    end_time_str = f"{end_time_hour}:{end_time_minute}"
+                    end_time = dt.strptime(f"{end_date_str} {end_time_str}", "%Y-%m-%d %H:%M")
+                else:
+                    flash('End time is required for all events.', 'error')
+                    return redirect(url_for('events.edit_event', event_id=event_id))
+                
+                # Validate that end is after start
+                if end_time <= exact_time:
+                    flash('Event end date/time must be after start date/time.', 'error')
+                    return redirect(url_for('events.edit_event', event_id=event_id))
+                    
+            except ValueError as e:
+                flash(f'Invalid date or time format: {str(e)}', 'error')
                 return redirect(url_for('events.edit_event', event_id=event_id))
         else:
-            flash('End time is required for all events.', 'error')
-            return redirect(url_for('events.edit_event', event_id=event_id))
+            # Single day event
+            date = dt.strptime(date_str, '%Y-%m-%d')
+            exact_time = dt.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
+
+            # Parse end_time from form dropdowns
+            end_time_hour = request.form.get('end_time_hour')
+            end_time_minute = request.form.get('end_time_minute')
+            end_time = None
+
+            if end_time_hour and end_time_minute:
+                try:
+                    end_time_str = f"{end_time_hour}:{end_time_minute}"
+                    end_time = dt.strptime(f"{date_str} {end_time_str}", "%Y-%m-%d %H:%M")
+                    
+                    # Validate that end is after start
+                    if end_time <= exact_time:
+                        flash('Event end time must be after start time.', 'error')
+                        return redirect(url_for('events.edit_event', event_id=event_id))
+                except Exception:
+                    flash('Invalid end time format.', 'error')
+                    return redirect(url_for('events.edit_event', event_id=event_id))
+            else:
+                flash('End time is required for all events.', 'error')
+                return redirect(url_for('events.edit_event', event_id=event_id))
 
         # Validate Google Maps link if provided
         valid_maps_domains = ['maps.google.com', 'www.google.com/maps', 'maps.app.goo.gl', 'goo.gl/maps']

@@ -77,18 +77,21 @@
                     </div>
                     
                     <!-- Date & Time -->
-                    <div class="row mb-4">
+                    <div class="row mb-3">
                         <div class="col-12">
                             <h5 class="text-primary">Date & Time</h5>
                         </div>
-                        
-                        <div class="col-md-5 mb-3">
+                    </div>
+                    
+                    <!-- Single Day Event: Date, Start Time, End Time on one row -->
+                    <div class="row mb-1" id="single_day_row">
+                        <div class="col-md-4 mb-3">
                             <label for="date" class="form-label">Date *</label>
                             <input type="date" class="form-control" id="date" name="date" required
                                 value="{% if event %}{{ event.date.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
                         </div>
                         
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Start Time *</label>
                             <div class="input-group mb-2">
                                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -96,7 +99,7 @@
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="hourDropdown" id="hourDropdownMenu">
                                     {% set selected_hour = event.exact_time.hour if event else default_hour|int %}
-                                    {% for hour in range(23, -1, -1) %}
+                                    {% for hour in range(0, 24) %}
                                     <li><a class="dropdown-item hour-option{% if hour == selected_hour %} active selected-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                     {% endfor %}
                                 </ul>
@@ -122,7 +125,7 @@
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="endHourDropdown" id="endHourDropdownMenu">
                                     {% set selected_end_hour = event.end_time.hour if (event and event.end_time) else (default_hour|int + 2) % 24 %}
-                                    {% for hour in range(23, -1, -1) %}
+                                    {% for hour in range(0, 24) %}
                                     <li><a class="dropdown-item end-hour-option{% if hour == selected_end_hour %} active selected-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                     {% endfor %}
                                 </ul>
@@ -139,8 +142,89 @@
                             <input type="hidden" id="end_time_hour" name="end_time_hour" value="{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}">
                             <input type="hidden" id="end_time_minute" name="end_time_minute" value="{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}">
                         </div>
+                    </div>
+                    
+                    <!-- Multi-day Event: Start Date/Time row, then End Date/Time row -->
+                    <div id="multiday_rows" style="display: none;">
+                        <!-- Start Date and Time -->
+                        <div class="row mb-2">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label">Start Date *</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date"
+                                    value="{% if event %}{{ event.date.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Start Time *</label>
+                                <div class="input-group mb-2">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-clock me-1"></i><span id="multiday_selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="multiday_hourDropdown" id="multiday_hourDropdownMenu">
+                                        {% set selected_hour = event.exact_time.hour if event else default_hour|int %}
+                                        {% for hour in range(0, 24) %}
+                                        <li><a class="dropdown-item multiday-hour-option{% if hour == selected_hour %} active selected-multiday-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span id="multiday_selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="multiday_minuteDropdown" id="multiday_minuteDropdownMenu">
+                                        {% set selected_minute = event.exact_time.minute if event else default_minute|int %}
+                                        {% for minute in [0, 15, 30, 45] %}
+                                        <li><a class="dropdown-item multiday-minute-option{% if minute == selected_minute %} active selected-multiday-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                         
-                    </div> <!-- close Date & Time row -->
+                        <!-- End Date and Time -->
+                        <div class="row mb-2">
+                            <div class="col-md-6 mb-3">
+                                <label for="end_date" class="form-label">End Date *</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date"
+                                    value="{% if event and event.end_time %}{{ event.end_time.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">End Time *</label>
+                                <div class="input-group mb-2">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-clock me-1"></i><span id="multiday_selectedEndHour">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="multiday_endHourDropdown" id="multiday_endHourDropdownMenu">
+                                        {% set selected_end_hour = event.end_time.hour if (event and event.end_time) else (default_hour|int + 2) % 24 %}
+                                        {% for hour in range(0, 24) %}
+                                        <li><a class="dropdown-item multiday-end-hour-option{% if hour == selected_end_hour %} active selected-multiday-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span id="multiday_selectedEndMinute">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="multiday_endMinuteDropdown" id="multiday_endMinuteDropdownMenu">
+                                        {% set selected_end_minute = event.end_time.minute if (event and event.end_time) else default_minute|int %}
+                                        {% for minute in [0, 15, 30, 45] %}
+                                        <li><a class="dropdown-item multiday-end-minute-option{% if minute == selected_end_minute %} active selected-multiday-end-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Multi-day Event Checkbox -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_multiday" name="is_multiday"
+                                    {% if event and event.end_time and event.date != event.end_time.date() %}checked{% endif %}>
+                                <label class="form-check-label" for="is_multiday">
+                                    This is a multi-day event
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="row mb-4">
                         <div class="col-12">
@@ -243,6 +327,198 @@
                                 
                                 // Initial validation on page load
                                 setTimeout(validateEventTimes, 500);
+                                
+                                // Scroll to selected hour when hour dropdowns are opened
+                                const hourDropdown = document.getElementById('hourDropdown');
+                                if (hourDropdown) {
+                                    hourDropdown.addEventListener('shown.bs.dropdown', function () {
+                                        const activeHour = document.querySelector('#hourDropdownMenu .hour-option.active');
+                                        if (activeHour) {
+                                            activeHour.scrollIntoView({block: 'nearest', behavior: 'instant'});
+                                        }
+                                    });
+                                }
+                                
+                                const endHourDropdown = document.getElementById('endHourDropdown');
+                                if (endHourDropdown) {
+                                    endHourDropdown.addEventListener('shown.bs.dropdown', function () {
+                                        const activeEndHour = document.querySelector('#endHourDropdownMenu .end-hour-option.active');
+                                        if (activeEndHour) {
+                                            activeEndHour.scrollIntoView({block: 'nearest', behavior: 'instant'});
+                                        }
+                                    });
+                                }
+                                
+                                // Multi-day Start Time - Hour dropdown
+                                const multidaySelectedHour = document.getElementById('multiday_selectedHour').textContent;
+                                const multidayHourOptions = document.querySelectorAll('#multiday_hourDropdownMenu .multiday-hour-option');
+                                multidayHourOptions.forEach(function(item) {
+                                    if (item.dataset.value === multidaySelectedHour) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('multiday_selectedHour').textContent = this.dataset.value;
+                                        document.getElementById('modern_time_hour').value = this.dataset.value;
+                                        multidayHourOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes();
+                                    });
+                                });
+                                
+                                // Multi-day Start Time - Minute dropdown
+                                const multidaySelectedMinute = document.getElementById('multiday_selectedMinute').textContent;
+                                const multidayMinuteOptions = document.querySelectorAll('#multiday_minuteDropdownMenu .multiday-minute-option');
+                                multidayMinuteOptions.forEach(function(item) {
+                                    if (item.dataset.value === multidaySelectedMinute) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('multiday_selectedMinute').textContent = this.dataset.value;
+                                        document.getElementById('modern_time_minute').value = this.dataset.value;
+                                        multidayMinuteOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes();
+                                    });
+                                });
+                                
+                                // Multi-day End Time - Hour dropdown
+                                const multidaySelectedEndHour = document.getElementById('multiday_selectedEndHour').textContent;
+                                const multidayEndHourOptions = document.querySelectorAll('#multiday_endHourDropdownMenu .multiday-end-hour-option');
+                                multidayEndHourOptions.forEach(function(item) {
+                                    if (item.dataset.value === multidaySelectedEndHour) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('multiday_selectedEndHour').textContent = this.dataset.value;
+                                        document.getElementById('end_time_hour').value = this.dataset.value;
+                                        multidayEndHourOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes();
+                                    });
+                                });
+                                
+                                // Multi-day End Time - Minute dropdown
+                                const multidaySelectedEndMinute = document.getElementById('multiday_selectedEndMinute').textContent;
+                                const multidayEndMinuteOptions = document.querySelectorAll('#multiday_endMinuteDropdownMenu .multiday-end-minute-option');
+                                multidayEndMinuteOptions.forEach(function(item) {
+                                    if (item.dataset.value === multidaySelectedEndMinute) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('multiday_selectedEndMinute').textContent = this.dataset.value;
+                                        document.getElementById('end_time_minute').value = this.dataset.value;
+                                        multidayEndMinuteOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes();
+                                    });
+                                });
+                                
+                                // Scroll to selected hour when multiday hour dropdowns are opened
+                                const multidayHourDropdown = document.getElementById('multiday_hourDropdown');
+                                if (multidayHourDropdown) {
+                                    multidayHourDropdown.addEventListener('shown.bs.dropdown', function () {
+                                        const activeHour = document.querySelector('#multiday_hourDropdownMenu .multiday-hour-option.active');
+                                        if (activeHour) {
+                                            activeHour.scrollIntoView({block: 'nearest', behavior: 'instant'});
+                                        }
+                                    });
+                                }
+                                
+                                const multidayEndHourDropdown = document.getElementById('multiday_endHourDropdown');
+                                if (multidayEndHourDropdown) {
+                                    multidayEndHourDropdown.addEventListener('shown.bs.dropdown', function () {
+                                        const activeEndHour = document.querySelector('#multiday_endHourDropdownMenu .multiday-end-hour-option.active');
+                                        if (activeEndHour) {
+                                            activeEndHour.scrollIntoView({block: 'nearest', behavior: 'instant'});
+                                        }
+                                    });
+                                }
+                                
+                                // Handle multi-day event checkbox
+                                const multidayCheckbox = document.getElementById('is_multiday');
+                                const multidayRows = document.getElementById('multiday_rows');
+                                const singleDayRow = document.getElementById('single_day_row');
+                                const startDateInput = document.getElementById('start_date');
+                                const endDateInput = document.getElementById('end_date');
+                                const dateInput = document.getElementById('date');
+                                
+                                function toggleMultidayFields() {
+                                    if (multidayCheckbox.checked) {
+                                        // Show multiday rows, hide single day row
+                                        multidayRows.style.display = '';
+                                        singleDayRow.style.display = 'none';
+                                        startDateInput.required = true;
+                                        endDateInput.required = true;
+                                        dateInput.required = false;
+                                        // Copy date value to start_date if start_date is empty
+                                        if (!startDateInput.value && dateInput.value) {
+                                            startDateInput.value = dateInput.value;
+                                        }
+                                        // Set end_date to start_date if end_date is empty
+                                        if (!endDateInput.value && startDateInput.value) {
+                                            endDateInput.value = startDateInput.value;
+                                        }
+                                        // Sync time values from single-day to multi-day dropdowns
+                                        syncTimeToMultiday();
+                                    } else {
+                                        // Show single day row, hide multiday rows
+                                        multidayRows.style.display = 'none';
+                                        singleDayRow.style.display = '';
+                                        startDateInput.required = false;
+                                        endDateInput.required = false;
+                                        dateInput.required = true;
+                                        // Sync time values from multi-day to single-day dropdowns
+                                        syncTimeToSingleday();
+                                    }
+                                    validateEventTimes();
+                                }
+                                
+                                function syncTimeToMultiday() {
+                                    // Copy single-day time values to multi-day fields
+                                    document.getElementById('multiday_selectedHour').textContent = document.getElementById('selectedHour').textContent;
+                                    document.getElementById('multiday_selectedMinute').textContent = document.getElementById('selectedMinute').textContent;
+                                    document.getElementById('multiday_selectedEndHour').textContent = document.getElementById('selectedEndHour').textContent;
+                                    document.getElementById('multiday_selectedEndMinute').textContent = document.getElementById('selectedEndMinute').textContent;
+                                }
+                                
+                                function syncTimeToSingleday() {
+                                    // Copy multi-day time values to single-day fields
+                                    document.getElementById('selectedHour').textContent = document.getElementById('multiday_selectedHour').textContent;
+                                    document.getElementById('selectedMinute').textContent = document.getElementById('multiday_selectedMinute').textContent;
+                                    document.getElementById('selectedEndHour').textContent = document.getElementById('multiday_selectedEndHour').textContent;
+                                    document.getElementById('selectedEndMinute').textContent = document.getElementById('multiday_selectedEndMinute').textContent;
+                                    
+                                    // Update hidden fields
+                                    document.getElementById('modern_time_hour').value = document.getElementById('multiday_selectedHour').textContent;
+                                    document.getElementById('modern_time_minute').value = document.getElementById('multiday_selectedMinute').textContent;
+                                    document.getElementById('end_time_hour').value = document.getElementById('multiday_selectedEndHour').textContent;
+                                    document.getElementById('end_time_minute').value = document.getElementById('multiday_selectedEndMinute').textContent;
+                                }
+                                
+                                multidayCheckbox.addEventListener('change', toggleMultidayFields);
+                                
+                                // Add validation listeners for multiday date fields
+                                startDateInput.addEventListener('change', validateEventTimes);
+                                endDateInput.addEventListener('change', validateEventTimes);
+                                
+                                // Initialize multiday fields state
+                                toggleMultidayFields();
                             });
                             </script>
                         </div>
@@ -918,7 +1194,10 @@ function setupGoogleMapsValidation() {
 
 // Time validation function
 function validateEventTimes() {
+    const multidayCheckbox = document.getElementById('is_multiday');
     const dateInput = document.getElementById('date');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
     const startHour = parseInt(document.getElementById('modern_time_hour').value);
     const startMinute = parseInt(document.getElementById('modern_time_minute').value);
     const endHour = parseInt(document.getElementById('end_time_hour').value);
@@ -945,18 +1224,42 @@ function validateEventTimes() {
         return true; // Not all times set yet, skip validation
     }
     
-    // Create time objects for comparison (using today's date for comparison)
-    const today = new Date();
-    const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startHour, startMinute);
-    const endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMinute);
+    // Determine which dates to use
+    let startDateValue, endDateValue;
+    if (multidayCheckbox && multidayCheckbox.checked) {
+        startDateValue = startDateInput.value;
+        endDateValue = endDateInput.value;
+        
+        if (!startDateValue || !endDateValue) {
+            return true; // Dates not set yet
+        }
+    } else {
+        startDateValue = dateInput.value;
+        endDateValue = dateInput.value;
+        
+        if (!startDateValue) {
+            return true; // Date not set yet
+        }
+    }
+    
+    // Create datetime objects for comparison
+    const startDateTime = new Date(startDateValue + 'T' + String(startHour).padStart(2, '0') + ':' + String(startMinute).padStart(2, '0'));
+    const endDateTime = new Date(endDateValue + 'T' + String(endHour).padStart(2, '0') + ':' + String(endMinute).padStart(2, '0'));
     
     // Check if end time is after start time
-    if (endTime <= startTime) {
+    if (endDateTime <= startDateTime) {
         // Show error message
         const errorDiv = document.createElement('div');
         errorDiv.id = 'time-validation-error';
         errorDiv.className = 'alert alert-danger mt-3';
-        errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Invalid end time:</strong> The end time must be after the start time.';
+        
+        if (multidayCheckbox && multidayCheckbox.checked && endDateValue < startDateValue) {
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Invalid end date:</strong> The end date must be on or after the start date.';
+        } else if (endDateValue === startDateValue) {
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Invalid end time:</strong> The end time must be after the start time.';
+        } else {
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Invalid date/time:</strong> The event end must be after the event start.';
+        }
         
         // Insert error after the end time container
         if (endTimeContainer) {
