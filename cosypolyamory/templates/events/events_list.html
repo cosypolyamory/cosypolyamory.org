@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Community Events</h1>
         {% if current_user.role in ['admin', 'organizer'] %}
-            <a href="{{ url_for('events.create_event') }}" class="btn btn-custom-primary">
+            <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>Create Event
             </a>
         {% endif %}
@@ -31,19 +31,19 @@
         <div class="col-md-6">
             <div class="btn-group event-filter-group" role="group" aria-label="Event filters">
                 <a href="{{ url_for('events.events_list', filter='upcoming') }}" 
-                   class="btn {{ 'btn-custom-secondary' if current_filter == 'upcoming' else 'btn-outline-custom-secondary' }}">
+                   class="btn {{ 'btn-secondary' if current_filter == 'upcoming' else 'btn-outline-secondary' }}">
                     <i class="fas fa-calendar-alt me-1"></i>Upcoming
                 </a>
                 
                 <a href="{{ url_for('events.events_list', filter='past') }}" 
-                   class="btn {{ 'btn-custom-secondary' if current_filter == 'past' else 'btn-outline-custom-secondary' }}">
+                   class="btn {{ 'btn-secondary' if current_filter == 'past' else 'btn-outline-secondary' }}">
                     <i class="fas fa-history me-1"></i>Past Events
                 </a>
             </div>
         </div>
         {% if current_user.is_authenticated %}
         <div class="col-md-6 text-end">
-            <a href="{{ url_for('auth.my_events') }}" class="btn btn-custom-secondary">
+            <a href="{{ url_for('auth.my_events') }}" class="btn btn-secondary">
                 My Events
             </a>
         </div>
@@ -275,7 +275,7 @@
                                         </div>
                                     {% endif %}
                                     {% if current_user.role in ['approved', 'admin', 'organizer'] %}
-                                        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-custom-primary">
+                                        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-primary">
                                             View details
                                         </a>
                                     {% else %}
@@ -313,7 +313,7 @@
                 {% else %}
                     <p>There are no upcoming events scheduled at this time. Check back soon for new events!</p>
                     {% if current_user.role in ['admin', 'organizer'] %}
-                        <a href="{{ url_for('events.create_event') }}" class="btn btn-custom-primary">
+                        <a href="{{ url_for('events.create_event') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-2"></i>Create Event
                         </a>
                     {% endif %}

@@ -22,9 +22,99 @@ textarea::placeholder {
   background-color: #7a4da8 !important;
 }
 
-/* Override Bootstrap icon colors to use custom primary */
+/* Override Bootstrap Primary Color - replaces default blue */
+.btn-primary {
+  background-color: #7a4da8 !important;
+  border-color: #7a4da8 !important;
+  color: white !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: #6a3f94 !important;
+  border-color: #6a3f94 !important;
+  color: white !important;
+}
+
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: #9d7dba !important;
+  border-color: #9d7dba !important;
+}
+
+.btn-outline-primary {
+  color: #7a4da8 !important;
+  border-color: #7a4da8 !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+  background-color: #7a4da8 !important;
+  border-color: #7a4da8 !important;
+  color: white !important;
+}
+
+.bg-primary {
+  background-color: #7a4da8 !important;
+}
+
 .text-primary {
   color: #7a4da8 !important;
+}
+
+.border-primary {
+  border-color: #7a4da8 !important;
+}
+
+/* Override Bootstrap Secondary Color - replaces default grey */
+.btn-secondary {
+  background-color: #e9ecef !important;
+  border-color: #e9ecef !important;
+  color: #212529 !important;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus,
+.btn-secondary:active {
+  background-color: #dee2e6 !important;
+  border-color: #dee2e6 !important;
+  color: #212529 !important;
+}
+
+.btn-secondary:disabled,
+.btn-secondary.disabled {
+  background-color: #f8f9fa !important;
+  border-color: #f8f9fa !important;
+  color: #6c757d !important;
+}
+
+.btn-outline-secondary {
+  color: #212529 !important;
+  border-color: #dee2e6 !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus,
+.btn-outline-secondary:active {
+  background-color: #e9ecef !important;
+  border-color: #e9ecef !important;
+  color: #212529 !important;
+}
+
+.bg-secondary {
+  background-color: #e9ecef !important;
+}
+
+.text-secondary {
+  color: #6c757d !important;
+}
+
+.border-secondary {
+  border-color: #dee2e6 !important;
 }
 
 /* Custom icon colors for host/co-host */
@@ -717,93 +807,10 @@ h4 {
 }
 
 /* Custom Button Colors - Site-wide consistency */
-/* NOTE: These are distinct from Bootstrap's .btn-primary and .btn-secondary */
-/* Use .btn-custom-primary and .btn-custom-secondary for site-wide button harmonization */
-
-/* Primary button: Softer purple derived from navbar (#5d0096) */
-.btn-custom-primary {
-    background-color: #7a4da8 !important;
-    border-color: #7a4da8 !important;
-    color: white !important;
-    font-weight: 500;
-}
-
-.btn-custom-primary:hover,
-.btn-custom-primary:focus,
-.btn-custom-primary:active {
-    background-color: #6a3f94 !important;
-    border-color: #6a3f94 !important;
-    color: white !important;
-}
-
-.btn-custom-primary:disabled,
-.btn-custom-primary.disabled {
-    background-color: #9d7dba !important;
-    border-color: #9d7dba !important;
-    opacity: 0.65;
-    cursor: not-allowed;
-}
-
-/* Secondary button: Very light grey with dark text */
-.btn-custom-secondary {
-    background-color: #e9ecef !important;
-    border-color: #e9ecef !important;
-    color: #212529 !important;
-    font-weight: 500;
-}
-
-.btn-custom-secondary:hover,
-.btn-custom-secondary:focus,
-.btn-custom-secondary:active {
-    background-color: #dee2e6 !important;
-    border-color: #dee2e6 !important;
-    color: #212529 !important;
-}
-
-.btn-custom-secondary:disabled,
-.btn-custom-secondary.disabled {
-    background-color: #f8f9fa !important;
-    border-color: #f8f9fa !important;
-    color: #6c757d !important;
-    opacity: 0.65;
-    cursor: not-allowed;
-}
-
-/* Outline variants for lighter touch */
-.btn-outline-custom-primary {
-    background-color: transparent !important;
-    border-color: #7a4da8 !important;
-    color: #7a4da8 !important;
-    font-weight: 500;
-}
-
-.btn-outline-custom-primary:hover,
-.btn-outline-custom-primary:focus,
-.btn-outline-custom-primary:active {
-    background-color: #7a4da8 !important;
-    border-color: #7a4da8 !important;
-    color: white !important;
-}
-
-.btn-outline-custom-secondary {
-    background-color: transparent !important;
-    border-color: #dee2e6 !important;
-    color: #212529 !important;
-    font-weight: 500;
-}
-
-.btn-outline-custom-secondary:hover,
-.btn-outline-custom-secondary:focus,
-.btn-outline-custom-secondary:active {
-    background-color: #e9ecef !important;
-    border-color: #e9ecef !important;
-    color: #212529 !important;
-}
-
 /* Event filter button group - add visible borders between buttons */
-.event-filter-group .btn-custom-secondary + .btn-custom-secondary,
-.event-filter-group .btn-custom-secondary + .btn-outline-custom-secondary,
-.event-filter-group .btn-outline-custom-secondary + .btn-custom-secondary {
+.event-filter-group .btn-secondary + .btn-secondary,
+.event-filter-group .btn-secondary + .btn-outline-secondary,
+.event-filter-group .btn-outline-secondary + .btn-secondary {
     border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
@@ -816,10 +823,4 @@ h4 {
 .btn-group .btn-rsvp-no + .btn-rsvp-none,
 .btn-group .btn-rsvp-maybe + .btn-rsvp-none {
     border-left: 1px solid #adb5bd !important;
-}
-
-/* Ensure dropdown toggles with custom buttons maintain consistent styling */
-.btn-custom-secondary.dropdown-toggle::after,
-.btn-custom-primary.dropdown-toggle::after {
-    vertical-align: middle;
 }

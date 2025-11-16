@@ -13,7 +13,7 @@
                         <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
                             <!-- Primary Navigation -->
                             <div>
-                                <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-custom-secondary btn-sm">
+                                <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-secondary btn-sm">
                                     Back to Event
                                 </a>
                             </div>
@@ -21,7 +21,7 @@
                             <!-- Actions -->
                             <div class="d-flex flex-wrap gap-2">
                                 {% if (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) and event.exact_time > now %}
-                                    <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-custom-secondary btn-sm">
+                                    <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-secondary btn-sm">
                                         Manage Attendance
                                     </a>
                                 {% endif %}
@@ -94,7 +94,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Start Time *</label>
                             <div class="input-group mb-2">
-                                <button class="btn btn-outline-custom-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-clock me-1"></i><span id="selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="hourDropdown" id="hourDropdownMenu">
@@ -103,7 +103,7 @@
                                     <li><a class="dropdown-item hour-option{% if hour == selected_hour %} active selected-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                     {% endfor %}
                                 </ul>
-                                <button class="btn btn-outline-custom-secondary dropdown-toggle" type="button" id="minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span id="selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="minuteDropdown" id="minuteDropdownMenu">
@@ -120,7 +120,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">End Time *</label>
                             <div class="input-group mb-2">
-                                <button class="btn btn-outline-custom-secondary dropdown-toggle" type="button" id="endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-clock me-1"></i><span id="selectedEndHour">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="endHourDropdown" id="endHourDropdownMenu">
@@ -129,7 +129,7 @@
                                     <li><a class="dropdown-item end-hour-option{% if hour == selected_end_hour %} active selected-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                     {% endfor %}
                                 </ul>
-                                <button class="btn btn-outline-custom-secondary dropdown-toggle" type="button" id="endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span id="selectedEndMinute">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="endMinuteDropdown" id="endMinuteDropdownMenu">
@@ -157,7 +157,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Start Time *</label>
                                 <div class="input-group mb-2">
-                                    <button class="btn btn-outline-custom-secondary dropdown-toggle" type="button" id="multiday_hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fas fa-clock me-1"></i><span id="multiday_selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="multiday_hourDropdown" id="multiday_hourDropdownMenu">
@@ -166,7 +166,7 @@
                                         <li><a class="dropdown-item multiday-hour-option{% if hour == selected_hour %} active selected-multiday-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                         {% endfor %}
                                     </ul>
-                                    <button class="btn btn-outline-custom-secondary dropdown-toggle" type="button" id="multiday_minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <span id="multiday_selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="multiday_minuteDropdown" id="multiday_minuteDropdownMenu">
@@ -190,7 +190,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">End Time *</label>
                                 <div class="input-group mb-2">
-                                    <button class="btn btn-outline-custom-secondary dropdown-toggle" type="button" id="multiday_endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fas fa-clock me-1"></i><span id="multiday_selectedEndHour">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}</span>
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="multiday_endHourDropdown" id="multiday_endHourDropdownMenu">
@@ -199,7 +199,7 @@
                                         <li><a class="dropdown-item multiday-end-hour-option{% if hour == selected_end_hour %} active selected-multiday-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                         {% endfor %}
                                     </ul>
-                                    <button class="btn btn-outline-custom-secondary dropdown-toggle" type="button" id="multiday_endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <span id="multiday_selectedEndMinute">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="multiday_endMinuteDropdown" id="multiday_endMinuteDropdownMenu">
@@ -620,7 +620,7 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">&nbsp;</label>
                             <div class="d-grid">
-                                <a href="{{ url_for('admin.event_notes') }}" target="_blank" class="btn btn-custom-secondary">
+                                <a href="{{ url_for('admin.event_notes') }}" target="_blank" class="btn btn-secondary">
                                     Edit event notes
                                     <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75em;"></i>
                                 </a>
@@ -658,18 +658,18 @@
                     
                     <!-- Submit -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{% if event %}{{ url_for('events.event_detail', event_id=event.id) }}{% else %}{{ url_for('events.events_list') }}{% endif %}" class="btn btn-custom-secondary btn-lg me-md-2">
+                        <a href="{% if event %}{{ url_for('events.event_detail', event_id=event.id) }}{% else %}{{ url_for('events.events_list') }}{% endif %}" class="btn btn-secondary btn-lg me-md-2">
                             Cancel
                         </a>
                         {% if is_edit %}
-                        <button type="button" class="btn btn-custom-secondary btn-lg me-md-2" onclick="confirmDeleteEvent()">
+                        <button type="button" class="btn btn-secondary btn-lg me-md-2" onclick="confirmDeleteEvent()">
                             Delete Event
                         </button>
-                        <button type="button" class="btn btn-custom-secondary btn-lg me-md-2" onclick="confirmCloneEvent()">
+                        <button type="button" class="btn btn-secondary btn-lg me-md-2" onclick="confirmCloneEvent()">
                             Clone Event
                         </button>
                         {% endif %}
-                        <button type="submit" class="btn btn-custom-primary btn-lg">
+                        <button type="submit" class="btn btn-primary btn-lg">
                             {% if is_edit %}Update Event{% else %}Create Event{% endif %}
                         </button>
                     </div>
@@ -1365,10 +1365,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-custom-secondary" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-2"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-custom-primary" id="confirmPromotionBtn">
+                <button type="button" class="btn btn-primary" id="confirmPromotionBtn">
                     <i class="fas fa-check me-2"></i>Confirm and Update Event
                 </button>
             </div>
@@ -1411,10 +1411,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </ul>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-custom-secondary" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-2"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-custom-secondary" id="confirmDeleteBtn">
+                <button type="button" class="btn btn-secondary" id="confirmDeleteBtn">
                     <i class="fas fa-trash me-2"></i>Delete Event
                 </button>
             </div>
@@ -1454,10 +1454,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p class="text-muted small"><strong>Note:</strong> You can review and modify the details before clicking "Update Event" to save the cloned event.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-custom-secondary" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-custom-primary" id="confirmCloneBtn">
+                <button type="button" class="btn btn-primary" id="confirmCloneBtn">
                     Clone Event
                 </button>
             </div>
