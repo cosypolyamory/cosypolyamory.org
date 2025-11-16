@@ -67,6 +67,7 @@ def approved_user_required(f):
 # - attendance_no: list of (user_id, notify) tuples - users not attending
 # - attendance_maybe: list of (user_id, notify) tuples - users with maybe status
 # - attendance_waitlist: list of (user_id, notify) tuples - users on waitlist
+# - attendance_banned: list of (user_id, notify) tuples - users who are banned from this event.
 # - remove_attendance: list of (user_id, notify) tuples - completely remove RSVPs from event
 #
 # Each tuple contains (user_id, notify) where user_id is a string (e.g., 'google_123456',
@@ -80,13 +81,14 @@ def approved_user_required(f):
 # Transaction-safe processing order:
 #   Step 0: Remove RSVPs (remove_attendance list)
 #   Step 1: Apply attendance_no updates (clear spots)
-#   Step 2: Apply attendance_yes updates (auto-waitlist if full)
-#   Step 3: Apply attendance_maybe updates
-#   Step 4: Apply attendance_waitlist updates (explicit waitlist)
-#   Step 5: Validate capacity constraints
-#   Step 6: Ensure host/co-host have 'yes' RSVPs (always enforced)
-#   Step 7: Promote waitlisted users FCFS if capacity available
-#   Step 8: Final capacity validation
+#   Step 2: Apply attendance_yes updates (auto-waitlist if full, blocked if user is banned)
+#   Step 3: Apply attendance_maybe updates (blocked if user is banned)
+#   Step 4: Apply attendance_waitlist updates (explicit waitlist, blocked if user is banned)
+#   Step 5: Apply attendance_banned updates. Banned users cannot RSVP for the event.
+#   Step 6: Validate capacity constraints
+#   Step 7: Ensure host/co-host have 'yes' RSVPs (always enforced)
+#   Step 8: Promote waitlisted users FCFS if capacity available
+#   Step 9: Final capacity validation
 #   
 # All changes are wrapped in database.atomic() transaction - any capacity violation
 # triggers automatic rollback. Notifications are sent AFTER successful commit.
@@ -149,6 +151,7 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
     attendance_no = attendance_data.get('attendance_no', [])
     attendance_maybe = attendance_data.get('attendance_maybe', [])
     attendance_waitlist = attendance_data.get('attendance_waitlist', [])
+    attendance_banned = attendance_data.get('attendance_banned', [])
     remove_attendance = attendance_data.get('remove_attendance', [])
     
     # Parse tuples of (user_id, notify) or plain user_id
@@ -181,6 +184,7 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
         attendance_no = parse_attendance_list(attendance_no)
         attendance_maybe = parse_attendance_list(attendance_maybe)
         attendance_waitlist = parse_attendance_list(attendance_waitlist)
+        attendance_banned = parse_attendance_list(attendance_banned)
         # Parse remove_attendance - support both plain IDs and tuples with notify flag
         remove_attendance = parse_attendance_list(remove_attendance)
     except (ValueError, TypeError) as e:
@@ -188,7 +192,7 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
     
     # If not admin/organizer, validate user can only change their own RSVP
     if not is_admin_or_organizer and requesting_user_id:
-        all_user_ids = set([uid for uid, _ in attendance_yes + attendance_no + attendance_maybe + attendance_waitlist + remove_attendance])
+        all_user_ids = set([uid for uid, _ in attendance_yes + attendance_no + attendance_maybe + attendance_waitlist + attendance_banned + remove_attendance])
         if len(all_user_ids) != 1 or requesting_user_id not in all_user_ids:
             return False, {'error': 'You can only manage your own attendance'}, 403
     
@@ -245,6 +249,15 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                 try:
                     user = User.get_by_id(user_id)
                     
+                    # Check if user is banned from this event
+                    try:
+                        existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                        if existing_rsvp.status == 'banned':
+                            database.rollback()
+                            return False, {'error': f'User {user.name} is banned from this event and cannot RSVP'}, 403
+                    except RSVP.DoesNotExist:
+                        pass  # No existing RSVP, user is not banned
+                    
                     # Check if event is full - if so, add to waitlist instead of 'yes'
                     current_yes_count = RSVP.select().where(
                         (RSVP.event == event) & (RSVP.status == 'yes')
@@ -283,6 +296,16 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
             for user_id, notify in attendance_maybe:
                 try:
                     user = User.get_by_id(user_id)
+                    
+                    # Check if user is banned from this event
+                    try:
+                        existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                        if existing_rsvp.status == 'banned':
+                            database.rollback()
+                            return False, {'error': f'User {user.name} is banned from this event and cannot RSVP'}, 403
+                    except RSVP.DoesNotExist:
+                        pass  # No existing RSVP, user is not banned
+                    
                     rsvp, created = RSVP.get_or_create(
                         event=event,
                         user=user,
@@ -306,6 +329,16 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
             for user_id, notify in attendance_waitlist:
                 try:
                     user = User.get_by_id(user_id)
+                    
+                    # Check if user is banned from this event
+                    try:
+                        existing_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == user))
+                        if existing_rsvp.status == 'banned':
+                            database.rollback()
+                            return False, {'error': f'User {user.name} is banned from this event and cannot RSVP'}, 403
+                    except RSVP.DoesNotExist:
+                        pass  # No existing RSVP, user is not banned
+                    
                     rsvp, created = RSVP.get_or_create(
                         event=event,
                         user=user,
@@ -325,7 +358,31 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                     database.rollback()
                     return False, {'error': f'User {user_id} not found'}, 400
             
-            # Step 5: Check capacity 
+            # Step 5: Apply attendance_banned updates (add/update users to 'banned' status)
+            # Banned users cannot RSVP to the event and do not count towards attendance
+            for user_id, notify in attendance_banned:
+                try:
+                    user = User.get_by_id(user_id)
+                    rsvp, created = RSVP.get_or_create(
+                        event=event,
+                        user=user,
+                        defaults={'status': 'banned', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                    )
+                    if created:
+                        # New RSVP created
+                        updated_rsvps.append({'user': user, 'old_status': None, 'new_status': 'banned', 'notify': notify})
+                    elif rsvp.status != 'banned':
+                        # Existing RSVP status changed
+                        old_status = rsvp.status
+                        rsvp.status = 'banned'
+                        rsvp.updated_at = datetime.now()
+                        rsvp.save()
+                        updated_rsvps.append({'user': user, 'old_status': old_status, 'new_status': 'banned', 'notify': notify})
+                except User.DoesNotExist:
+                    database.rollback()
+                    return False, {'error': f'User {user_id} not found'}, 400
+            
+            # Step 6: Check capacity 
             current_yes_count = RSVP.select().where(
                 (RSVP.event == event) & (RSVP.status == 'yes')
             ).count()
@@ -336,7 +393,7 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                     'error': f'Cannot update attendance: would exceed event capacity ({current_yes_count} attending, max {event.max_attendees})'
                 }, 400
             
-            # Step 5: Ensure hosts have RSVPs and promote waitlist (skip if no_auto_promote is True)
+            # Step 7: Ensure hosts have RSVPs and promote waitlist (skip if no_auto_promote is True)
             if not no_auto_promote:
                 # Ensure organizer has 'yes' RSVP
                 organizer_rsvp, created = RSVP.get_or_create(
@@ -399,7 +456,7 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                             rsvp.save()
                             promoted_users.append(rsvp.user)
             
-            # Final capacity check
+            # Step 9: Final capacity check
             final_yes_count = RSVP.select().where(
                 (RSVP.event == event) & (RSVP.status == 'yes')
             ).count()

@@ -17,7 +17,8 @@ class RSVP(BaseModel):
         ('yes', 'Attending'),
         ('no', 'Not Attending'),
         ('maybe', 'Maybe'),
-        ('waitlist', 'Waitlisted')
+        ('waitlist', 'Waitlisted'),
+        ('banned', 'Banned')
     ])
     
     notes = TextField(null=True)  # Optional notes from user
