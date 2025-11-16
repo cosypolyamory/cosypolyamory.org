@@ -66,11 +66,12 @@ def approved_user_required(f):
 # - attendance_yes: list of (user_id, notify) tuples - users attending (FCFS order)
 # - attendance_no: list of (user_id, notify) tuples - users not attending
 # - attendance_maybe: list of (user_id, notify) tuples - users with maybe status
+# - attendance_waitlist: list of (user_id, notify) tuples - users on waitlist
 # - remove_attendance: list of (user_id, notify) tuples - completely remove RSVPs from event
 #
-# Each tuple contains (user_id, notify) where notify is a boolean indicating whether
-# to send notification emails for this change. Plain user_id integers are also accepted
-# and will default to notify=True.
+# Each tuple contains (user_id, notify) where user_id is a string (e.g., 'google_123456',
+# 'test_user_003') and notify is a boolean indicating whether to send notification emails
+# for this change. Plain user_id strings are also accepted and will default to notify=True.
 #
 # Permission model:
 #   - Organizers and admins can manage all attendees
@@ -81,10 +82,11 @@ def approved_user_required(f):
 #   Step 1: Apply attendance_no updates (clear spots)
 #   Step 2: Apply attendance_yes updates (auto-waitlist if full)
 #   Step 3: Apply attendance_maybe updates
-#   Step 4: Validate capacity constraints
-#   Step 5: Ensure host/co-host have 'yes' RSVPs (always enforced)
-#   Step 6: Promote waitlisted users FCFS if capacity available
-#   Step 7: Final capacity validation
+#   Step 4: Apply attendance_waitlist updates (explicit waitlist)
+#   Step 5: Validate capacity constraints
+#   Step 6: Ensure host/co-host have 'yes' RSVPs (always enforced)
+#   Step 7: Promote waitlisted users FCFS if capacity available
+#   Step 8: Final capacity validation
 #   
 # All changes are wrapped in database.atomic() transaction - any capacity violation
 # triggers automatic rollback. Notifications are sent AFTER successful commit.
@@ -109,11 +111,12 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
     Args:
         event_id: The ID of the event
         attendance_data: Dict with keys:
-            - attendance_yes: list of (user_id, notify) tuples or plain user IDs
-            - attendance_no: list of (user_id, notify) tuples or plain user IDs
-            - attendance_maybe: list of (user_id, notify) tuples or plain user IDs
-            - remove_attendance: list of (user_id, notify) tuples or plain user IDs
-        requesting_user_id: ID of user making the request (for permission checks)
+            - attendance_yes: list of (user_id, notify) tuples or plain user IDs (strings)
+            - attendance_no: list of (user_id, notify) tuples or plain user IDs (strings)
+            - attendance_maybe: list of (user_id, notify) tuples or plain user IDs (strings)
+            - attendance_waitlist: list of (user_id, notify) tuples or plain user IDs (strings)
+            - remove_attendance: list of (user_id, notify) tuples or plain user IDs (strings)
+        requesting_user_id: ID (string) of user making the request (for permission checks)
                            If None, admin privileges are assumed
         no_auto_promote: If True, skip automatic host RSVP assignment and waitlist promotion
                         (default: False)
@@ -145,6 +148,7 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
     attendance_yes = attendance_data.get('attendance_yes', [])
     attendance_no = attendance_data.get('attendance_no', [])
     attendance_maybe = attendance_data.get('attendance_maybe', [])
+    attendance_waitlist = attendance_data.get('attendance_waitlist', [])
     remove_attendance = attendance_data.get('remove_attendance', [])
     
     # Parse tuples of (user_id, notify) or plain user_id
@@ -152,15 +156,23 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
         """Convert list of (user_id, notify) tuples or plain user_ids to [(user_id, notify)]"""
         result = []
         for item in items:
-            if isinstance(item, (list, tuple)) and len(item) >= 2:
-                # Tuple format: (user_id, notify)
-                result.append((int(item[0]), bool(item[1])))
-            elif isinstance(item, (list, tuple)) and len(item) == 1:
-                # Single-element tuple: (user_id,) - default notify to True
-                result.append((int(item[0]), True))
-            else:
-                # Plain user_id - default notify to True
-                result.append((int(item), True))
+            try:
+                if isinstance(item, (list, tuple)) and len(item) >= 2:
+                    # Tuple format: (user_id, notify)
+                    user_id = str(item[0])  # User IDs are strings in this system
+                    notify = bool(item[1])
+                    result.append((user_id, notify))
+                elif isinstance(item, (list, tuple)) and len(item) == 1:
+                    # Single-element tuple: (user_id,) - default notify to True
+                    user_id = str(item[0])
+                    result.append((user_id, True))
+                else:
+                    # Plain user_id - default notify to True
+                    user_id = str(item)
+                    result.append((user_id, True))
+            except (ValueError, TypeError) as e:
+                # Provide more helpful error message
+                raise ValueError(f"Invalid user ID format: {item!r}")
         return result
     
     # Validate and parse input
@@ -168,6 +180,7 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
         attendance_yes = parse_attendance_list(attendance_yes)
         attendance_no = parse_attendance_list(attendance_no)
         attendance_maybe = parse_attendance_list(attendance_maybe)
+        attendance_waitlist = parse_attendance_list(attendance_waitlist)
         # Parse remove_attendance - support both plain IDs and tuples with notify flag
         remove_attendance = parse_attendance_list(remove_attendance)
     except (ValueError, TypeError) as e:
@@ -175,7 +188,7 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
     
     # If not admin/organizer, validate user can only change their own RSVP
     if not is_admin_or_organizer and requesting_user_id:
-        all_user_ids = set([uid for uid, _ in attendance_yes + attendance_no + attendance_maybe + remove_attendance])
+        all_user_ids = set([uid for uid, _ in attendance_yes + attendance_no + attendance_maybe + attendance_waitlist + remove_attendance])
         if len(all_user_ids) != 1 or requesting_user_id not in all_user_ids:
             return False, {'error': 'You can only manage your own attendance'}, 403
     
@@ -289,7 +302,30 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                     database.rollback()
                     return False, {'error': f'User {user_id} not found'}, 400
             
-            # Step 4: Check capacity 
+            # Step 4: Apply attendance_waitlist updates (add/update users to 'waitlist' status)
+            for user_id, notify in attendance_waitlist:
+                try:
+                    user = User.get_by_id(user_id)
+                    rsvp, created = RSVP.get_or_create(
+                        event=event,
+                        user=user,
+                        defaults={'status': 'waitlist', 'created_at': datetime.now(), 'updated_at': datetime.now()}
+                    )
+                    if created:
+                        # New RSVP created
+                        updated_rsvps.append({'user': user, 'old_status': None, 'new_status': 'waitlist', 'notify': notify})
+                    elif rsvp.status != 'waitlist':
+                        # Existing RSVP status changed
+                        old_status = rsvp.status
+                        rsvp.status = 'waitlist'
+                        rsvp.updated_at = datetime.now()
+                        rsvp.save()
+                        updated_rsvps.append({'user': user, 'old_status': old_status, 'new_status': 'waitlist', 'notify': notify})
+                except User.DoesNotExist:
+                    database.rollback()
+                    return False, {'error': f'User {user_id} not found'}, 400
+            
+            # Step 5: Check capacity 
             current_yes_count = RSVP.select().where(
                 (RSVP.event == event) & (RSVP.status == 'yes')
             ).count()
@@ -455,10 +491,11 @@ def manage_attendance(event_id):
     API endpoint to manage event attendance.
     
     Expects JSON with:
-    - attendance_yes: list of (user_id, notify) tuples or plain user IDs
-    - attendance_no: list of (user_id, notify) tuples or plain user IDs  
-    - attendance_maybe: list of (user_id, notify) tuples or plain user IDs
-    - remove_attendance: list of (user_id, notify) tuples or plain user IDs
+    - attendance_yes: list of (user_id, notify) tuples or plain user IDs (strings)
+    - attendance_no: list of (user_id, notify) tuples or plain user IDs (strings)
+    - attendance_maybe: list of (user_id, notify) tuples or plain user IDs (strings)
+    - attendance_waitlist: list of (user_id, notify) tuples or plain user IDs (strings)
+    - remove_attendance: list of (user_id, notify) tuples or plain user IDs (strings)
     - no_auto_promote: optional boolean to skip automatic host RSVPs and waitlist promotion
     
     Returns JSON with success status and any relevant messages.

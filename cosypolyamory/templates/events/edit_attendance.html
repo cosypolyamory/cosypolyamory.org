@@ -611,13 +611,30 @@ function moveRSVP(eventId, userId, newStatus, userName) {
 function executeMoveRSVP(eventId, userId, newStatus, userName) {
     const skipNotification = document.getElementById('skipMoveNotification').checked;
     
-    fetch(`/events/${eventId}/admin/rsvp/${userId}/move`, {
+    // Build the attendance data based on the new status
+    const attendanceData = {
+        no_auto_promote: true  // Don't auto-assign hosts or promote waitlist
+    };
+    
+    // Add user to the appropriate status list
+    if (newStatus === 'yes') {
+        attendanceData.attendance_yes = [[userId, !skipNotification]];
+    } else if (newStatus === 'no') {
+        attendanceData.attendance_no = [[userId, !skipNotification]];
+    } else if (newStatus === 'maybe') {
+        attendanceData.attendance_maybe = [[userId, !skipNotification]];
+    } else if (newStatus === 'waitlist') {
+        // Explicitly move to waitlist using the attendance_waitlist parameter
+        attendanceData.attendance_waitlist = [[userId, !skipNotification]];
+    }
+    
+    fetch(`/events/${eventId}/manage_attendance`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
-        body: `status=${encodeURIComponent(newStatus)}&skip_notification=${skipNotification}`
+        body: JSON.stringify(attendanceData)
     })
     .then(response => response.json())
     .then(data => {
@@ -633,7 +650,7 @@ function executeMoveRSVP(eventId, userId, newStatus, userName) {
                 window.location.reload();
             }, 1000);
         } else {
-            showToast('Error', data.message, 'error');
+            showToast('Error', data.error || 'Failed to update RSVP', 'error');
         }
     })
     .catch(error => {
@@ -711,13 +728,18 @@ function removeRSVP(eventId, userId, userName) {
 function executeRemoveRSVP(eventId, userId, userName) {
     const skipNotification = document.getElementById('skipRemoveNotification').checked;
     
-    fetch(`/events/${eventId}/admin/rsvp/${userId}/remove`, {
+    const attendanceData = {
+        remove_attendance: [[userId, !skipNotification]],
+        no_auto_promote: true  // Don't auto-assign hosts or promote waitlist
+    };
+    
+    fetch(`/events/${eventId}/manage_attendance`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
-        body: `skip_notification=${skipNotification}`
+        body: JSON.stringify(attendanceData)
     })
     .then(response => response.json())
     .then(data => {
@@ -729,7 +751,7 @@ function executeRemoveRSVP(eventId, userId, userName) {
                 window.location.reload();
             }, 1000);
         } else {
-            showToast('Error', data.message, 'error');
+            showToast('Error', data.error || 'Failed to remove RSVP', 'error');
         }
     })
     .catch(error => {
