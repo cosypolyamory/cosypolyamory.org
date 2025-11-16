@@ -100,38 +100,50 @@ def approved_user_required(f):
 #
 # Returns JSON with success status, counts, and list of promoted users if applicable.
 
-@bp.route('/<int:event_id>/manage_attendance', methods=['POST'])
-@login_required
-def manage_attendance(event_id):
+def process_attendance_changes(event_id, attendance_data, requesting_user_id=None):
     """
-    API endpoint to manage event attendance.
+    Core function to process attendance changes for an event.
     
-    Expects JSON with:
-    - attendance_yes: list of user IDs who are attending
-    - attendance_no: list of user IDs who are not attending
-    - attendance_maybe: list of user IDs with maybe status
+    This function can be called by other parts of the application to manage attendance.
     
-    Returns JSON with success status and any relevant messages.
+    Args:
+        event_id: The ID of the event
+        attendance_data: Dict with keys:
+            - attendance_yes: list of (user_id, notify) tuples or plain user IDs
+            - attendance_no: list of (user_id, notify) tuples or plain user IDs
+            - attendance_maybe: list of (user_id, notify) tuples or plain user IDs
+            - remove_attendance: list of (user_id, notify) tuples or plain user IDs
+        requesting_user_id: ID of user making the request (for permission checks)
+                           If None, admin privileges are assumed
+    
+    Returns:
+        Tuple of (success: bool, data: dict, status_code: int)
+        - If success=True, data contains response with rsvp_count, waitlist_count, etc.
+        - If success=False, data contains error message
     """
     try:
         event = Event.get_by_id(event_id)
     except Event.DoesNotExist:
-        return jsonify({'success': False, 'error': 'Event not found'}), 404
+        return False, {'error': 'Event not found'}, 404
     
     # Check permissions based on user role
-    is_admin_or_organizer = (current_user.role in ['admin', 'organizer'] or 
-                              event.organizer_id == current_user.id or 
-                              (event.co_host and event.co_host_id == current_user.id))
+    if requesting_user_id:
+        try:
+            requesting_user = User.get_by_id(requesting_user_id)
+            is_admin_or_organizer = (requesting_user.role in ['admin', 'organizer'] or 
+                                      event.organizer_id == requesting_user_id or 
+                                      (event.co_host and event.co_host_id == requesting_user_id))
+        except User.DoesNotExist:
+            return False, {'error': 'Requesting user not found'}, 404
+    else:
+        # No requesting user = assume admin privileges
+        is_admin_or_organizer = True
+        requesting_user = None
     
-    # Parse JSON request
-    data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
-    
-    attendance_yes = data.get('attendance_yes', [])
-    attendance_no = data.get('attendance_no', [])
-    attendance_maybe = data.get('attendance_maybe', [])
-    remove_attendance = data.get('remove_attendance', [])
+    attendance_yes = attendance_data.get('attendance_yes', [])
+    attendance_no = attendance_data.get('attendance_no', [])
+    attendance_maybe = attendance_data.get('attendance_maybe', [])
+    remove_attendance = attendance_data.get('remove_attendance', [])
     
     # Parse tuples of (user_id, notify) or plain user_id
     def parse_attendance_list(items):
@@ -157,13 +169,13 @@ def manage_attendance(event_id):
         # Parse remove_attendance - support both plain IDs and tuples with notify flag
         remove_attendance = parse_attendance_list(remove_attendance)
     except (ValueError, TypeError) as e:
-        return jsonify({'success': False, 'error': f'Invalid user ID or notify format: {str(e)}'}), 400
+        return False, {'error': f'Invalid user ID or notify format: {str(e)}'}, 400
     
     # If not admin/organizer, validate user can only change their own RSVP
-    if not is_admin_or_organizer:
+    if not is_admin_or_organizer and requesting_user_id:
         all_user_ids = set([uid for uid, _ in attendance_yes + attendance_no + attendance_maybe + remove_attendance])
-        if len(all_user_ids) != 1 or current_user.id not in all_user_ids:
-            return jsonify({'success': False, 'error': 'You can only manage your own attendance'}), 403
+        if len(all_user_ids) != 1 or requesting_user_id not in all_user_ids:
+            return False, {'error': 'You can only manage your own attendance'}, 403
     
     # Start transaction
     try:
@@ -187,7 +199,7 @@ def manage_attendance(event_id):
                         pass
                 except User.DoesNotExist:
                     database.rollback()
-                    return jsonify({'success': False, 'error': f'User {user_id} not found'}), 400
+                    return False, {'error': f'User {user_id} not found'}, 400
             
             # Step 1: Apply attendance_no updates first (add/update users to 'no' status)
             for user_id, notify in attendance_no:
@@ -210,7 +222,7 @@ def manage_attendance(event_id):
                         updated_rsvps.append({'user': user, 'old_status': old_status, 'new_status': 'no', 'notify': notify})
                 except User.DoesNotExist:
                     database.rollback()
-                    return jsonify({'success': False, 'error': f'User {user_id} not found'}), 400
+                    return False, {'error': f'User {user_id} not found'}, 400
             
             # Step 2: Apply attendance_yes updates (add/update users to 'yes' status)
             # If event is full, automatically add to waitlist instead
@@ -250,7 +262,7 @@ def manage_attendance(event_id):
                         updated_rsvps.append({'user': user, 'old_status': old_status, 'new_status': desired_status, 'notify': notify})
                 except User.DoesNotExist:
                     database.rollback()
-                    return jsonify({'success': False, 'error': f'User {user_id} not found'}), 400
+                    return False, {'error': f'User {user_id} not found'}, 400
             
             # Step 3: Apply attendance_maybe updates (add/update users to 'maybe' status)
             for user_id, notify in attendance_maybe:
@@ -273,7 +285,7 @@ def manage_attendance(event_id):
                         updated_rsvps.append({'user': user, 'old_status': old_status, 'new_status': 'maybe', 'notify': notify})
                 except User.DoesNotExist:
                     database.rollback()
-                    return jsonify({'success': False, 'error': f'User {user_id} not found'}), 400
+                    return False, {'error': f'User {user_id} not found'}, 400
             
             # Step 4: Check capacity 
             current_yes_count = RSVP.select().where(
@@ -282,10 +294,9 @@ def manage_attendance(event_id):
             
             if event.max_attendees and current_yes_count > event.max_attendees:
                 database.rollback()
-                return jsonify({
-                    'success': False, 
+                return False, {
                     'error': f'Cannot update attendance: would exceed event capacity ({current_yes_count} attending, max {event.max_attendees})'
-                }), 400
+                }, 400
             
             # Step 5: Ensure hosts have RSVPs and promote waitlist (always done per updated spec)
             # Ensure organizer has 'yes' RSVP
@@ -331,10 +342,9 @@ def manage_attendance(event_id):
             # Check capacity again after adding hosts
             if event.max_attendees and current_yes_count > event.max_attendees:
                 database.rollback()
-                return jsonify({
-                    'success': False, 
+                return False, {
                     'error': f'Cannot update attendance: adding required host RSVPs would exceed event capacity ({current_yes_count} attending, max {event.max_attendees})'
-                }), 400
+                }, 400
             
             # Promote waitlisted users if there's capacity
             if event.max_attendees:
@@ -357,10 +367,9 @@ def manage_attendance(event_id):
             
             if event.max_attendees and final_yes_count > event.max_attendees:
                 database.rollback()
-                return jsonify({
-                    'success': False, 
+                return False, {
                     'error': f'Cannot update attendance: final state would exceed event capacity ({final_yes_count} attending, max {event.max_attendees})'
-                }), 400
+                }, 400
         
         # Transaction committed successfully
         # Now send notifications for all status changes (after transaction is complete)
@@ -411,12 +420,13 @@ def manage_attendance(event_id):
             ).count()
         }
         
-        # Include current user's status if they were affected
-        try:
-            user_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == current_user))
-            response_data['user_status'] = user_rsvp.status
-        except RSVP.DoesNotExist:
-            response_data['user_status'] = None
+        # Include requesting user's status if they were affected
+        if requesting_user_id:
+            try:
+                user_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user_id == requesting_user_id))
+                response_data['user_status'] = user_rsvp.status
+            except RSVP.DoesNotExist:
+                response_data['user_status'] = None
         
         if promoted_users:
             response_data['promoted_count'] = len(promoted_users)
@@ -428,11 +438,44 @@ def manage_attendance(event_id):
         if removed_users:
             response_data['removed_count'] = len(removed_users)
         
-        return jsonify(response_data), 200
+        return True, response_data, 200
         
     except Exception as e:
         current_app.logger.error(f"Error managing attendance for event {event_id}: {str(e)}", exc_info=True)
-        return jsonify({'success': False, 'error': 'An unexpected error occurred'}), 500
+        return False, {'error': 'An unexpected error occurred'}, 500
+
+
+@bp.route('/<int:event_id>/manage_attendance', methods=['POST'])
+@login_required
+def manage_attendance(event_id):
+    """
+    API endpoint to manage event attendance.
+    
+    Expects JSON with:
+    - attendance_yes: list of (user_id, notify) tuples or plain user IDs
+    - attendance_no: list of (user_id, notify) tuples or plain user IDs  
+    - attendance_maybe: list of (user_id, notify) tuples or plain user IDs
+    - remove_attendance: list of (user_id, notify) tuples or plain user IDs
+    
+    Returns JSON with success status and any relevant messages.
+    """
+    # Parse JSON request
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
+    
+    # Call the core processing function
+    success, response_data, status_code = process_attendance_changes(
+        event_id, 
+        data, 
+        requesting_user_id=current_user.id
+    )
+    
+    # Convert to JSON response
+    if not success:
+        return jsonify({'success': False, **response_data}), status_code
+    else:
+        return jsonify({'success': True, **response_data}), status_code
 
 
 @bp.route('/<int:event_id>/admin/attendance')
