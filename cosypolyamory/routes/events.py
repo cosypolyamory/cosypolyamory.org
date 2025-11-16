@@ -679,10 +679,20 @@ def edit_event_post(event_id):
                 flash('Co-host not found.', 'error')
                 return redirect(url_for('events.edit_event', event_id=event_id))
         
-        # Track if co-host is being removed (we'll handle RSVP removal via process_attendance_changes later)
-        removed_cohost_id = None
-        if not co_host and event.co_host:
-            removed_cohost_id = event.co_host_id
+        # Track host/co-host changes for RSVP management
+        # We need to remove RSVPs from old hosts before adding new ones
+        users_to_remove = []
+        
+        # Check if organizer changed
+        if event.organizer_id != organizer_id:
+            users_to_remove.append((event.organizer_id, False))  # Old organizer, don't notify
+        
+        # Check if co-host changed or was removed
+        if event.co_host_id:
+            # Old co-host exists
+            if not co_host or co_host.id != event.co_host_id:
+                # Co-host was removed or changed to someone else
+                users_to_remove.append((event.co_host_id, False))  # Old co-host, don't notify
 
         event_note_id = request.form.get('event_note_id')
         event_note = None
@@ -703,7 +713,90 @@ def edit_event_post(event_id):
         old_co_host = event.co_host
         old_published = event.published
 
-        # Update event
+        # IMPORTANT: Check capacity BEFORE making changes
+        # Calculate how many host slots we need
+        current_yes_count = RSVP.select().where(
+            (RSVP.event == event) & (RSVP.status == 'yes')
+        ).count()
+        
+        # Count how many host RSVPs we currently have
+        hosts_with_rsvp = 0
+        if event.organizer_id:
+            try:
+                org_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == event.organizer))
+                if org_rsvp.status == 'yes':
+                    hosts_with_rsvp += 1
+            except RSVP.DoesNotExist:
+                pass
+        
+        if event.co_host_id:
+            try:
+                cohost_rsvp = RSVP.get((RSVP.event == event) & (RSVP.user == event.co_host))
+                if cohost_rsvp.status == 'yes':
+                    hosts_with_rsvp += 1
+            except RSVP.DoesNotExist:
+                pass
+        
+        # Count how many host RSVPs we'll need after the change
+        new_hosts_needed = 0
+        if organizer_id != event.organizer_id:
+            # Organizer is changing - need new organizer
+            new_hosts_needed += 1
+        else:
+            # Same organizer - count if they already have RSVP
+            try:
+                RSVP.get((RSVP.event == event) & (RSVP.user == organizer))
+            except RSVP.DoesNotExist:
+                new_hosts_needed += 1
+        
+        if co_host:
+            if not event.co_host_id or co_host.id != event.co_host_id:
+                # Adding or changing co-host - need new co-host RSVP
+                new_hosts_needed += 1
+            else:
+                # Same co-host - count if they already have RSVP
+                try:
+                    RSVP.get((RSVP.event == event) & (RSVP.user == co_host))
+                except RSVP.DoesNotExist:
+                    new_hosts_needed += 1
+        
+        # Calculate final capacity needs
+        # Remove old host RSVPs from count, then check if we can add new ones
+        non_host_attendees = current_yes_count - hosts_with_rsvp
+        final_needed_spots = non_host_attendees + (1 if organizer else 0) + (1 if co_host else 0)
+        
+        # Check if new capacity would be exceeded
+        new_max_attendees = int(max_attendees) if max_attendees else None
+        if new_max_attendees and final_needed_spots > new_max_attendees:
+            from markupsafe import Markup
+            manage_url = url_for('attendance.edit_attendance', event_id=event.id)
+            
+            # Check if this is a capacity reduction issue or a host change issue
+            if new_max_attendees < event.max_attendees:
+                # Capacity is being reduced below current attendance
+                flash(Markup(f'Cannot reduce capacity: event currently has {current_yes_count} attendees and cannot be reduced to {new_max_attendees}. Please <a href="{manage_url}" class="alert-link">remove attendees</a> first, then reduce capacity.'), 'error')
+            else:
+                # Hosts are being changed/added and there's no room
+                flash(Markup(f'Cannot update hosts: event is at capacity ({current_yes_count}/{new_max_attendees}). Hosts require attendance spots and there are no available spots. Please increase capacity or <a href="{manage_url}" class="alert-link">remove an attendee</a> first.'), 'error')
+            return redirect(url_for('events.edit_event', event_id=event_id))
+        
+        # IMPORTANT: Remove old host RSVPs BEFORE updating event with new hosts
+        # This prevents capacity issues when hosts change
+        if users_to_remove:
+            attendance_data = {'remove_attendance': users_to_remove}
+            
+            success, response_data, status_code = process_attendance_changes(
+                event.id,
+                attendance_data,
+                requesting_user_id=None,  # Admin privileges
+                no_auto_promote=True  # Don't add current hosts yet - we're about to change them
+            )
+            
+            if not success:
+                flash(f'Failed to remove old host RSVPs: {response_data.get("error", "Unknown error")}', 'error')
+                return redirect(url_for('events.edit_event', event_id=event_id))
+
+        # Update event (including new hosts)
         event.title = title
         event.description = description
         event.barrio = barrio
@@ -722,6 +815,25 @@ def edit_event_post(event_id):
         event.published = publish_immediately
         event.save()
 
+        # Always ensure hosts have RSVPs after saving (handles both host changes and additions)
+        # This mirrors the behavior in create_event
+        success, response_data, status_code = process_attendance_changes(
+            event.id,
+            {},  # Empty data - just let it add host RSVPs
+            requesting_user_id=None,  # Admin privileges
+            no_auto_promote=False  # Add/update host RSVPs
+        )
+        
+        if not success:
+            # This shouldn't happen because we checked capacity above
+            # But if it does, we need to revert the event changes
+            event.organizer = old_organizer
+            event.co_host = old_co_host
+            event.save()
+            error_msg = response_data.get('error', 'Unknown error')
+            flash(f'Failed to update host attendance: {error_msg}. Event reverted to previous hosts.', 'error')
+            return redirect(url_for('events.edit_event', event_id=event_id))
+
         # Check for significant changes that warrant notifications
         if old_establishment_name != establishment_name:
             changes.append(f"Location updated to '{establishment_name}'")
@@ -737,27 +849,16 @@ def edit_event_post(event_id):
         if old_date.date() != date.date():
             new_date_str = date.strftime('%A, %B %d, %Y')
             changes.append(f"Date updated to {new_date_str}")
-
-        # Use process_attendance_changes to update host RSVPs and handle capacity/waitlist
-        # This ensures hosts are added properly and waitlist is promoted if needed
-        attendance_data = {}
-        if removed_cohost_id:
-            # Remove the old co-host's RSVP
-            attendance_data['remove_attendance'] = [(removed_cohost_id, False)]  # Don't notify
         
-        success, response_data, status_code = process_attendance_changes(
-            event.id,
-            attendance_data,
-            requesting_user_id=None  # Admin privileges to bypass permission checks
-        )
-        
-        if not success:
-            # If attendance processing fails, rollback and show error
-            flash(f'Failed to update event attendance: {response_data.get("error", "Unknown error")}', 'error')
-            return redirect(url_for('events.edit_event', event_id=event_id))
-        
-        if removed_cohost_id:
-            flash("Co-host has been removed.", 'info')
+        # Notify about host changes
+        if old_organizer.id != organizer.id:
+            flash(f"Primary organizer changed from {old_organizer.name} to {organizer.name}.", 'info')
+        if old_co_host and not co_host:
+            flash(f"Co-host {old_co_host.name} has been removed.", 'info')
+        elif old_co_host and co_host and old_co_host.id != co_host.id:
+            flash(f"Co-host changed from {old_co_host.name} to {co_host.name}.", 'info')
+        elif not old_co_host and co_host:
+            flash(f"{co_host.name} has been added as co-host.", 'info')
 
         # Send notifications for significant changes
         if changes:
@@ -931,6 +1032,55 @@ def delete_event(event_id):
 
     except Event.DoesNotExist:
         current_app.logger.warning(f"Attempt to delete non-existent event {event_id} by user {current_user.id}")
+
+
+@bp.route('/<int:event_id>/rsvp', methods=['POST'])
+@login_required
+@approved_user_required
+def rsvp(event_id):
+    """Handle RSVP from event detail page via AJAX.
+    
+    This endpoint wraps the manage_attendance API to provide a simpler
+    interface for users managing their own attendance.
+    
+    Expects form data with 'status' field: yes/no/maybe/waitlist
+    Returns JSON with success status and updated counts.
+    """
+    # Get the desired status from form data
+    status = request.form.get('status')
+    if not status or status not in ['yes', 'no', 'maybe', 'waitlist']:
+        return jsonify({'success': False, 'message': 'Invalid status'}), 400
+    
+    # Build attendance data for manage_attendance API
+    attendance_data = {}
+    if status == 'yes':
+        attendance_data['attendance_yes'] = [[current_user.id, True]]
+    elif status == 'no':
+        attendance_data['attendance_no'] = [[current_user.id, True]]
+    elif status == 'maybe':
+        attendance_data['attendance_maybe'] = [[current_user.id, True]]
+    elif status == 'waitlist':
+        attendance_data['attendance_waitlist'] = [[current_user.id, True]]
+    
+    # Call the core attendance processing function
+    success, response_data, status_code = process_attendance_changes(
+        event_id,
+        attendance_data,
+        requesting_user_id=current_user.id,
+        no_auto_promote=False  # Allow normal auto-promotion for regular users
+    )
+    
+    if not success:
+        return jsonify({'success': False, 'message': response_data.get('error', 'Failed to update RSVP')}), status_code
+    
+    # Return simplified response for frontend
+    return jsonify({
+        'success': True,
+        'message': response_data.get('message', 'Attendance updated'),
+        'status': response_data.get('user_status'),
+        'rsvp_count': response_data.get('rsvp_count', 0),
+        'waitlist_count': response_data.get('waitlist_count', 0)
+    }), 200
 
 
 @bp.route('/<int:event_id>/publish', methods=['POST'])

@@ -126,7 +126,14 @@ function makeRSVPRequest(eventId, status) {
         },
         body: `status=${status}`
     })
-    .then(response => response.json());
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Failed to update RSVP');
+            });
+        }
+        return response.json();
+    });
 }
 
 /**
