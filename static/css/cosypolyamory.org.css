@@ -4,6 +4,38 @@ textarea::placeholder {
   color: #adb5bd !important;
   opacity: 1;
 }
+
+/* Override Bootstrap's blue checkbox color with custom secondary grey */
+.form-check-input:checked {
+  background-color: #dee2e6 !important;
+  border-color: #dee2e6 !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23212529' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e") !important;
+}
+
+.form-check-input:focus {
+  border-color: #dee2e6 !important;
+  box-shadow: 0 0 0 0.25rem rgba(222, 226, 230, 0.25) !important;
+}
+
+/* Override Bootstrap's blue progress bar color with custom primary purple */
+.progress-bar {
+  background-color: #7a4da8 !important;
+}
+
+/* Override Bootstrap icon colors to use custom primary */
+.text-primary {
+  color: #7a4da8 !important;
+}
+
+/* Custom icon colors for host/co-host */
+.text-custom-primary {
+  color: #7a4da8 !important;
+}
+
+.text-custom-secondary {
+  color: #6c757d !important;
+}
+
 body {
   font-family: 'Montserrat', sans-serif !important;
   background: #FCFBFB;
@@ -604,11 +636,19 @@ h4 {
     color: #333 !important;
 }
 
-/* For no RSVP state, use custom secondary (filled grey) */
+/* For no RSVP state, use custom secondary style */
 .btn-rsvp-none {
-    background-color: #6c757d !important;
-    border-color: #6c757d !important;
-    color: white !important;
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+    color: #212529 !important;
+}
+
+.btn-rsvp-none:hover,
+.btn-rsvp-none:focus,
+.btn-rsvp-none:active {
+    background-color: #dee2e6 !important;
+    border-color: #c6cbd1 !important;
+    color: #212529 !important;
 }
 
 .btn-rsvp-none:hover,
@@ -765,6 +805,17 @@ h4 {
 .event-filter-group .btn-custom-secondary + .btn-outline-custom-secondary,
 .event-filter-group .btn-outline-custom-secondary + .btn-custom-secondary {
     border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Add visible borders between RSVP buttons */
+.btn-group .btn-rsvp-none + .btn-rsvp-none,
+.btn-group .btn-rsvp-none + .btn-rsvp-yes,
+.btn-group .btn-rsvp-none + .btn-rsvp-no,
+.btn-group .btn-rsvp-none + .btn-rsvp-maybe,
+.btn-group .btn-rsvp-yes + .btn-rsvp-none,
+.btn-group .btn-rsvp-no + .btn-rsvp-none,
+.btn-group .btn-rsvp-maybe + .btn-rsvp-none {
+    border-left: 1px solid #adb5bd !important;
 }
 
 /* Ensure dropdown toggles with custom buttons maintain consistent styling */
