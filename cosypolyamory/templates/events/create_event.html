@@ -94,7 +94,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Start Time *</label>
                             <div class="input-group mb-2">
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-clock me-1"></i><span id="selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="hourDropdown" id="hourDropdownMenu">
@@ -103,7 +103,7 @@
                                     <li><a class="dropdown-item hour-option{% if hour == selected_hour %} active selected-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                     {% endfor %}
                                 </ul>
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-secondary dropdown-toggle" type="button" id="minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span id="selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="minuteDropdown" id="minuteDropdownMenu">
@@ -120,7 +120,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">End Time *</label>
                             <div class="input-group mb-2">
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-secondary dropdown-toggle" type="button" id="endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-clock me-1"></i><span id="selectedEndHour">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="endHourDropdown" id="endHourDropdownMenu">
@@ -129,7 +129,7 @@
                                     <li><a class="dropdown-item end-hour-option{% if hour == selected_end_hour %} active selected-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                     {% endfor %}
                                 </ul>
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-secondary dropdown-toggle" type="button" id="endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span id="selectedEndMinute">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="endMinuteDropdown" id="endMinuteDropdownMenu">
@@ -157,7 +157,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Start Time *</label>
                                 <div class="input-group mb-2">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="multiday_hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fas fa-clock me-1"></i><span id="multiday_selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="multiday_hourDropdown" id="multiday_hourDropdownMenu">
@@ -166,7 +166,7 @@
                                         <li><a class="dropdown-item multiday-hour-option{% if hour == selected_hour %} active selected-multiday-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                         {% endfor %}
                                     </ul>
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="multiday_minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <span id="multiday_selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="multiday_minuteDropdown" id="multiday_minuteDropdownMenu">
@@ -190,7 +190,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">End Time *</label>
                                 <div class="input-group mb-2">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="multiday_endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fas fa-clock me-1"></i><span id="multiday_selectedEndHour">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}</span>
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="multiday_endHourDropdown" id="multiday_endHourDropdownMenu">
@@ -199,7 +199,7 @@
                                         <li><a class="dropdown-item multiday-end-hour-option{% if hour == selected_end_hour %} active selected-multiday-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
                                         {% endfor %}
                                     </ul>
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="multiday_endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="multiday_endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <span id="multiday_selectedEndMinute">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="multiday_endMinuteDropdown" id="multiday_endMinuteDropdownMenu">

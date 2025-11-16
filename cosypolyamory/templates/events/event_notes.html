@@ -36,8 +36,8 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">{{ note.name }}</h6>
                             <div class="btn-group">
-                                <a href="{{ url_for('admin.edit_event_note', note_id=note.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                <a href="{{ url_for('admin.edit_event_note', note_id=note.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+                                <button type="button" class="btn btn-sm btn-danger" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#deleteModal{{ note.id }}">Delete</button>
                             </div>

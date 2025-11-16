@@ -72,7 +72,7 @@
                             <i class="fas fa-paper-plane me-2"></i>
                             Submit Application
                         </button>
-                        <a href="{{ url_for('pages.index') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('pages.index') }}" class="btn btn-secondary">
                             Cancel
                         </a>
                     </div>
@@ -192,13 +192,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (allValid) {
             submitButton.disabled = false;
-            submitButton.classList.remove('btn-outline-primary');
+            submitButton.classList.remove('btn-primary');
             submitButton.classList.add('btn-primary');
             submitErrorMessage.classList.add('d-none');
         } else {
             submitButton.disabled = true;
             submitButton.classList.remove('btn-primary');
-            submitButton.classList.add('btn-outline-primary');
+            submitButton.classList.add('btn-primary');
             submitErrorMessage.classList.remove('d-none');
         }
     }

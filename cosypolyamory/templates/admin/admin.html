@@ -7,7 +7,7 @@
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-end mb-3" style="gap: 0.5rem;">
             <h1 class="mb-0">Manage members</h1>
-            <button class="btn btn-outline-secondary align-self-end" id="search-icon-button" type="button" title="Search members" style="padding-bottom: 2px;">
+            <button class="btn btn-secondary align-self-end" id="search-icon-button" type="button" title="Search members" style="padding-bottom: 2px;">
                 <i class="fas fa-search"></i>
             </button>
         </div>
@@ -25,7 +25,7 @@
         <div id="search-form-container" class="mb-3" style="display: none;">
             <div class="input-group">
                 <input type="text" id="user-search-input" class="form-control" placeholder="Type to search for members...">
-                <button class="btn btn-outline-secondary" type="button" id="close-search-button">
+                <button class="btn btn-secondary" type="button" id="close-search-button">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -82,9 +82,9 @@
                             <div class="d-flex align-items-center">
                                 <span class="text-muted me-3">Showing <span id="pending-showing">0</span> of <span id="pending-total">0</span></span>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" id="pending-prev" onclick="changePage('pending', -1)">&laquo;</button>
-                                    <span class="btn btn-outline-secondary" id="pending-page">1</span>
-                                    <button class="btn btn-outline-secondary" id="pending-next" onclick="changePage('pending', 1)">&raquo;</button>
+                                    <button class="btn btn-secondary" id="pending-prev" onclick="changePage('pending', -1)">&laquo;</button>
+                                    <span class="btn btn-secondary" id="pending-page">1</span>
+                                    <button class="btn btn-secondary" id="pending-next" onclick="changePage('pending', 1)">&raquo;</button>
                                 </div>
                             </div>
                         </div>
@@ -113,9 +113,9 @@
                             <div class="d-flex align-items-center">
                                 <span class="text-muted me-3">Showing <span id="members-showing">0</span> of <span id="members-total">0</span></span>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" id="members-prev" onclick="changePage('members', -1)">&laquo;</button>
-                                    <span class="btn btn-outline-secondary" id="members-page">1</span>
-                                    <button class="btn btn-outline-secondary" id="members-next" onclick="changePage('members', 1)">&raquo;</button>
+                                    <button class="btn btn-secondary" id="members-prev" onclick="changePage('members', -1)">&laquo;</button>
+                                    <span class="btn btn-secondary" id="members-page">1</span>
+                                    <button class="btn btn-secondary" id="members-next" onclick="changePage('members', 1)">&raquo;</button>
                                 </div>
                             </div>
                         </div>
@@ -129,9 +129,9 @@
                             <div class="d-flex align-items-center">
                                 <span class="text-muted me-3">Showing <span id="organizers-showing">0</span> of <span id="organizers-total">0</span></span>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" id="organizers-prev" onclick="changePage('organizers', -1)">&laquo;</button>
-                                    <span class="btn btn-outline-secondary" id="organizers-page">1</span>
-                                    <button class="btn btn-outline-secondary" id="organizers-next" onclick="changePage('organizers', 1)">&raquo;</button>
+                                    <button class="btn btn-secondary" id="organizers-prev" onclick="changePage('organizers', -1)">&laquo;</button>
+                                    <span class="btn btn-secondary" id="organizers-page">1</span>
+                                    <button class="btn btn-secondary" id="organizers-next" onclick="changePage('organizers', 1)">&raquo;</button>
                                 </div>
                             </div>
                         </div>
@@ -145,9 +145,9 @@
                             <div class="d-flex align-items-center">
                                 <span class="text-muted me-3">Showing <span id="rejected-showing">0</span> of <span id="rejected-total">0</span></span>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" id="rejected-prev" onclick="changePage('rejected', -1)">&laquo;</button>
-                                    <span class="btn btn-outline-secondary" id="rejected-page">1</span>
-                                    <button class="btn btn-outline-secondary" id="rejected-next" onclick="changePage('rejected', 1)">&raquo;</button>
+                                    <button class="btn btn-secondary" id="rejected-prev" onclick="changePage('rejected', -1)">&laquo;</button>
+                                    <span class="btn btn-secondary" id="rejected-page">1</span>
+                                    <button class="btn btn-secondary" id="rejected-next" onclick="changePage('rejected', 1)">&raquo;</button>
                                 </div>
                             </div>
                         </div>
@@ -379,7 +379,7 @@ function createUserCard(user) {
                 <div class="col-12 col-sm-auto mt-2 mt-sm-0">
                     ${user.role !== 'admin' ? `
                     <div class="btn-group dropdown position-relative">
-                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Click to change user role" aria-expanded="false">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Click to change user role" aria-expanded="false">
                             Change role
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
@@ -640,7 +640,7 @@ function viewUser(userId) {
                         if (answersHtml) {
                             applicationSection = `
                                 <div class="mt-3">
-                                    <a href="#applicationAnswers" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" aria-expanded="false" aria-controls="applicationAnswers">
+                                    <a href="#applicationAnswers" class="btn btn-primary btn-sm" data-bs-toggle="collapse" aria-expanded="false" aria-controls="applicationAnswers">
                                         <i class="fas fa-file-alt me-1"></i>Show application responses
                                     </a>
                                     <div class="collapse mt-3" id="applicationAnswers">
@@ -891,7 +891,7 @@ function showHostedEventsError(userName, errorMessage, hostedEvents) {
                     <br>
                     <small class="text-muted">${event.date} • ${event.role}</small>
                 </div>
-                <a href="/events/${event.id}" target="_blank" class="btn btn-sm btn-outline-primary">
+                <a href="/events/${event.id}" target="_blank" class="btn btn-sm btn-primary">
                     <i class="fas fa-external-link-alt me-1"></i>View Event
                 </a>
             </div>
