@@ -84,23 +84,46 @@
                                     <div class="card-text event-description" style="white-space: pre-line; margin-top: 0; cursor: pointer;">{{ event.description[:900]|e|trim }}{% if event.description|length > 900 %}...{% endif %}</div>
                                 </a>
                                 
-                                <div class="mb-2">
-                                    <i class="fas fa-calendar me-2 text-muted"></i>
-                                    <strong>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</strong>
-                                </div>
-                                
-                                <div class="mb-2">
-                                    <i class="fas fa-clock me-2 text-muted"></i>
-                                    {% if current_user.role in ['approved', 'admin', 'organizer'] %}
-                                        {% if event.end_time %}
-                                            {{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}
-                                        {% else %}
-                                            {{ event.exact_time.strftime('%H:%M') }}
+                                {% if event.end_time and event.exact_time.date() != event.end_time.date() %}
+                                    {# Multi-day event #}
+                                    <div class="mb-2 d-flex justify-content-between">
+                                        <div>
+                                            <i class="fas fa-calendar me-2 text-muted"></i>
+                                            <strong>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</strong>
+                                        </div>
+                                        {% if current_user.role in ['approved', 'admin', 'organizer'] %}
+                                            <span class="text-muted">{{ event.exact_time.strftime('%H:%M') }}</span>
                                         {% endif %}
-                                    {% else %}
-                                        {{ event.time_period }}
-                                    {% endif %}
-                                </div>
+                                    </div>
+                                    <div class="mb-2 d-flex justify-content-between">
+                                        <div>
+                                            <i class="fas fa-calendar me-2 text-muted"></i>
+                                            <strong>{{ event.end_time.strftime('%A, %B %d, %Y') }}</strong>
+                                        </div>
+                                        {% if current_user.role in ['approved', 'admin', 'organizer'] %}
+                                            <span class="text-muted">{{ event.end_time.strftime('%H:%M') }}</span>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    {# Single-day event #}
+                                    <div class="mb-2">
+                                        <i class="fas fa-calendar me-2 text-muted"></i>
+                                        <strong>{{ event.exact_time.strftime('%A, %B %d, %Y') }}</strong>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <i class="fas fa-clock me-2 text-muted"></i>
+                                        {% if current_user.role in ['approved', 'admin', 'organizer'] %}
+                                            {% if event.end_time %}
+                                                {{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}
+                                            {% else %}
+                                                {{ event.exact_time.strftime('%H:%M') }}
+                                            {% endif %}
+                                        {% else %}
+                                            {{ event.time_period }}
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
                                 
                                 <div class="mb-2">
                                     <i class="fas fa-map-marker-alt me-2 text-muted"></i>
