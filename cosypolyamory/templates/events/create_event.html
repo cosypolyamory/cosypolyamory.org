@@ -807,11 +807,11 @@ function loadOrganizers() {
     organizersData.forEach(organizer => {
         const option1 = document.createElement('option');
         option1.value = organizer.id;
-        option1.textContent = `${organizer.name} (${organizer.role})`;
+        option1.textContent = organizer.name;
         
         const option2 = document.createElement('option');
         option2.value = organizer.id;
-        option2.textContent = `${organizer.name} (${organizer.role})`;
+        option2.textContent = organizer.name;
         
         organizerSelect.appendChild(option1);
         coHostSelect.appendChild(option2);

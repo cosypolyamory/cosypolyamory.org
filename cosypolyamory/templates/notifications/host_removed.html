@@ -1,9 +1,9 @@
 {% extends "notifications/base.html" %}
 
-{% block subject %}Host role update for: {{ event_title }}{% endblock %}
+{% block subject %}Host change update for: {{ event_title }}{% endblock %}
 
 {% block content %}
-<h2>Host Role Update</h2>
+<h2>Host Change Update</h2>
 <p>Hello {{ name }},</p>
 <p>You are no longer <strong>{{ role }}</strong> for the following event:</p>
 

@@ -399,15 +399,27 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
             
             # Step 7: Ensure hosts have RSVPs and promote waitlist (skip if no_auto_promote is True)
             if not no_auto_promote:
+                # Check if this is a new event (no RSVPs exist yet)
+                existing_rsvp_count = RSVP.select().where(RSVP.event == event).count()
+                is_new_event = (existing_rsvp_count == 0)
+                
                 # Ensure organizer has 'yes' RSVP
                 organizer_rsvp, created = RSVP.get_or_create(
                     event=event,
                     user=event.organizer,
                     defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
                 )
+                
                 if created:
-                    # New host RSVP created - add to tracking with notify=False (hosts don't need their own confirmation)
+                    # New host RSVP created
                     updated_rsvps.append({'user': event.organizer, 'old_status': None, 'new_status': 'yes', 'notify': False})
+                    # Only send notification for NEW events (event creation)
+                    # For existing events, notifications are sent by edit_event before calling this function
+                    if is_new_event:
+                        try:
+                            notify_host_assigned(event.organizer, event, role="host")
+                        except Exception as e:
+                            current_app.logger.error(f"Failed to send host assignment notification: {e}")
                 elif organizer_rsvp.status != 'yes':
                     # Existing RSVP status changed
                     old_status = organizer_rsvp.status
@@ -423,9 +435,17 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
                         user=event.co_host,
                         defaults={'status': 'yes', 'created_at': datetime.now(), 'updated_at': datetime.now()}
                     )
+                    
                     if created:
-                        # New co-host RSVP created - add to tracking with notify=False
+                        # New co-host RSVP created
                         updated_rsvps.append({'user': event.co_host, 'old_status': None, 'new_status': 'yes', 'notify': False})
+                        # Only send notification for NEW events (event creation)
+                        # For existing events, notifications are sent by edit_event before calling this function
+                        if is_new_event:
+                            try:
+                                notify_host_assigned(event.co_host, event, role="co-host")
+                            except Exception as e:
+                                current_app.logger.error(f"Failed to send co-host assignment notification: {e}")
                     elif cohost_rsvp.status != 'yes':
                         # Existing RSVP status changed
                         old_status = cohost_rsvp.status

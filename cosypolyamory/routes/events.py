@@ -530,17 +530,7 @@ def create_event_post():
             flash(f'Failed to create event: {response_data.get("error", "Unknown error")}', 'error')
             return redirect(url_for('events.create_event'))
 
-        # Send host assignment notifications for new event
-        try:
-            # Notify the organizer (host)
-            notify_host_assigned(organizer, event, role="host")
-
-            # Notify co-host if assigned
-            if co_host and co_host.id != current_user.id:
-                notify_host_assigned(co_host, event, role="co-host")
-
-        except Exception as e:
-            current_app.logger.error(f"Failed to send host assignment notifications for event {event.id}: {e}")
+        # Note: Host assignment notifications are sent automatically by process_attendance_changes()
 
         if publish_immediately:
             flash(f'Event "{title}" has been created and published! Users can now see it and RSVP.', 'success')
@@ -903,8 +893,40 @@ def edit_event_post(event_id):
         event.published = publish_immediately
         event.save()
 
+        # Send notifications for host/co-host changes BEFORE updating RSVPs
+        # Check if organizer changed
+        if old_organizer.id != organizer.id:
+            try:
+                # Notify old organizer about removal
+                notify_host_removed(old_organizer, event, role="host")
+            except Exception as e:
+                current_app.logger.error(f"Failed to send host removal notification: {e}")
+            
+            try:
+                # Notify new organizer about assignment
+                notify_host_assigned(organizer, event, role="host")
+            except Exception as e:
+                current_app.logger.error(f"Failed to send host assignment notification: {e}")
+        
+        # Check if co-host changed
+        if old_co_host != co_host:
+            # If old co-host existed and is different from new co-host
+            if old_co_host:
+                if not co_host or old_co_host.id != co_host.id:
+                    try:
+                        notify_host_removed(old_co_host, event, role="co-host")
+                    except Exception as e:
+                        current_app.logger.error(f"Failed to send co-host removal notification: {e}")
+            
+            # If new co-host exists and is different from old co-host
+            if co_host:
+                if not old_co_host or co_host.id != old_co_host.id:
+                    try:
+                        notify_host_assigned(co_host, event, role="co-host")
+                    except Exception as e:
+                        current_app.logger.error(f"Failed to send co-host assignment notification: {e}")
+
         # Always ensure hosts have RSVPs after saving (handles both host changes and additions)
-        # This mirrors the behavior in create_event
         success, response_data, status_code = process_attendance_changes(
             event.id,
             {},  # Empty data - just let it add host RSVPs
@@ -965,39 +987,8 @@ def edit_event_post(event_id):
                 attendee_count = rsvped_users.count()
                 current_app.logger.info(f"Sent event update notifications for {change_count} changes to {attendee_count} attendees")
 
-        # Send host assignment/removal notifications
-        try:
-            # Check for organizer changes
-            if old_organizer.id != organizer.id:
-                # Notify new organizer
-                notify_host_assigned(organizer, event, role="host")
-
-                # Optionally notify old organizer about removal (if not the person making the change)
-                if old_organizer.id != current_user.id:
-                    # Send notification about host role removal
-                    notify_host_removed(old_organizer, event, "host")
-
-            # Check for co-host changes
-            if old_co_host != co_host:
-                # If co-host was added
-                if co_host and not old_co_host:
-                    if co_host.id != current_user.id:
-                        notify_host_assigned(co_host, event, role="co-host")
-                # If co-host was changed
-                elif co_host and old_co_host and co_host.id != old_co_host.id:
-                    # Notify new co-host
-                    if co_host.id != current_user.id:
-                        notify_host_assigned(co_host, event, role="co-host")
-                    # Notify old co-host about removal
-                    if old_co_host.id != current_user.id:
-                        notify_host_removed(old_co_host, event, "co-host")
-                # If co-host was removed
-                elif not co_host and old_co_host:
-                    if old_co_host.id != current_user.id:
-                        notify_host_removed(old_co_host, event, "co-host")
-
-        except Exception as e:
-            current_app.logger.error(f"Failed to send host change notifications for event {event.id}: {e}")
+        # Note: Host assignment/removal notifications are sent automatically by process_attendance_changes()
+        # when hosts are added/changed/removed
 
         # Handle publication status changes and Telegram notifications
         if old_published != publish_immediately:
