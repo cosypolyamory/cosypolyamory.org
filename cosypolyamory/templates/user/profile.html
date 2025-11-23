@@ -64,6 +64,14 @@
                     other members to call you during our events. Finally, please enter your pronouns so that other community
                     members can address you appropriately.
                 </p>
+                
+                {% if pending_verification %}
+                <p class="mb-3 text-info">
+                    <i class="fas fa-info-circle me-2"></i>We've sent you an email verification link, please click on that link before proceeding.
+                </p>
+                {% endif %}
+
+                
                 <form method="POST" action="{{ url_for('auth.update_profile') }}">
                     <div class="row">
                         <div class="col-md-6">

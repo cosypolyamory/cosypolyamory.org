@@ -499,13 +499,17 @@ def profile():
     # Check for pending email verification
     pending_verification = None
     try:
-        pending_verification = EmailVerification.get(
+        # Get all unused verifications for this user, order by most recent
+        verifications = EmailVerification.select().where(
             (EmailVerification.user == current_user) &
-            (EmailVerification.is_used == False)
-        )
-        # Only show if not expired
-        if pending_verification.is_expired():
-            pending_verification = None
+            (EmailVerification.is_used == 0)  # Explicitly use 0 for SQLite boolean
+        ).order_by(EmailVerification.created_at.desc())
+        
+        # Find the first non-expired one
+        for verification in verifications:
+            if not verification.is_expired():
+                pending_verification = verification
+                break
     except EmailVerification.DoesNotExist:
         pass
     
