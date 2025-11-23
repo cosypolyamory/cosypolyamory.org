@@ -3,6 +3,9 @@
  * Used by both events list and event detail pages
  */
 
+// Track ongoing RSVP requests to prevent duplicates
+const ongoingRequests = new Set();
+
 // Initialize RSVP functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeRSVPHandlers();
@@ -13,6 +16,8 @@ function initializeRSVPHandlers() {
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('attendance-btn')) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             const eventId = e.target.getAttribute('data-event-id');
             const status = e.target.getAttribute('data-status');
             
@@ -26,6 +31,8 @@ function initializeRSVPHandlers() {
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('attendance-dropdown-item')) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             const eventId = e.target.getAttribute('data-event-id');
             const status = e.target.getAttribute('data-status');
             
@@ -40,6 +47,12 @@ function initializeRSVPHandlers() {
  * Handle RSVP from initial three-button click
  */
 function updateAttendanceStatusFromButton(eventId, status, button) {
+    // Check if a request is already in progress for this event
+    const requestKey = `${eventId}-${status}`;
+    if (ongoingRequests.has(requestKey)) {
+        return;
+    }
+    
     // Find the button group for this event
     const buttonGroup = button.closest('.btn-group');
     if (!buttonGroup) return;
@@ -50,6 +63,9 @@ function updateAttendanceStatusFromButton(eventId, status, button) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
     });
+
+    // Mark request as ongoing
+    ongoingRequests.add(requestKey);
 
     // Make AJAX request
     makeRSVPRequest(eventId, status)
@@ -69,7 +85,6 @@ function updateAttendanceStatusFromButton(eventId, status, button) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             showToast('An error occurred while updating your attendance.', 'error');
             // Restore buttons on error
             allButtons.forEach((btn, index) => {
@@ -77,6 +92,10 @@ function updateAttendanceStatusFromButton(eventId, status, button) {
                 const originalTexts = ['Yes', 'No', 'Maybe'];
                 btn.innerHTML = originalTexts[index];
             });
+        })
+        .finally(() => {
+            // Always clear the ongoing request flag
+            ongoingRequests.delete(requestKey);
         });
 }
 
@@ -84,15 +103,26 @@ function updateAttendanceStatusFromButton(eventId, status, button) {
  * Handle RSVP from dropdown item click
  */
 function updateAttendanceStatusFromDropdown(eventId, status, dropdownItem) {
+    // Check if a request is already in progress for this event
+    const requestKey = `${eventId}-${status}`;
+    if (ongoingRequests.has(requestKey)) {
+        return;
+    }
+    
     // Find the dropdown button for this event
     const dropdownButton = document.querySelector(`#rsvpDropdown${eventId}`);
-    if (!dropdownButton) return;
+    if (!dropdownButton) {
+        return;
+    }
     
     // Show loading state
     const originalText = dropdownButton.innerHTML;
     dropdownButton.disabled = true;
     dropdownButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
 
+    // Mark request as ongoing
+    ongoingRequests.add(requestKey);
+    
     // Make AJAX request
     makeRSVPRequest(eventId, status)
         .then(data => {
@@ -107,10 +137,13 @@ function updateAttendanceStatusFromDropdown(eventId, status, dropdownItem) {
             dropdownButton.disabled = false;
         })
         .catch(error => {
-            console.error('Error:', error);
             showToast('An error occurred while updating your attendance.', 'error');
             dropdownButton.innerHTML = originalText;
             dropdownButton.disabled = false;
+        })
+        .finally(() => {
+            // Always clear the ongoing request flag
+            ongoingRequests.delete(requestKey);
         });
 }
 
@@ -143,14 +176,14 @@ function makeRSVPRequest(eventId, status) {
 function updateDropdownState(elementOrButton, newStatus, eventId) {
     // Find the attendance container
     const attendanceContainer = elementOrButton.closest('.attendance-container');
-    if (!attendanceContainer) return;
+    if (!attendanceContainer) {
+        return;
+    }
     
     // Detect button size classes from existing buttons
     const existingButtons = attendanceContainer.querySelectorAll('button');
     let buttonSizeClass = '';
     let dropdownSizeClass = '';
-    let buttonWidthClass = '';
-    let minWidthStyle = '';
     
     if (existingButtons.length > 0) {
         const firstButton = existingButtons[0];
@@ -159,36 +192,17 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
         } else if (firstButton.classList.contains('btn-lg')) {
             buttonSizeClass = ' btn-lg';
         }
-        
-        // Check for width classes
-        if (firstButton.classList.contains('w-100')) {
-            buttonWidthClass = ' w-100';
-            dropdownSizeClass = ' w-100';
-        }
-        
-        // Check for existing min-width style
-        const computedStyle = window.getComputedStyle(firstButton);
-        const minWidth = computedStyle.minWidth;
-        if (minWidth && minWidth !== 'auto' && minWidth !== '0px') {
-            minWidthStyle = ` style="min-width: ${minWidth};"`;
-        } else {
-            // Default min-width for consistent sizing
-            minWidthStyle = ' style="min-width: 100px;"';
-        }
-    } else {
-        // Default min-width for consistent sizing
-        minWidthStyle = ' style="min-width: 100px;"';
     }
     
     let dropdownHtml = '';
     
     if (newStatus === 'yes') {
         dropdownHtml = `
-            <div class="dropdown${dropdownSizeClass}">
-                <button class="btn btn-rsvp-yes dropdown-toggle${buttonSizeClass}${buttonWidthClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false"${minWidthStyle}>
+            <div class="dropdown w-100">
+                <button class="btn btn-rsvp-yes dropdown-toggle${buttonSizeClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
                     Yes
                 </button>
-                <ul class="dropdown-menu${dropdownSizeClass}" aria-labelledby="rsvpDropdown${eventId}">
+                <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
                     <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
                         No
                     </a></li>
@@ -200,11 +214,11 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
         `;
     } else if (newStatus === 'no') {
         dropdownHtml = `
-            <div class="dropdown${dropdownSizeClass}">
-                <button class="btn btn-rsvp-no dropdown-toggle${buttonSizeClass}${buttonWidthClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false"${minWidthStyle}>
+            <div class="dropdown w-100">
+                <button class="btn btn-rsvp-no dropdown-toggle${buttonSizeClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
                     No
                 </button>
-                <ul class="dropdown-menu${dropdownSizeClass}" aria-labelledby="rsvpDropdown${eventId}">
+                <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
                     <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
                         Yes
                     </a></li>
@@ -216,11 +230,11 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
         `;
     } else if (newStatus === 'maybe') {
         dropdownHtml = `
-            <div class="dropdown${dropdownSizeClass}">
-                <button class="btn btn-rsvp-maybe dropdown-toggle${buttonSizeClass}${buttonWidthClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false"${minWidthStyle}>
+            <div class="dropdown w-100">
+                <button class="btn btn-rsvp-maybe dropdown-toggle${buttonSizeClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
                     Maybe
                 </button>
-                <ul class="dropdown-menu${dropdownSizeClass}" aria-labelledby="rsvpDropdown${eventId}">
+                <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
                     <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="yes">
                         Yes
                     </a></li>
@@ -232,11 +246,11 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
         `;
     } else if (newStatus === 'waitlist') {
         dropdownHtml = `
-            <div class="dropdown${dropdownSizeClass}">
-                <button class="btn btn-rsvp-waitlisted dropdown-toggle${buttonSizeClass}${buttonWidthClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false"${minWidthStyle}>
+            <div class="dropdown w-100">
+                <button class="btn btn-rsvp-waitlisted dropdown-toggle${buttonSizeClass}" type="button" id="rsvpDropdown${eventId}" data-bs-toggle="dropdown" aria-expanded="false">
                     Waitlisted
                 </button>
-                <ul class="dropdown-menu${dropdownSizeClass}" aria-labelledby="rsvpDropdown${eventId}">
+                <ul class="dropdown-menu w-100" aria-labelledby="rsvpDropdown${eventId}">
                     <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="${eventId}" data-status="no">
                         No
                     </a></li>
@@ -249,7 +263,7 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
     } else {
         // Fallback case - restore to initial three-button state
         dropdownHtml = `
-            <div class="btn-group${dropdownSizeClass}" role="group">
+            <div class="btn-group w-100" role="group">
                 <button class="btn btn-rsvp-none attendance-btn${buttonSizeClass}" type="button" data-event-id="${eventId}" data-status="yes">
                     Yes
                 </button>
@@ -261,9 +275,18 @@ function updateDropdownState(elementOrButton, newStatus, eventId) {
                 </button>
             </div>
         `;
-    }
-    
-    attendanceContainer.innerHTML = dropdownHtml;
+        }
+        
+        attendanceContainer.innerHTML = dropdownHtml;
+        
+        // Ensure the button has w-100 class
+        const dropdown = attendanceContainer.querySelector('.dropdown');
+        if (dropdown) {
+            const dropdownButton = dropdown.querySelector('button');
+            if (dropdownButton) {
+                dropdownButton.classList.add('w-100');
+            }
+        }
 }
 
 /**

@@ -458,7 +458,8 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success) {
-                updateDropdownState(buttonGroup, data.status, eventId);
+                const attendanceContainer = buttonGroup.closest('.attendance-container');
+                updateDropdownState(attendanceContainer, data.status, eventId);
                 updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
             } else {
@@ -484,8 +485,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateAttendanceStatus(eventId, status, dropdownItem) {
-        // Find the dropdown button for this event
-        const dropdownButton = document.querySelector(`#rsvpDropdown${eventId}`);
+        // Find the attendance container for this event
+        const attendanceContainer = dropdownItem.closest('.attendance-container');
+        if (!attendanceContainer) return;
+        
+        // Find the dropdown button
+        const dropdownButton = attendanceContainer.querySelector(`#rsvpDropdown${eventId}`);
         if (!dropdownButton) return;
         
         // Show loading state
@@ -512,20 +517,26 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success) {
-                updateDropdownState(dropdownButton, data.status, eventId);
+                updateDropdownState(attendanceContainer, data.status, eventId);
                 updateAttendeeInfo(eventId, data);
                 showToast(data.message, 'success');
             } else {
                 showToast(data.message, 'error');
-                dropdownButton.innerHTML = originalText;
+                const currentButton = attendanceContainer.querySelector(`#rsvpDropdown${eventId}`);
+                if (currentButton) {
+                    currentButton.innerHTML = originalText;
+                    currentButton.disabled = false;
+                }
             }
-            dropdownButton.disabled = false;
         })
         .catch(error => {
             console.error('Error:', error);
             showToast(error.message || 'An error occurred while updating your attendance.', 'error');
-            dropdownButton.innerHTML = originalText;
-            dropdownButton.disabled = false;
+            const currentButton = attendanceContainer.querySelector(`#rsvpDropdown${eventId}`);
+            if (currentButton) {
+                currentButton.innerHTML = originalText;
+                currentButton.disabled = false;
+            }
         });
     }
 
@@ -578,9 +589,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function updateDropdownState(elementOrButton, newStatus, eventId) {
-        // Find the attendance container
-        const attendanceContainer = elementOrButton.closest('.attendance-container');
+    function updateDropdownState(attendanceContainer, newStatus, eventId) {
+        // attendanceContainer is passed directly now
         let dropdownHtml = '';
         
         if (newStatus === 'yes') {
@@ -675,27 +685,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Re-attach event listeners to the new dropdown items
-        const newDropdownItems = attendanceContainer.querySelectorAll('.attendance-dropdown-item');
-        newDropdownItems.forEach(newItem => {
-            newItem.addEventListener('click', function(e) {
-                e.preventDefault();
-                const eventId = this.getAttribute('data-event-id');
-                const status = this.getAttribute('data-status');
-                updateAttendanceStatus(eventId, status, this);
-            });
-        });
-        
-        // Re-attach event listeners to any new attendance buttons (for fallback case)
-        const newAttendanceButtons = attendanceContainer.querySelectorAll('.attendance-btn');
-        newAttendanceButtons.forEach(newButton => {
-            newButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                const eventId = this.getAttribute('data-event-id');
-                const status = this.getAttribute('data-status');
-                updateAttendanceStatusFromButton(eventId, status, this);
-            });
-        });
+        // Note: Event listeners are handled by rsvp.js via event delegation,
+        // so we don't need to manually attach them to dynamically created elements.
     }
     
     function showToast(message, type) {
