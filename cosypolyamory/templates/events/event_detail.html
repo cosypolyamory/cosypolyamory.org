@@ -274,7 +274,7 @@
                                      style="width: 40px; height: 40px;">
                                     <i class="fas fa-crown text-white" style="font-size: 16px;"></i>
                                 </div>
-                                <div>
+                                <div class="text-truncate" style="max-width: calc(100% - 52px);">
                                     <strong>{{ event.organizer.name }}</strong>
                                 </div>
                             </div>
@@ -287,7 +287,7 @@
                                      style="width: 40px; height: 40px; background-color: #6c757d;">
                                     <i class="fas fa-handshake text-white" style="font-size: 16px;"></i>
                                 </div>
-                                <div>
+                                <div class="text-truncate" style="max-width: calc(100% - 52px);">
                                     <strong>{{ event.co_host.name }}</strong>
                                 </div>
                             </div>
@@ -560,9 +560,9 @@
                                             <tbody>
                                                 {% for attendance in consolidated_attendance %}
                                                 <tr>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div>
+                                                    <td style="max-width: 1px; width: 100%;">
+                                                        <div class="d-flex align-items-center" style="min-width: 0;">
+                                                            <div class="text-truncate">
                                                                 <strong>{{ attendance.user.name }}</strong>
                                                                 {% if attendance.user.pronouns %}
                                                                     <span class="text-muted">({{ attendance.user.pronouns }})</span>
@@ -570,7 +570,7 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="text-end">
+                                                    <td class="text-end" style="white-space: nowrap;">
                                                         {% if attendance.status == 'host' %}
                                                             <span class="badge badge-rsvp-host">Host</span>
                                                         {% elif attendance.status == 'co-host' %}

@@ -162,9 +162,9 @@
                                 
                                 {% if event.organizer %}
                                     <div class="mb-3">
-                                        <small class="text-muted">
-                                            <i class="fas fa-users me-1"></i>
-                                            Hosts: {{ event.organizer.name }}{% if event.co_host and event.co_host.id != event.organizer.id %}, {{ event.co_host.name }}{% endif %}
+                                        <small class="text-muted d-flex align-items-start">
+                                            <i class="fas fa-users me-1 flex-shrink-0" style="margin-top: 2px;"></i>
+                                            <span class="text-truncate">Hosts: {{ event.organizer.name }}{% if event.co_host and event.co_host.id != event.organizer.id %}, {{ event.co_host.name }}{% endif %}</span>
                                         </small>
                                     </div>
                                 {% endif %}

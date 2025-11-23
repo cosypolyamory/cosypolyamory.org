@@ -112,9 +112,9 @@
                             {% for rsvp in rsvps_attending %}
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
+                                    <div class="flex-grow-1" style="min-width: 0;">
                                         <div class="d-flex align-items-center gap-2">
-                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            <span class="fw-bold text-truncate" style="max-width: 200px;">{{ rsvp.user.name }}</span>
                                             {% if rsvp.user.id == organizer_id %}
                                                 <span class="badge bg-primary">
                                                     <i class="fas fa-crown me-1"></i>Host
@@ -222,9 +222,9 @@
                             {% for rsvp in rsvps_maybe %}
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
+                                    <div class="flex-grow-1" style="min-width: 0;">
                                         <div class="d-flex align-items-center gap-2">
-                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            <span class="fw-bold text-truncate" style="max-width: 200px;">{{ rsvp.user.name }}</span>
                                             {% if rsvp.user.id == organizer_id %}
                                                 <span class="badge bg-primary">
                                                     <i class="fas fa-crown me-1"></i>Host
@@ -334,9 +334,9 @@
                             {% for rsvp in rsvps_waitlist %}
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
+                                    <div class="flex-grow-1" style="min-width: 0;">
                                         <div class="d-flex align-items-center gap-2">
-                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            <span class="fw-bold text-truncate" style="max-width: 200px;">{{ rsvp.user.name }}</span>
                                             {% if rsvp.user.id == organizer_id %}
                                                 <span class="badge bg-primary">
                                                     <i class="fas fa-crown me-1"></i>Host

@@ -233,8 +233,9 @@
                             <i class="fas fa-user me-1"></i>Display Name <span class="text-danger">*</span>
                         </label>
                         <input type="text" class="form-control" id="editName" name="name" 
-                               value="{% if form_data and form_data.name %}{{ form_data.name }}{% else %}{{ user.name }}{% endif %}" required>
-                        <div class="form-text">How you'd like to be known in the community</div>
+                               value="{% if form_data and form_data.name %}{{ form_data.name }}{% else %}{{ user.name }}{% endif %}" 
+                               required maxlength="32">
+                        <div class="form-text">How you'd like to be known in the community.<br><span id="name-counter">0</span>/32 characters</div>
                     </div>
                     <div class="mb-3">
                         <label for="editPronounSingular" class="form-label">
@@ -437,6 +438,37 @@ document.addEventListener('DOMContentLoaded', function() {
     if (editNameInput) {
         editNameInput.addEventListener('input', checkEditFormValidity);
     }
+    
+    // Character counter for name field
+    function updateCharacterCounter(inputId, counterId, maxLength) {
+        const input = document.getElementById(inputId);
+        const counter = document.getElementById(counterId);
+        
+        if (input && counter) {
+            function updateCount() {
+                const currentLength = input.value.length;
+                counter.textContent = currentLength;
+                
+                // Change color based on usage
+                if (currentLength > maxLength * 0.9) {
+                    counter.style.color = '#dc3545'; // Red
+                } else if (currentLength > maxLength * 0.75) {
+                    counter.style.color = '#fd7e14'; // Orange
+                } else {
+                    counter.style.color = '#6c757d'; // Gray
+                }
+            }
+            
+            // Update on page load
+            updateCount();
+            
+            // Update on input
+            input.addEventListener('input', updateCount);
+        }
+    }
+    
+    // Initialize character counter for name
+    updateCharacterCounter('editName', 'name-counter', 32);
     
     // Check validity on page load
     if (saveBtn) {
