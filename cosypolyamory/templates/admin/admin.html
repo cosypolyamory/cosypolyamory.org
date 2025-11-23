@@ -518,17 +518,17 @@ function viewUser(userId) {
                     const getRoleBadgeInfo = (role) => {
                         switch(role) {
                             case 'admin':
-                                return { class: 'bg-secondary', icon: 'fas fa-shield-alt', text: 'Administrator' };
+                                return { class: 'bg-secondary text-dark', text: 'Administrator' };
                             case 'organizer':
-                                return { class: 'bg-secondary', icon: 'fas fa-star', text: 'Community Organizer' };
+                                return { class: 'bg-secondary text-dark', text: 'Community Organizer' };
                             case 'approved':
-                                return { class: 'bg-secondary', icon: 'fas fa-check-circle', text: 'Approved Member' };
+                                return { class: 'bg-secondary text-dark', text: 'Approved Member' };
                             case 'pending':
-                                return { class: 'bg-secondary', icon: 'fas fa-clock', text: 'Application Pending' };
+                                return { class: 'bg-secondary text-dark', text: 'Application Pending' };
                             case 'rejected':
-                                return { class: 'bg-secondary', icon: 'fas fa-times-circle', text: 'Rejected' };
+                                return { class: 'bg-secondary text-dark', text: 'Rejected' };
                             default:
-                                return { class: 'bg-secondary', icon: 'fas fa-user', text: 'Pending Review' };
+                                return { class: 'bg-secondary text-dark', text: 'Pending Review' };
                         }
                     };
                     
@@ -572,7 +572,7 @@ function viewUser(userId) {
                                         </h4>
                                     </div>
                                     <span class="badge ${roleBadge.class} fs-6">
-                                        <i class="${roleBadge.icon} me-1"></i>${roleBadge.text}
+                                        ${roleBadge.text}
                                     </span>
                                 </div>
                                 
@@ -641,7 +641,7 @@ function viewUser(userId) {
                             applicationSection = `
                                 <div class="mt-3">
                                     <a href="#applicationAnswers" class="btn btn-primary btn-sm" data-bs-toggle="collapse" aria-expanded="false" aria-controls="applicationAnswers">
-                                        <i class="fas fa-file-alt me-1"></i>Show application responses
+                                        Show application responses
                                     </a>
                                     <div class="collapse mt-3" id="applicationAnswers">
                                         <div class="card">
@@ -660,7 +660,23 @@ function viewUser(userId) {
                                     </div>
                                 </div>
                             `;
+                        } else {
+                            applicationSection = `
+                                <div class="mt-3">
+                                    <span class="badge bg-secondary text-dark">
+                                        No application submitted
+                                    </span>
+                                </div>
+                            `;
                         }
+                    } else {
+                        applicationSection = `
+                            <div class="mt-3">
+                                <span class="badge bg-secondary text-dark">
+                                    No application submitted
+                                </span>
+                            </div>
+                        `;
                     }
                     
                     modalBody.innerHTML = profileContent + '        </div>\n    </div>' + applicationSection;
@@ -675,17 +691,17 @@ function viewUser(userId) {
                     const getRoleBadgeInfo = (role) => {
                         switch(role) {
                             case 'admin':
-                                return { class: 'bg-danger', icon: 'fas fa-shield-alt', text: 'Administrator' };
+                                return { class: 'bg-danger', text: 'Administrator' };
                             case 'organizer':
-                                return { class: 'bg-primary', icon: 'fas fa-star', text: 'Community Organizer' };
+                                return { class: 'bg-primary', text: 'Community Organizer' };
                             case 'approved':
-                                return { class: 'bg-success', icon: 'fas fa-check-circle', text: 'Approved Member' };
+                                return { class: 'bg-success text-dark', text: 'Approved Member' };
                             case 'pending':
-                                return { class: 'bg-warning', icon: 'fas fa-clock', text: 'Application Pending' };
+                                return { class: 'bg-warning text-dark', text: 'Application Pending' };
                             case 'rejected':
-                                return { class: 'bg-danger', icon: 'fas fa-times-circle', text: 'Rejected' };
+                                return { class: 'bg-danger', text: 'Rejected' };
                             default:
-                                return { class: 'bg-secondary', icon: 'fas fa-user', text: 'Pending Review' };
+                                return { class: 'bg-secondary', text: 'Pending Review' };
                         }
                     };
                     
@@ -713,7 +729,7 @@ function viewUser(userId) {
                                         </h4>
                                     </div>
                                     <span class="badge ${roleBadge.class} fs-6">
-                                        <i class="${roleBadge.icon} me-1"></i>${roleBadge.text}
+                                        ${roleBadge.text}
                                     </span>
                                 </div>
                                 

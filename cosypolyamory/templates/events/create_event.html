@@ -218,7 +218,7 @@
                         <div class="col-12">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="is_multiday" name="is_multiday"
-                                    {% if event and event.end_time and event.date != event.end_time.date() %}checked{% endif %}>
+                                    {% if event and event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date() %}checked{% endif %}>
                                 <label class="form-check-label" for="is_multiday">
                                     This is a multi-day event
                                 </label>
@@ -459,6 +459,9 @@
                                 const dateInput = document.getElementById('date');
                                 
                                 function toggleMultidayFields() {
+                                    const timePeriodRow = document.getElementById('time_period_row');
+                                    const timePeriodSelect = document.getElementById('time_period');
+                                    
                                     if (multidayCheckbox.checked) {
                                         // Show multiday rows, hide single day row
                                         multidayRows.style.display = '';
@@ -466,6 +469,11 @@
                                         startDateInput.required = true;
                                         endDateInput.required = true;
                                         dateInput.required = false;
+                                        // Hide time period for multi-day events
+                                        if (timePeriodRow) {
+                                            timePeriodRow.style.display = 'none';
+                                            timePeriodSelect.required = false;
+                                        }
                                         // Copy date value to start_date if start_date is empty
                                         if (!startDateInput.value && dateInput.value) {
                                             startDateInput.value = dateInput.value;
@@ -483,6 +491,11 @@
                                         startDateInput.required = false;
                                         endDateInput.required = false;
                                         dateInput.required = true;
+                                        // Show time period for single-day events
+                                        if (timePeriodRow) {
+                                            timePeriodRow.style.display = '';
+                                            timePeriodSelect.required = true;
+                                        }
                                         // Sync time values from multi-day to single-day dropdowns
                                         syncTimeToSingleday();
                                     }
@@ -524,7 +537,7 @@
                         </div>
                         
                     </div> <!-- close previous row -->
-                    <div class="row mb-4">
+                    <div class="row mb-4" id="time_period_row">
                         
                         <div class="col-12 mb-3">
                             <label for="time_period" class="form-label">Time Period (Public) *</label>
@@ -535,6 +548,7 @@
                                 <option value="afternoon"{% if (clone_data and clone_data.time_period == 'afternoon') or (event and event.time_period == 'afternoon') %} selected{% endif %}>Afternoon</option>
                                 <option value="evening"{% if (clone_data and clone_data.time_period == 'evening') or (event and event.time_period == 'evening') %} selected{% endif %}>Evening</option>
                                 <option value="night"{% if (clone_data and clone_data.time_period == 'night') or (event and event.time_period == 'night') %} selected{% endif %}>Night</option>
+                                <option value="other"{% if (clone_data and clone_data.time_period == 'other') or (event and event.time_period == 'other') %} selected{% endif %}>Other (see description)</option>
                             </select>
                             <div class="form-text">This is what non-approved members will see instead of the exact time</div>
                         </div>

@@ -120,7 +120,9 @@
                                                 {{ event.exact_time.strftime('%H:%M') }}
                                             {% endif %}
                                         {% else %}
-                                            {{ event.time_period }}
+                                            {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                                {{ event.time_period }}
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                 {% endif %}

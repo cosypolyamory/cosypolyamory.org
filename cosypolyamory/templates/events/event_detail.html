@@ -309,11 +309,15 @@
                                 {% if can_see_details %}
                                     <p>
                                         {{ event.exact_time.strftime('%H:%M') }}
-                                        {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
-                                        {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                        {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                            {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
+                                            {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                        {% endif %}
                                     </p>
                                 {% else %}
-                                    <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                        <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </div>
@@ -327,7 +331,9 @@
                                 {% if can_see_details %}
                                     <p>{{ event.end_time.strftime('%H:%M') }}</p>
                                 {% else %}
-                                    <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                        <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </div>
@@ -357,11 +363,15 @@
                                         {% else %}
                                             {{ event.exact_time.strftime('%H:%M') }}
                                         {% endif %}
-                                        {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
-                                        {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                        {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                            {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
+                                            {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                        {% endif %}
                                     </p>
                                 {% else %}
-                                    <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                        <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                             <div class="col-md-5">
@@ -766,8 +776,8 @@
                         <textarea id="plain-text" class="form-control share-text" rows="8" readonly>{{ event.title }}
 
 Date: {{ event.exact_time.strftime('%A, %B %d, %Y') }}
-Time: {{ event.time_period }}
-Location: {{ event.barrio }}
+{% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}Time: {{ event.time_period }}
+{% endif %}Location: {{ event.barrio }}
 
 {{ event.description }}
 
@@ -785,8 +795,8 @@ Log in or join our community for more details: {{ request.url }}</textarea>
                         <textarea id="html-text" class="form-control share-text" rows="8" readonly><h2>{{ event.title | e }}</h2>
 
 <p><strong>📅 Date:</strong> {{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
-<p><strong>🕐 Time:</strong> {{ event.time_period }}</p>
-<p><strong>📍 Location:</strong> {{ event.barrio | e }}</p>
+{% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}<p><strong>🕐 Time:</strong> {{ event.time_period }}</p>
+{% endif %}<p><strong>📍 Location:</strong> {{ event.barrio | e }}</p>
 
 <div>{{ event.description | safe }}</div>
 
@@ -804,8 +814,8 @@ Log in or join our community for more details: {{ request.url }}</textarea>
                         <textarea id="markdown-text" class="form-control share-text" rows="8" readonly>## {{ event.title }}
 
 **📅 Date:** {{ event.exact_time.strftime('%A, %B %d, %Y') }}
-**🕐 Time:** {{ event.time_period }}
-**📍 Location:** {{ event.barrio }}
+{% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}**🕐 Time:** {{ event.time_period }}
+{% endif %}**📍 Location:** {{ event.barrio }}
 
 {{ event.description }}
 
