@@ -666,9 +666,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         attendanceContainer.innerHTML = dropdownHtml;
         
-        // Add a brief delay to check if something is overriding our change
-        setTimeout(() => {
-        }, 100);
+        // Ensure the button has w-100 class
+        const dropdown = attendanceContainer.querySelector('.dropdown');
+        if (dropdown) {
+            const dropdownButton = dropdown.querySelector('button');
+            if (dropdownButton) {
+                dropdownButton.classList.add('w-100');
+            }
+        }
         
         // Re-attach event listeners to the new dropdown items
         const newDropdownItems = attendanceContainer.querySelectorAll('.attendance-dropdown-item');
@@ -718,6 +723,16 @@ document.addEventListener('DOMContentLoaded', function() {
             closeBtn.addEventListener('click', () => toast.remove());
         }
     }
+
+    // Attach event listeners to initial attendance buttons
+    document.querySelectorAll('.attendance-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const eventId = this.getAttribute('data-event-id');
+            const status = this.getAttribute('data-status');
+            updateAttendanceStatusFromButton(eventId, status, this);
+        });
+    });
 
     // Handle banned user button clicks
     document.querySelectorAll('.banned-user-btn').forEach(button => {
