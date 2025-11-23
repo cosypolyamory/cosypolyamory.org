@@ -4,10 +4,10 @@ Attendance/RSVP routes for cosypolyamory.org
 Handles RSVP functionality and attendance management.
 """
 
-import os
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_required, current_user
+import pytz
 
 from cosypolyamory.models.user import User
 from cosypolyamory.models.event import Event
@@ -132,6 +132,16 @@ def process_attendance_changes(event_id, attendance_data, requesting_user_id=Non
         event = Event.get_by_id(event_id)
     except Event.DoesNotExist:
         return False, {'error': 'Event not found'}, 404
+    
+    # Check if event has already passed
+    now = datetime.now(pytz.UTC)
+    event_time = event.exact_time if event.exact_time else event.date
+    # Ensure event_time is timezone-aware
+    if event_time.tzinfo is None:
+        event_time = pytz.UTC.localize(event_time)
+    
+    if event_time < now:
+        return False, {'error': 'Cannot RSVP to events that have already passed'}, 400
     
     # Check permissions based on user role
     if requesting_user_id:
