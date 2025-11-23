@@ -1048,11 +1048,9 @@ def edit_event_post(event_id):
             except Exception as e:
                 current_app.logger.error(f"Failed to send Telegram update announcement for event {event.id}: {e}")
 
-        success_message = f'Event "{title}" has been updated successfully!'
         if 'promotion_message' in locals():
-            success_message += promotion_message
+            flash(promotion_message, 'success')
 
-        flash(success_message, 'success')
         return redirect(url_for('events.event_detail', event_id=event.id))
 
     except Event.DoesNotExist:
