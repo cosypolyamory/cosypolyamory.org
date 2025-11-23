@@ -1201,10 +1201,11 @@ def publish_event(event_id):
     try:
         event = Event.get_by_id(event_id)
         
-        # Check if user can edit this event
-        if not (current_user.role == 'admin' or 
+        # Check if user can edit this event - allow admin, organizer role, event creator, or co-host
+        is_cohost = event.co_host and event.co_host.id == current_user.id
+        if not (current_user.role in ['admin', 'organizer'] or 
                 event.organizer_id == current_user.id or 
-                (event.co_host and event.co_host_id == current_user.id)):
+                is_cohost):
             flash('You do not have permission to publish this event.', 'error')
             return redirect(url_for('events.event_detail', event_id=event_id))
         
