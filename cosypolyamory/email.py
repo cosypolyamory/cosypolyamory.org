@@ -150,6 +150,39 @@ def test_email_configuration() -> bool:
         return False
 
 
+def send_email_verification(user, new_email: str, verification_url: str, hours_valid: int = 24) -> bool:
+    """
+    Send an email verification message
+    
+    Args:
+        user: User object
+        new_email: The new email address to verify
+        verification_url: The verification URL with token
+        hours_valid: Number of hours the link is valid (default: 24)
+    
+    Returns:
+        bool: True if email was sent successfully, False otherwise
+    """
+    from flask import render_template
+    
+    subject = "Verify Your Email Address - Cosy Polyamory"
+    
+    # Render the email template
+    body = render_template(
+        'notifications/email_verification.html',
+        user_name=user.name,
+        new_email=new_email,
+        verification_url=verification_url,
+        hours_valid=hours_valid
+    )
+    
+    try:
+        return send_email(new_email, subject, body)
+    except EmailError as e:
+        current_app.logger.error(f"Failed to send verification email to {new_email}: {e}")
+        return False
+
+
 if __name__ == "__main__":
     # Run configuration test when module is executed directly
     test_email_configuration()

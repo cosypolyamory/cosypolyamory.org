@@ -26,6 +26,25 @@
         {% endif %}
     {% endwith %}
 
+    <!-- Pending Email Verification Notice -->
+    {% if pending_verification %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading">
+                <i class="fas fa-envelope me-2"></i>Email Verification Pending
+            </h5>
+            <p class="mb-2">
+                A verification email has been sent to <strong>{{ pending_verification.new_email }}</strong>.
+            </p>
+            <p class="mb-0">
+                <small>
+                    Please check your inbox and click the verification link to complete your email setup. 
+                    The link will expire on {{ pending_verification.expires_at.strftime('%B %d, %Y at %H:%M') }}.
+                </small>
+            </p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
     <!-- Profile Update Form for users with incomplete data -->
     {% if needs_info %}
         <div class="card mt-4 border-warning">

@@ -10,3 +10,4 @@ faker
 python-telegram-bot
 schedule
 pytz
+itsdangerous

@@ -472,6 +472,8 @@ def logout():
 @login_required
 def profile():
     """User profile page"""
+    from cosypolyamory.models.email_verification import EmailVerification
+    
     # Show welcome message for new users
     user_role = getattr(current_user, 'role', None)
     
@@ -494,6 +496,19 @@ def profile():
     if not current_user.pronouns:
         needs_info = True
     
+    # Check for pending email verification
+    pending_verification = None
+    try:
+        pending_verification = EmailVerification.get(
+            (EmailVerification.user == current_user) &
+            (EmailVerification.is_used == False)
+        )
+        # Only show if not expired
+        if pending_verification.is_expired():
+            pending_verification = None
+    except EmailVerification.DoesNotExist:
+        pass
+    
     # Get stored form data from session (for retaining values after errors)
     form_data = session.get('profile_form_data', {})
     show_edit_modal = bool(form_data)  # Show edit modal if there's stored form data
@@ -507,6 +522,7 @@ def profile():
                          needs_info=needs_info,
                          form_data=form_data,
                          show_edit_modal=show_edit_modal,
+                         pending_verification=pending_verification,
                          now=datetime.now())
 
 
@@ -716,29 +732,202 @@ def update_profile():
     except User.DoesNotExist:
         pass  # Email is available
     
+    # Check if user is changing their email address
+    current_email = current_user.email.lower()
+    new_email_lower = email.lower()
+    
+    # User needs verification if they're changing to a different email
+    needs_email_verification = (new_email_lower != current_email)
+    
     try:
         with database.atomic():
-            # Update user information
-            current_user.email = email
+            # Update name and pronouns immediately
             current_user.name = name
             current_user.pronouns = pronouns
-            current_user.save()
             
-            # Refresh the current user session to ensure updated data is reflected
-            # This is important because Flask-Login caches the user object
-            from flask_login import login_user
-            login_user(current_user, remember=True)
+            if needs_email_verification:
+                # Don't update email yet - send verification instead
+                from cosypolyamory.email_verification_utils import (
+                    create_email_verification, 
+                    get_verification_url
+                )
+                from cosypolyamory.email import send_email_verification
+                
+                # Save name and pronouns first
+                current_user.save()
+                
+                # Create verification record
+                verification = create_email_verification(current_user, email)
+                
+                # Generate verification URL
+                verification_url = get_verification_url(verification.token)
+                
+                # Send verification email
+                email_sent = send_email_verification(
+                    current_user, 
+                    email, 
+                    verification_url,
+                    hours_valid=24
+                )
+                
+                if not email_sent:
+                    error_msg = 'Failed to send verification email. Please try again later.'
+                    if is_ajax:
+                        return jsonify({'success': False, 'error': error_msg})
+                    flash(error_msg, 'error')
+                    return redirect(url_for('auth.profile'))
+                
+                # Refresh the current user session
+                from flask_login import login_user
+                login_user(current_user, remember=True)
+                
+                # Clear form data from session
+                if not is_ajax:
+                    session.pop('profile_form_data', None)
+                
+                success_msg = f'Profile updated! A verification email has been sent to {email}. Please check your inbox and click the verification link to complete your email setup.'
+                if is_ajax:
+                    return jsonify({'success': True, 'message': success_msg, 'needs_verification': True})
+                flash(success_msg, 'info')
+                return redirect(url_for('auth.profile'))
+            else:
+                # Email doesn't need verification - update normally
+                current_user.email = email
+                current_user.save()
+                
+                # Refresh the current user session
+                from flask_login import login_user
+                login_user(current_user, remember=True)
+                
+                # Clear form data from session
+                if not is_ajax:
+                    session.pop('profile_form_data', None)
+                
+                if is_ajax:
+                    return jsonify({'success': True})
         
-        # Clear form data from session on successful update
-        if not is_ajax:
-            session.pop('profile_form_data', None)
-        
-        if is_ajax:
-            return jsonify({'success': True})
     except Exception as e:
+        current_app.logger.error(f"Error updating profile: {e}")
         error_msg = f'Error updating profile: {str(e)}'
         if is_ajax:
             return jsonify({'success': False, 'error': error_msg})
         flash(error_msg, 'error')
     
     return redirect(url_for('auth.profile'))
+
+
+@bp.route('/request-email-change', methods=['POST'])
+@login_required
+def request_email_change():
+    """
+    Request an email change with verification
+    
+    This route:
+    1. Validates the new email address
+    2. Creates a verification token
+    3. Sends a verification email to the new address
+    4. Does NOT change the email until verified
+    """
+    from cosypolyamory.email_verification_utils import (
+        create_email_verification, 
+        get_verification_url
+    )
+    from cosypolyamory.email import send_email_verification
+    
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    new_email = request.form.get('new_email', '').strip().lower()
+    
+    # Validate email format
+    if not new_email or '@' not in new_email or '.' not in new_email:
+        error_msg = 'Please enter a valid email address.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
+    # Check if it's the same as current email
+    if new_email == current_user.email:
+        error_msg = 'This is already your current email address.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
+    # Check if email is already taken by another user
+    try:
+        existing_user = User.get(User.email == new_email)
+        if existing_user.id != current_user.id:
+            error_msg = 'This email address is already in use by another account.'
+            if is_ajax:
+                return jsonify({'success': False, 'error': error_msg})
+            flash(error_msg, 'error')
+            return redirect(url_for('auth.profile'))
+    except User.DoesNotExist:
+        pass  # Email is available
+    
+    try:
+        # Create verification record with secure token
+        verification = create_email_verification(current_user, new_email)
+        
+        # Generate verification URL
+        verification_url = get_verification_url(verification.token)
+        
+        # Send verification email
+        email_sent = send_email_verification(
+            current_user, 
+            new_email, 
+            verification_url,
+            hours_valid=24
+        )
+        
+        if not email_sent:
+            error_msg = 'Failed to send verification email. Please try again later.'
+            if is_ajax:
+                return jsonify({'success': False, 'error': error_msg})
+            flash(error_msg, 'error')
+            return redirect(url_for('auth.profile'))
+        
+        success_msg = f'A verification email has been sent to {new_email}. Please check your inbox and click the verification link to complete the email change.'
+        if is_ajax:
+            return jsonify({'success': True, 'message': success_msg})
+        flash(success_msg, 'info')
+        return redirect(url_for('auth.profile'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error creating email verification: {e}")
+        error_msg = 'An error occurred. Please try again later.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+
+
+@bp.route('/verify-email/<token>')
+def verify_email(token):
+    """
+    Verify an email change using the token
+    
+    This route:
+    1. Validates the token cryptographically
+    2. Checks if it's not expired or already used
+    3. Updates the user's email if valid
+    4. Provides appropriate feedback
+    """
+    from cosypolyamory.email_verification_utils import verify_email_change
+    
+    success, message, user = verify_email_change(token)
+    
+    if success:
+        flash(message, 'success')
+        # If user is logged in and it's their own verification, refresh their session
+        if current_user.is_authenticated and user and current_user.id == user.id:
+            from flask_login import login_user
+            login_user(user, remember=True)
+            return redirect(url_for('auth.profile'))
+        # If not logged in, redirect to login
+        return redirect(url_for('auth.login'))
+    else:
+        flash(message, 'error')
+        if current_user.is_authenticated:
+            return redirect(url_for('auth.profile'))
+        return redirect(url_for('auth.login'))
