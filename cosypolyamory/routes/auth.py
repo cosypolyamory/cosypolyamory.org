@@ -389,37 +389,41 @@ def oauth_callback(provider):
                 else:
                     # Create new user
                     if provider == 'google':
+                        display_name = user_info['name'][:32]  # Truncate to 32 chars
                         user = User.create(
                             id=user_id,
                             email=user_info['email'],
-                            name=user_info['name'],
+                            name=display_name,
                             avatar_url=user_info.get('picture'),
                             provider='google',
                             last_login=datetime.now()
                         )
                     elif provider == 'github':
+                        display_name = (user_info.get('name') or user_info.get('login'))[:32]  # Truncate to 32 chars
                         user = User.create(
                             id=user_id,
                             email=primary_email,
-                            name=user_info.get('name') or user_info.get('login'),
+                            name=display_name,
                             avatar_url=user_info.get('avatar_url'),
                             provider='github',
                             last_login=datetime.now()
                         )
                     elif provider == 'reddit':
+                        display_name = user_info['name'][:32]  # Truncate to 32 chars
                         user = User.create(
                             id=user_id,
                             email=constructed_email,
-                            name=user_info['name'],
+                            name=display_name,
                             avatar_url=user_info.get('icon_img', '').split('?')[0] if user_info.get('icon_img') else None,
                             provider='reddit',
                             last_login=datetime.now()
                         )
                     elif provider == 'musicbrainz':
+                        display_name = username[:32]  # Truncate to 32 chars
                         user = User.create(
                             id=user_id,
                             email=constructed_email,
-                            name=username,
+                            name=display_name,
                             avatar_url=None,  # MusicBrainz doesn't provide avatars
                             provider='musicbrainz',
                             last_login=datetime.now()
@@ -623,6 +627,14 @@ def update_profile():
     # Validation
     if not email or not name:
         error_msg = 'Both email and name are required.'
+        if is_ajax:
+            return jsonify({'success': False, 'error': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
+    # Validate name length
+    if len(name) > 32:
+        error_msg = 'Name cannot be longer than 32 characters.'
         if is_ajax:
             return jsonify({'success': False, 'error': error_msg})
         flash(error_msg, 'error')
