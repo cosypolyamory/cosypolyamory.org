@@ -306,12 +306,41 @@ def create_event():
     default_date = (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d')
     default_hour = '19'
     default_minute = '00'
+    
+    # Check if we're cloning an event (query parameters present)
+    clone_data = {}
+    if request.args:
+        # Collect all query parameters for pre-populating the form
+        clone_data = {
+            'title': request.args.get('title', ''),
+            'description': request.args.get('description', ''),
+            'barrio': request.args.get('barrio', ''),
+            'time_period': request.args.get('time_period', ''),
+            'date': request.args.get('date', default_date),
+            'time_hour': request.args.get('time_hour', default_hour),
+            'time_minute': request.args.get('time_minute', default_minute),
+            'establishment_name': request.args.get('establishment_name', ''),
+            'google_maps_link': request.args.get('google_maps_link', ''),
+            'location_notes': request.args.get('location_notes', ''),
+            'organizer_id': request.args.get('organizer_id', ''),
+            'co_host_id': request.args.get('co_host_id', ''),
+            'tips_for_attendees': request.args.get('tips_for_attendees', ''),
+            'max_attendees': request.args.get('max_attendees', ''),
+            'event_note_id': request.args.get('event_note_id', ''),
+            'is_multiday': request.args.get('is_multiday', '') == 'on',
+            'start_date': request.args.get('start_date', ''),
+            'end_date': request.args.get('end_date', ''),
+            'end_time_hour': request.args.get('end_time_hour', ''),
+            'end_time_minute': request.args.get('end_time_minute', ''),
+        }
+    
     return render_template('events/create_event.html',
                            organizers=organizer_list,
                            event_notes=event_notes,
                            default_date=default_date,
                            default_hour=default_hour,
                            default_minute=default_minute,
+                           clone_data=clone_data,
                            now=datetime.now())
 
 
@@ -566,8 +595,9 @@ def edit_event(event_id):
     try:
         event = Event.get_by_id(event_id)
 
-        # Check permissions - only admin, organizers, or event creator can edit
-        if not (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id):
+        # Check permissions - only admin, organizers, event creator, or co-host can edit
+        is_cohost = event.co_host and event.co_host.id == current_user.id
+        if not (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id or is_cohost):
             flash('You do not have permission to edit this event.', 'error')
             return redirect(url_for('events.event_detail', event_id=event_id))
 
@@ -610,8 +640,9 @@ def edit_event_post(event_id):
     try:
         event = Event.get_by_id(event_id)
 
-        # Check permissions
-        if not (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id):
+        # Check permissions - allow admin, organizer, event creator, or co-host
+        is_cohost = event.co_host and event.co_host.id == current_user.id
+        if not (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id or is_cohost):
             flash('You do not have permission to edit this event.', 'error')
             return redirect(url_for('events.event_detail', event_id=event_id))
 
@@ -666,10 +697,11 @@ def edit_event_post(event_id):
             flash('Selected organizer not found.', 'error')
             return redirect(url_for('events.edit_event', event_id=event_id))
 
-        # Check permission: only admins, organizers, or the original/new organizer can edit
+        # Check permission: only admins, organizers, event creator, new organizer, or co-host can edit
+        is_cohost = event.co_host and event.co_host.id == current_user.id
         if not (current_user.role in ['admin', 'organizer'] or current_user.id == event.organizer_id
-                or current_user.id == organizer_id):
-            flash('You can only edit events you organize unless you are an admin or organizer.', 'error')
+                or current_user.id == organizer_id or is_cohost):
+            flash('You can only edit events you organize or co-host unless you are an admin or organizer.', 'error')
             return redirect(url_for('events.edit_event', event_id=event_id))
 
         # Parse dates and times

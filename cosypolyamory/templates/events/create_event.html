@@ -60,7 +60,7 @@
                         <div class="col-12 mb-3">
                             <label for="title" class="form-label">Event Title *</label>
                             <input type="text" class="form-control" id="title" name="title" required maxlength="255"
-                                   placeholder="e.g., Community Game Night" value="{% if event %}{{ event.title }}{% endif %}">
+                                   placeholder="e.g., Community Game Night" value="{% if clone_data %}{{ clone_data.title }}{% elif event %}{{ event.title }}{% endif %}">
                             <div class="form-text">
                                 <span id="title-counter">0</span>/255 characters
                             </div>
@@ -69,7 +69,7 @@
                         <div class="col-12 mb-3">
                             <label for="description" class="form-label">Description *</label>
                             <textarea class="form-control" id="description" name="description" rows="16" required maxlength="5000"
-                                      placeholder="Describe your event...">{% if event %}{{ event.description }}{% endif %}</textarea>
+                                      placeholder="Describe your event...">{% if clone_data %}{{ clone_data.description }}{% elif event %}{{ event.description }}{% endif %}</textarea>
                             <div class="form-text">
                                 <span id="description-counter">0</span>/5000 characters
                             </div>
@@ -88,7 +88,7 @@
                         <div class="col-md-4 mb-3">
                             <label for="date" class="form-label">Date *</label>
                             <input type="date" class="form-control" id="date" name="date" required
-                                value="{% if event %}{{ event.date.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
+                                value="{% if clone_data %}{{ clone_data.date }}{% elif event %}{{ event.date.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
                         </div>
                         
                         <div class="col-md-4 mb-3">
@@ -530,11 +530,11 @@
                             <label for="time_period" class="form-label">Time Period (Public) *</label>
                             <select class="form-select" id="time_period" name="time_period" required>
                                 <option value="">Select time period...</option>
-                                <option value="morning"{% if event and event.time_period == 'morning' %} selected{% endif %}>Morning</option>
-                                <option value="mid day"{% if event and event.time_period == 'mid day' %} selected{% endif %}>Mid Day</option>
-                                <option value="afternoon"{% if event and event.time_period == 'afternoon' %} selected{% endif %}>Afternoon</option>
-                                <option value="evening"{% if event and event.time_period == 'evening' %} selected{% endif %}>Evening</option>
-                                <option value="night"{% if event and event.time_period == 'night' %} selected{% endif %}>Night</option>
+                                <option value="morning"{% if (clone_data and clone_data.time_period == 'morning') or (event and event.time_period == 'morning') %} selected{% endif %}>Morning</option>
+                                <option value="mid day"{% if (clone_data and clone_data.time_period == 'mid day') or (event and event.time_period == 'mid day') %} selected{% endif %}>Mid Day</option>
+                                <option value="afternoon"{% if (clone_data and clone_data.time_period == 'afternoon') or (event and event.time_period == 'afternoon') %} selected{% endif %}>Afternoon</option>
+                                <option value="evening"{% if (clone_data and clone_data.time_period == 'evening') or (event and event.time_period == 'evening') %} selected{% endif %}>Evening</option>
+                                <option value="night"{% if (clone_data and clone_data.time_period == 'night') or (event and event.time_period == 'night') %} selected{% endif %}>Night</option>
                             </select>
                             <div class="form-text">This is what non-approved members will see instead of the exact time</div>
                         </div>
@@ -548,7 +548,7 @@
                             <label for="establishment_name" class="form-label">Establishment Name *</small></label>
                             <input type="text" class="form-control" id="establishment_name" name="establishment_name" required maxlength="64"
                                    placeholder="e.g., Port Bay, Barna Brew, Venus"
-                                   value="{% if event %}{{ event.establishment_name }}{% endif %}">
+                                   value="{% if clone_data %}{{ clone_data.establishment_name }}{% elif event %}{{ event.establishment_name }}{% endif %}">
                             <div class="form-text">Name of the venue, restaurant, or meeting place. <span id="establishment-counter">0</span>/64 characters</div>
                         </div>
                         
@@ -556,7 +556,7 @@
                             <label for="google_maps_link" class="form-label">Google Maps Link</label>
                             <input type="url" class="form-control" id="google_maps_link" name="google_maps_link" maxlength="2000"
                                    placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/@..."
-                                   value="{% if event %}{{ event.google_maps_link }}{% endif %}">
+                                   value="{% if clone_data %}{{ clone_data.google_maps_link }}{% elif event %}{{ event.google_maps_link }}{% endif %}">
                             <div id="maps-url-feedback" class="form-text" style="display: none;"></div>
                             <div class="form-text">Optional. Approved members will see an embedded map preview if provided. <span id="maps-counter">0</span>/2000 characters</div>
                         </div>
@@ -565,14 +565,14 @@
                             <label for="barrio" class="form-label">Barrio (Public) *</label>
                             <input type="text" class="form-control" id="barrio" name="barrio" required maxlength="64"
                                    placeholder="e.g., The Born, Gòtic, Poble Sec"
-                                   value="{% if event %}{{ event.barrio }}{% endif %}">
+                                   value="{% if clone_data %}{{ clone_data.barrio }}{% elif event %}{{ event.barrio }}{% endif %}">
                             <div class="form-text">This is what non-approved members will see instead of the exact location. <span id="barrio-counter">0</span>/64 characters</div>
                         </div>
                         
                         <div class="col-12 mb-3">
                             <label for="location_notes" class="form-label">Location Notes</label>
                             <textarea class="form-control" id="location_notes" name="location_notes" rows="2" maxlength="1000"
-                                      placeholder="e.g., Enter via side door, look for the group in the back room, second floor">{% if event %}{{ event.location_notes }}{% endif %}</textarea>
+                                      placeholder="e.g., Enter via side door, look for the group in the back room, second floor">{% if clone_data %}{{ clone_data.location_notes }}{% elif event %}{{ event.location_notes }}{% endif %}</textarea>
                             <div class="form-text">Additional directions or meeting details. <span id="location-notes-counter">0</span>/1000 characters</div>
                         </div>
                     </div>
@@ -603,7 +603,7 @@
                             <label for="max_attendees" class="form-label">Maximum Attendees</label>
                             <input type="number" class="form-control" id="max_attendees" name="max_attendees" 
                                    min="1" placeholder="Unlimited"
-                                   value="{% if event and event.max_attendees %}{{ event.max_attendees }}{% endif %}">
+                                   value="{% if clone_data %}{{ clone_data.max_attendees }}{% elif event and event.max_attendees %}{{ event.max_attendees }}{% endif %}">
                             <div class="form-text">Leave empty for unlimited capacity</div>
                         </div>
                         
@@ -631,7 +631,7 @@
                             <div id="selected_event_note_box" class="border rounded bg-light p-2 mb-2" style="display:none; white-space:pre-line;"></div>
                             <label for="tips_for_attendees" class="form-label">Additional notes for this event</label>
                             <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3" maxlength="5000"
-                                      placeholder="Add any event-specific notes here">{% if event and event.tips_for_attendees %}{{ event.tips_for_attendees }}{% endif %}</textarea>
+                                      placeholder="Add any event-specific notes here">{% if clone_data %}{{ clone_data.tips_for_attendees }}{% elif event and event.tips_for_attendees %}{{ event.tips_for_attendees }}{% endif %}</textarea>
                             <div class="form-text">You can add extra notes for this event. The selected standard note will be shown above. <span id="tips-counter">0</span>/5000 characters</div>
                         </div>
                     </div>
@@ -738,6 +738,50 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load organizers from server data
     loadOrganizers();
+    
+    // Handle cloned event data (pre-populate from query parameters)
+    {% if clone_data %}
+    // Set time dropdowns if cloning
+    {% if clone_data.time_hour %}
+    if (timeHourSelect) timeHourSelect.value = '{{ clone_data.time_hour }}';
+    {% endif %}
+    {% if clone_data.time_minute %}
+    if (timeMinuteSelect) timeMinuteSelect.value = '{{ clone_data.time_minute }}';
+    {% endif %}
+    updateTimeInput();
+    
+    // Set organizer and co-host after organizers are loaded
+    setTimeout(function() {
+        {% if clone_data.organizer_id %}
+        const organizerSelect = document.getElementById('organizer_id');
+        if (organizerSelect) organizerSelect.value = '{{ clone_data.organizer_id }}';
+        {% endif %}
+        {% if clone_data.co_host_id %}
+        const coHostSelect = document.getElementById('co_host_id');
+        if (coHostSelect) coHostSelect.value = '{{ clone_data.co_host_id }}';
+        {% endif %}
+        {% if clone_data.event_note_id %}
+        const eventNoteSelect = document.getElementById('event_note_select');
+        if (eventNoteSelect) {
+            eventNoteSelect.value = '{{ clone_data.event_note_id }}';
+            // Trigger change event to show note preview
+            eventNoteSelect.dispatchEvent(new Event('change'));
+        }
+        {% endif %}
+    }, 100);
+    
+    // Show alert about cloning
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <i class="fas fa-clone me-2"></i>
+        <strong>Event cloned!</strong> Review the details below and click "Create Event" to save as a new event.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    const cardBody = document.querySelector('.card-body');
+    const form = document.querySelector('form');
+    cardBody.insertBefore(alertDiv, form);
+    {% endif %}
 
     // Setup event notes preview
     setupEventNotes();
@@ -1028,6 +1072,9 @@ function confirmCloneEvent() {
 }
 
 function cloneEvent() {
+    // Collect all form data
+    const params = new URLSearchParams();
+    
     // Calculate new date (1 month from today)
     const today = new Date();
     let newMonth = today.getMonth() + 1;
@@ -1048,38 +1095,77 @@ function cloneEvent() {
     const newDate = new Date(newYear, newMonth, newDay);
     const formattedDate = newDate.toISOString().split('T')[0];
     
-    // Update the title to "Copy of <old title>"
-    const titleInput = document.getElementById('title');
-    const currentTitle = titleInput.value;
-    if (!currentTitle.startsWith('Copy of ')) {
-        titleInput.value = 'Copy of ' + currentTitle;
+    // Helper function to safely get element value
+    function getValue(id) {
+        const el = document.getElementById(id);
+        return el ? el.value : '';
     }
     
-    // Update the date field
-    document.getElementById('date').value = formattedDate;
+    // Add "Copy of " to title if not already present
+    const currentTitle = getValue('title');
+    const newTitle = currentTitle.startsWith('Copy of ') ? currentTitle : 'Copy of ' + currentTitle;
+    params.append('title', newTitle);
     
-    // Scroll to top of form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Add all other form fields
+    const description = getValue('description');
+    const barrio = getValue('barrio');
+    const timePeriod = getValue('time_period');
+    if (description) params.append('description', description);
+    if (barrio) params.append('barrio', barrio);
+    if (timePeriod) params.append('time_period', timePeriod);
+    params.append('date', formattedDate);
     
-    // Show a success message
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-info alert-dismissible fade show';
-    alertDiv.innerHTML = `
-        <i class="fas fa-clone me-2"></i>
-        <strong>Event cloned!</strong> The date has been set to 1 month from today (${newDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}). 
-        Review the details and click "Update Event" to save.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
+    // Time fields - use hidden inputs
+    const timeHour = getValue('modern_time_hour');
+    const timeMinute = getValue('modern_time_minute');
+    if (timeHour) params.append('time_hour', timeHour);
+    if (timeMinute) params.append('time_minute', timeMinute);
     
-    // Insert alert at the top of the form
-    const cardBody = document.querySelector('.card-body');
-    const form = document.querySelector('form');
-    cardBody.insertBefore(alertDiv, form);
+    // Location fields
+    const establishmentName = getValue('establishment_name');
+    const googleMapsLink = getValue('google_maps_link');
+    const locationNotes = getValue('location_notes');
+    if (establishmentName) params.append('establishment_name', establishmentName);
+    if (googleMapsLink) params.append('google_maps_link', googleMapsLink);
+    if (locationNotes) params.append('location_notes', locationNotes);
     
-    // Auto-dismiss after 8 seconds
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 8000);
+    // Organizer and co-host
+    const organizerId = getValue('organizer_id');
+    const coHostId = getValue('co_host_id');
+    if (organizerId) params.append('organizer_id', organizerId);
+    if (coHostId) params.append('co_host_id', coHostId);
+    
+    // Tips and notes
+    const tipsForAttendees = getValue('tips_for_attendees');
+    if (tipsForAttendees) params.append('tips_for_attendees', tipsForAttendees);
+    
+    // Max attendees
+    const maxAttendees = getValue('max_attendees');
+    if (maxAttendees) params.append('max_attendees', maxAttendees);
+    
+    // Event note - use correct ID
+    const eventNoteSelect = document.getElementById('event_note_select');
+    if (eventNoteSelect && eventNoteSelect.value) {
+        params.append('event_note_id', eventNoteSelect.value);
+    }
+    
+    // Multi-day event fields
+    const isMultidayEl = document.getElementById('is_multiday');
+    const isMultiday = isMultidayEl ? isMultidayEl.checked : false;
+    if (isMultiday) {
+        params.append('is_multiday', 'on');
+        const startDate = getValue('start_date');
+        const endDate = getValue('end_date');
+        const endTimeHour = getValue('end_time_hour');
+        const endTimeMinute = getValue('end_time_minute');
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (endTimeHour) params.append('end_time_hour', endTimeHour);
+        if (endTimeMinute) params.append('end_time_minute', endTimeMinute);
+    }
+    
+    // Redirect to create event page with all parameters
+    window.location.href = '{{ url_for("events.create_event") }}?' + params.toString();
 }
 
 // Google Maps URL validation
