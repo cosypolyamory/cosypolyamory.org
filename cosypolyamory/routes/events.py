@@ -1092,6 +1092,7 @@ def delete_event(event_id):
             event_date = event.date
             event_time = event.exact_time
             event_location = event.establishment_name
+            event_was_published = event.published
 
             # Delete all RSVPs associated with this event
             RSVP.delete().where(RSVP.event == event).execute()
@@ -1120,21 +1121,22 @@ def delete_event(event_id):
         if attendee_count > 0:
             current_app.logger.info(f"Sent event cancellation notifications to {attendee_count} attendees")
 
-        # Send Telegram announcement for event cancellation
-        try:
-            from cosypolyamory.telegram_integration import notify_event_cancelled
-            # Create a temporary event object for the notification
-            class TempEvent:
-                def __init__(self, title, date, exact_time, establishment_name):
-                    self.title = title
-                    self.date = date
-                    self.exact_time = exact_time
-                    self.establishment_name = establishment_name
-            
-            temp_event = TempEvent(event_title, event_date, event_time, event_location)
-            notify_event_cancelled(temp_event)
-        except Exception as e:
-            current_app.logger.error(f"Failed to send Telegram cancellation announcement for event '{event_title}': {e}")
+        # Send Telegram announcement for event cancellation (only for published events)
+        if event_was_published:
+            try:
+                from cosypolyamory.telegram_integration import notify_event_cancelled
+                # Create a temporary event object for the notification
+                class TempEvent:
+                    def __init__(self, title, date, exact_time, establishment_name):
+                        self.title = title
+                        self.date = date
+                        self.exact_time = exact_time
+                        self.establishment_name = establishment_name
+                
+                temp_event = TempEvent(event_title, event_date, event_time, event_location)
+                notify_event_cancelled(temp_event)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send Telegram cancellation announcement for event '{event_title}': {e}")
 
         flash(f'Event "{event_title}" has been successfully deleted.', 'success')
         return redirect(url_for('events.events_list'))
