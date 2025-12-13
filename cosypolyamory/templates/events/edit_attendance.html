@@ -1,0 +1,1064 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Manage Attendance - {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                        <!-- Primary Navigation -->
+                        <div>
+                            <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-secondary btn-sm">
+                                Back to Event
+                            </a>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('events.events_list') }}" class="btn btn-secondary btn-sm">
+                                All Events
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h1>Manage Attendance</h1>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message|safe }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Event Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div style="margin: -1em 0 1.5em 0">
+                This page gives you full control over the attandance responses and no automatic actions happen 
+                when you change a users attandance. (e.g. no one is automatically promoted from the waitlist to attending.)
+                By default users will receive a notifcation of the changes you make, but you can override this in 
+                confirmation dialog.
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h4 class="card-title mb-0">{{ event.title }}</h4>
+                        <div class="d-flex align-items-center gap-2">
+                            <span id="header-pills" class="d-flex align-items-start gap-2">
+                            {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %}
+                                <span class="badge bg-warning text-dark">Unpublished</span>
+                            {% endif %}
+                            {% if event.exact_time < now %}
+                                <span class="badge bg-secondary">Past Event</span>
+                            {% else %}
+                                {% if event.max_attendees and rsvp_count >= event.max_attendees %}
+                                    <span class="badge bg-warning text-dark">Full</span>
+                                {% endif %}
+                                {% if waitlist_count > 0 %}
+                                    <span class="badge badge-rsvp-waitlisted">{{ waitlist_count }} Waitlisted</span>
+                                {% endif %}
+                                <span class="badge bg-primary">Upcoming</span>
+                            {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-calendar me-2"></i>
+                        {{ event.exact_time.strftime('%A, %B %d, %Y at %I:%M %p') }}
+                    </p>
+                    {% if event.max_attendees %}
+                    <p class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        <span id="capacity-text">Capacity: {{ rsvp_count }}/{{ event.max_attendees }} attendees</span>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Management -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Attending -->
+            <div class="card mb-4">
+                <div class="card-header card-header-rsvp-yes">
+                    <h6 class="mb-0">
+                        <i class="fas fa-check me-2"></i>
+                        Attending ({{ rsvp_count }})
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if rsvps_attending %}
+                        <div class="list-group list-group-flush">
+                            {% for rsvp in rsvps_attending %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1" style="min-width: 0;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-truncate" style="max-width: 200px;">{{ rsvp.user.name }}</span>
+                                            {% if rsvp.user.id == organizer_id %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif rsvp.user.id == co_host_id %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                            {% if event_has_passed and rsvp.user.id in no_shows %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-user-times me-1"></i>No Show
+                                                </span>
+                                            {% endif %}
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-danger text-light">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            RSVP'd {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                Manage
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if event_has_started %}
+                                                {% if rsvp.user.id in no_shows %}
+                                                <li>
+                                                    <button class="dropdown-item text-default" onclick="removeNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                        <i class="fas fa-user-check me-2"></i>Remove No Show
+                                                    </button>
+                                                </li>
+                                                {% else %}
+                                                <li>
+                                                    <button class="dropdown-item text-default" onclick="markNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                        <i class="fas fa-user-times me-2"></i>Mark as No Show
+                                                    </button>
+                                                </li>
+                                                {% endif %}
+                                                {% if not event_has_passed %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if not event_has_passed %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'maybe', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-question-circle me-2 text-info"></i>Move to Maybe
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-hourglass-half me-2 text-default"></i>Move to Waitlist
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-times me-2 text-danger"></i>Move to Not Attending
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'banned', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-ban me-2"></i>Ban from Event
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-trash me-2"></i>Remove RSVP
+                                                </button>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-user-plus fa-2x mb-2"></i>
+                            <p class="mb-0">No attendees yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Maybe -->
+            <div class="card mb-4">
+                <div class="card-header card-header-rsvp-maybe">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Maybe ({{ maybe_count }})
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if rsvps_maybe %}
+                        <div class="list-group list-group-flush">
+                            {% for rsvp in rsvps_maybe %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1" style="min-width: 0;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-truncate" style="max-width: 200px;">{{ rsvp.user.name }}</span>
+                                            {% if rsvp.user.id == organizer_id %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif rsvp.user.id == co_host_id %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                            {% if event_has_passed and rsvp.user.id in no_shows %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-user-times me-1"></i>No Show
+                                                </span>
+                                            {% endif %}
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-danger text-light">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            RSVP'd {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                Manage
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if event_has_started %}
+                                                {% if rsvp.user.id in no_shows %}
+                                                <li>
+                                                    <button class="dropdown-item text-default" onclick="removeNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                        <i class="fas fa-user-check me-2"></i>Remove No Show
+                                                    </button>
+                                                </li>
+                                                {% else %}
+                                                <li>
+                                                    <button class="dropdown-item text-default" onclick="markNoShow({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                        <i class="fas fa-user-times me-2"></i>Mark as No Show
+                                                    </button>
+                                                </li>
+                                                {% endif %}
+                                                {% if not event_has_passed %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if not event_has_passed %}
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-check me-2 text-success"></i>Move to Attending
+                                                </button>
+                                            </li>
+                                            {% endif %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-hourglass-half me-2 text-default"></i>Move to Waitlist
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-times me-2 text-danger"></i>Move to Not Attending
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'banned', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-ban me-2"></i>Ban from Event
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-trash me-2"></i>Remove RSVP
+                                                </button>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-question-circle fa-2x mb-2"></i>
+                            <p class="mb-0">No maybes yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Waitlist -->
+            <div class="card mb-4">
+                <div class="card-header card-header-rsvp-waitlisted">
+                    <h6 class="mb-0">
+                        <i class="fas fa-hourglass-half me-2"></i>
+                        Waitlist ({{ waitlist_count }})
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if rsvps_waitlist %}
+                        <div class="list-group list-group-flush">
+                            {% for rsvp in rsvps_waitlist %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1" style="min-width: 0;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-truncate" style="max-width: 200px;">{{ rsvp.user.name }}</span>
+                                            {% if rsvp.user.id == organizer_id %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif rsvp.user.id == co_host_id %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            Waitlisted {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
+                                    {% if not event_has_passed %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                            Manage
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-check me-2 text-success"></i>Move to Attending
+                                                </button>
+                                            </li>
+                                            {% endif %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'maybe', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-question-circle me-2 text-info"></i>Move to Maybe
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-times me-2 text-danger"></i>Move to Not Attending
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'banned', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-ban me-2"></i>Ban from Event
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-trash me-2"></i>Remove RSVP
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                    {% else %}
+                                    <div class="text-muted small">
+                                        <i class="fas fa-lock me-1"></i>Protected
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+                            <p class="mb-0">No one on waitlist</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Not Attending -->
+            <div class="card mb-4">
+                <div class="card-header card-header-rsvp-no">
+                    <h6 class="mb-0">
+                        <i class="fas fa-times me-2"></i>
+                        Not Attending ({{ not_attending_count }})
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if rsvps_not_attending %}
+                        <div class="list-group list-group-flush">
+                            {% for rsvp in rsvps_not_attending %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            {% if rsvp.user.id == organizer_id %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-crown me-1"></i>Host
+                                                </span>
+                                            {% elif rsvp.user.id == co_host_id %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-friends me-1"></i>Co-Host
+                                                </span>
+                                            {% endif %}
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            RSVP'd {{ rsvp.created_at.strftime('%m/%d/%Y at %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    {% if rsvp.user.id != organizer_id and rsvp.user.id != co_host_id %}
+                                    {% if not event_has_passed %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                            Manage
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-check me-2 text-success"></i>Move to Attending
+                                                </button>
+                                            </li>
+                                            {% endif %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'maybe', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-question-circle me-2 text-info"></i>Move to Maybe
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-hourglass-half me-2 text-warning"></i>Move to Waitlist
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'banned', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-ban me-2"></i>Ban from Event
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-trash me-2"></i>Remove RSVP
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                    {% else %}
+                                    <div class="text-muted small">
+                                        <i class="fas fa-lock me-1"></i>Protected
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-user-times fa-2x mb-2"></i>
+                            <p class="mb-0">No one marked as not attending</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Banned Users -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-ban me-2"></i>
+                        Banned from Event ({{ banned_count }})
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if rsvps_banned %}
+                        <div class="list-group list-group-flush">
+                            {% for rsvp in rsvps_banned %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold">{{ rsvp.user.name }}</span>
+                                            {% if not event_has_passed and rsvp.user.id in user_no_show_counts %}
+                                                <span class="badge bg-danger text-light">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ user_no_show_counts[rsvp.user.id] }} no show{{ 's' if user_no_show_counts[rsvp.user.id] != 1 else '' }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            Banned {{ rsvp.updated_at.strftime('%m/%d/%Y at %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    {% if not event_has_passed %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                            Manage
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if not event.max_attendees or rsvp_count < event.max_attendees %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-check me-2 text-success"></i>Move to Attending
+                                                </button>
+                                            </li>
+                                            {% endif %}
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'maybe', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-question-circle me-2 text-info"></i>Move to Maybe
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-hourglass-half me-2 text-warning"></i>Move to Waitlist
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-times me-2 text-danger"></i>Move to Not Attending
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                                    <i class="fas fa-trash me-2"></i>Remove RSVP
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-user-shield fa-2x mb-2"></i>
+                            <p class="mb-0">No users banned from this event</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pronoun Statistics Section -->
+    {% if rsvp_count > 0 and pronoun_stats.pronouns %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Attendee Pronoun Breakdown
+                    </h5>
+                    <small class="text-muted">Current attendees with pronouns provided</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="chart-container" style="position: relative; height: 350px;">
+                                <canvas id="pronounChart"></canvas>
+                            </div>
+                            <div class="mt-2 text-center">
+                                <small class="text-muted">
+                                    Total: {{ pronoun_stats.pronouns.values() | sum }} people with pronouns provided
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if not pronoun_stats.pronouns %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Pronoun data will appear here when attendees provide their pronouns.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmMoveModal" tabindex="-1" aria-labelledby="confirmMoveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmMoveModalLabel">Confirm RSVP Move</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMoveText"></p>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="skipMoveNotification">
+                    <label class="form-check-label" for="skipMoveNotification">
+                        Do not send the member a notification
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmMoveBtn">Move</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove RSVP Modal -->
+<div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmRemoveModalLabel">Remove RSVP</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmRemoveText"></p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone.
+                </div>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="skipRemoveNotification">
+                    <label class="form-check-label" for="skipRemoveNotification">
+                        Do not send the member a notification
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables for modal confirmation
+let pendingMoveAction = null;
+let pendingRemoveAction = null;
+
+// Updated moveRSVP function with modal confirmation
+function moveRSVP(eventId, userId, newStatus, userName) {
+    // Set up the confirmation modal
+    const statusText = newStatus === 'yes' ? 'Attending' : 
+                      newStatus === 'waitlist' ? 'Waitlist' :
+                      newStatus === 'no' ? 'Not Attending' :
+                      newStatus === 'banned' ? 'Banned from Event' : newStatus;
+    
+    document.getElementById('confirmMoveText').textContent = `Move ${userName} to ${statusText}?`;
+    
+    // Reset the notification checkbox to unchecked
+    document.getElementById('skipMoveNotification').checked = false;
+    
+    // Store the action to execute if confirmed
+    pendingMoveAction = () => {
+        executeMoveRSVP(eventId, userId, newStatus, userName);
+    };
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmMoveModal'));
+    modal.show();
+}
+
+function executeMoveRSVP(eventId, userId, newStatus, userName) {
+    const skipNotification = document.getElementById('skipMoveNotification').checked;
+    
+    // Build the attendance data based on the new status
+    const attendanceData = {
+        no_auto_promote: true  // Don't auto-assign hosts or promote waitlist
+    };
+    
+    // Add user to the appropriate status list
+    if (newStatus === 'yes') {
+        attendanceData.attendance_yes = [[userId, !skipNotification]];
+    } else if (newStatus === 'no') {
+        attendanceData.attendance_no = [[userId, !skipNotification]];
+    } else if (newStatus === 'maybe') {
+        attendanceData.attendance_maybe = [[userId, !skipNotification]];
+    } else if (newStatus === 'waitlist') {
+        // Explicitly move to waitlist using the attendance_waitlist parameter
+        attendanceData.attendance_waitlist = [[userId, !skipNotification]];
+    } else if (newStatus === 'banned') {
+        // Ban user from the event
+        attendanceData.attendance_banned = [[userId, !skipNotification]];
+    }
+    
+    fetch(`/events/${eventId}/manage_attendance`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(attendanceData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message briefly before reload
+            showToast('Success', data.message || `${userName} moved successfully`, 'success');
+            
+            // Update capacity display dynamically if needed
+            updateCapacityDisplay();
+            
+            // Reload the page to show updated attendance
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast('Error', data.error || 'Failed to update RSVP', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error', 'An error occurred while updating the RSVP.', 'error');
+    });
+}
+
+// Function to update capacity display and overflow warning
+function updateCapacityDisplay() {
+    const attendingCard = document.querySelector('.card-header-rsvp-yes');
+    let attendingCount = 0;
+    
+    if (attendingCard) {
+        const headerText = attendingCard.querySelector('h6').textContent;
+        const match = headerText.match(/\((\d+)\)/);
+        attendingCount = match ? parseInt(match[1]) : 0;
+    }
+    
+    const maxAttendees = {{ event.max_attendees or 0 }};
+    
+    if (maxAttendees > 0) {
+        const capacityText = document.getElementById('capacity-text');
+        const existingWarning = document.getElementById('overflow-warning');
+        
+        if (capacityText) {
+            // Update capacity text
+            capacityText.textContent = `Capacity: ${attendingCount}/${maxAttendees} attendees`;
+            
+            // Handle overflow warning
+            if (attendingCount > maxAttendees) {
+                const overflowAmount = attendingCount - maxAttendees;
+                
+                if (existingWarning) {
+                    // Update existing warning
+                    existingWarning.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>Over capacity by ${overflowAmount}`;
+                } else {
+                    // Create new warning
+                    const warningBadge = document.createElement('span');
+                    warningBadge.id = 'overflow-warning';
+                    warningBadge.className = 'badge bg-danger ms-2';
+                    warningBadge.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>Over capacity by ${overflowAmount}`;
+                    capacityText.parentNode.appendChild(warningBadge);
+                }
+            } else if (existingWarning) {
+                // Remove warning if within capacity
+                existingWarning.remove();
+            }
+        }
+    }
+}
+
+// Initialize capacity display on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCapacityDisplay();
+});
+
+function removeRSVP(eventId, userId, userName) {
+    // Set up the confirmation modal
+    document.getElementById('confirmRemoveText').textContent = `Remove ${userName}'s RSVP entirely?`;
+    
+    // Reset the notification checkbox to unchecked
+    document.getElementById('skipRemoveNotification').checked = false;
+    
+    // Store the action to execute if confirmed
+    pendingRemoveAction = () => {
+        executeRemoveRSVP(eventId, userId, userName);
+    };
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmRemoveModal'));
+    modal.show();
+}
+
+function executeRemoveRSVP(eventId, userId, userName) {
+    const skipNotification = document.getElementById('skipRemoveNotification').checked;
+    
+    const attendanceData = {
+        remove_attendance: [[userId, !skipNotification]],
+        no_auto_promote: true  // Don't auto-assign hosts or promote waitlist
+    };
+    
+    fetch(`/events/${eventId}/manage_attendance`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(attendanceData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message briefly before reload
+            showToast('Success', data.message || `${userName}'s RSVP removed successfully`, 'success');
+            // Reload the page to show updated attendance
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast('Error', data.error || 'Failed to remove RSVP', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error', 'An error occurred while removing the RSVP.', 'error');
+    });
+}
+
+// Mark user as no-show
+function markNoShow(eventId, userId, userName) {
+    // Call performNoShow directly - no modal needed since action is easily reversible
+    performNoShow(eventId, userId, userName);
+}
+
+function performNoShow(eventId, userId, userName) {
+    // Default to sending notifications since action is now immediate and reversible
+    const skipNotification = false;
+    
+    fetch(`/api/admin/events/${eventId}/mark-no-show`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `user_id=${userId}&skip_notification=${skipNotification}`
+    })
+    .then(response => {
+        // Check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Response is not JSON');
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message briefly before reload
+            showToast('Success', data.message || `${userName} marked as no-show`, 'success');
+            // Reload the page to show updated attendance
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error', `An error occurred while marking the no-show: ${error.message}`, 'error');
+    });
+}
+
+function removeNoShow(eventId, userId, userName) {
+    fetch(`/api/admin/events/${eventId}/remove-no-show`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `user_id=${userId}`
+    })
+    .then(response => {
+        // Check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Response is not JSON');
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message briefly before reload
+            showToast('Success', data.message || `No-show removed for ${userName}`, 'success');
+            // Reload the page to show updated attendance
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error', `An error occurred while removing the no-show: ${error.message}`, 'error');
+    });
+}
+
+// Toast notification function
+function showToast(title, message, type) {
+    const toastClass = type === 'success' ? 'text-bg-success' : 'text-bg-danger';
+    const toastHtml = `
+        <div class="toast ${toastClass}" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">${title}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '1055';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Add the toast
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remove from DOM after hiding
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+// Event listeners for modal confirmation buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('confirmMoveBtn').addEventListener('click', function() {
+        if (pendingMoveAction) {
+            pendingMoveAction();
+            pendingMoveAction = null;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('confirmMoveModal')).hide();
+    });
+    
+    document.getElementById('confirmRemoveBtn').addEventListener('click', function() {
+        if (pendingRemoveAction) {
+            pendingRemoveAction();
+            pendingRemoveAction = null;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('confirmRemoveModal')).hide();
+    });
+    
+    // Initialize pronoun charts
+    {% if rsvp_count > 0 and pronoun_stats.pronouns %}
+    // Color palette for charts
+    const colors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+        '#9966FF', '#FF9F40', '#FF6B6B', '#4ECDC4',
+        '#45B7D1', '#96CEB4'
+    ];
+    
+    // Combined pronouns chart
+    const pronounCtx = document.getElementById('pronounChart').getContext('2d');
+    const pronounData = {
+        labels: {{ pronoun_stats.pronouns.keys() | list | tojson }},
+        datasets: [{
+            data: {{ pronoun_stats.pronouns.values() | list | tojson }},
+            backgroundColor: colors.slice(0, {{ pronoun_stats.pronouns | length }}),
+            borderColor: '#fff',
+            borderWidth: 2
+        }]
+    };
+    
+    new Chart(pronounCtx, {
+        type: 'pie',
+        data: pronounData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((context.parsed / total) * 100);
+                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+
+<!-- Chart.js for pronoun pie charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- CSS for charts -->
+{% endblock %}

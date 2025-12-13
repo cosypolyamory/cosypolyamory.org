@@ -1,0 +1,26 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Reminder: {{ event_title }} is coming up!{% endblock %}
+
+{% block content %}
+<h2>Event Reminder</h2>
+<p>Hello {{ name }},</p>
+<p>Please remember that you're signed up for:</p>
+
+<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #856404;">📅 {{ event_title }}</h3>
+    <p><strong>When:</strong> {{ event_date }} at {{ event_time }}</p>
+    <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #856404;">Google Maps</a>){% endif %}</p>
+    {% if location_tips %}
+    <p><strong>💡 Location notes:</strong> {{ location_tips }}</p>
+    {% endif %}
+</div>
+
+{% if event_description %}
+<div style="margin: 20px 0;">
+    <div>{{ event_description | replace('\n', '<br>') | safe }}</div>
+</div>
+{% endif %}
+
+<p>We're looking forward to seeing you there!</p>
+{% endblock %}

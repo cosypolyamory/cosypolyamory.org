@@ -1,0 +1,5 @@
+📢 **Cosy Telegram Bot Notification**
+
+{{ message }}
+
+--Team Cosy

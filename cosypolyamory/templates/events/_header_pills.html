@@ -1,0 +1,12 @@
+{# Renders the pills for the event header (title area) #}
+{% if event.exact_time < now %}
+    <span class="badge bg-secondary fs-6">Past Event</span>
+{% else %}
+    {% if event.max_attendees and rsvp_count >= event.max_attendees %}
+        <span class="badge bg-warning text-dark align-middle">Full</span>
+    {% endif %}
+    {% if rsvps_waitlist|length > 0 %}
+        <span class="badge badge-rsvp-waitlisted align-middle ms-2">Waitlist</span>
+    {% endif %}
+    <span class="badge bg-primary fs-6 ms-2">Upcoming</span>
+{% endif %}

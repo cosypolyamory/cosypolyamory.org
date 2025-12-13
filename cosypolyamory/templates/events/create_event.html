@@ -1,0 +1,1569 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{% if is_edit %}Edit Event{% else %}Create Event{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if is_edit %}
+    <!-- Header Navigation for Edit Event -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                            <!-- Primary Navigation -->
+                            <div>
+                                <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-secondary btn-sm">
+                                    Back to Event
+                                </a>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) and event.exact_time > now %}
+                                    <a href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}" class="btn btn-secondary btn-sm">
+                                        Manage Attendance
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <h1>{% if is_edit %}Edit Event{% else %}Create New Event{% endif %}</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message|safe }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <div class="card mt-4">
+        <div class="card-body">
+                <form method="POST" action="{% if is_edit %}{{ url_for('events.edit_event_post', event_id=event.id) }}{% else %}{{ url_for('events.create_event') }}{% endif %}"{% if event %} data-current-organizer="{{ event.organizer.id }}"{% if event.co_host %} data-current-cohost="{{ event.co_host.id }}"{% endif %}{% endif %}>
+                    <!-- Basic Info -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">Basic Information</h5>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="title" class="form-label">Event Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" required maxlength="255"
+                                   placeholder="e.g., Community Game Night" value="{% if clone_data %}{{ clone_data.title }}{% elif event %}{{ event.title }}{% endif %}">
+                            <div class="form-text">
+                                <span id="title-counter">0</span>/255 characters
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="16" required maxlength="5000"
+                                      placeholder="Describe your event...">{% if clone_data %}{{ clone_data.description }}{% elif event %}{{ event.description }}{% endif %}</textarea>
+                            <div class="form-text">
+                                <span id="description-counter">0</span>/5000 characters
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Date & Time -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <h5 class="text-primary">Date & Time</h5>
+                        </div>
+                    </div>
+                    
+                    <!-- Single Day Event: Date, Start Time, End Time on one row -->
+                    <div class="row mb-1" id="single_day_row">
+                        <div class="col-md-4 mb-3">
+                            <label for="date" class="form-label">Date *</label>
+                            <input type="date" class="form-control" id="date" name="date" required
+                                value="{% if clone_data %}{{ clone_data.date }}{% elif event %}{{ event.date.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Start Time *</label>
+                            <div class="input-group mb-2">
+                                <button class="btn btn-secondary dropdown-toggle" type="button" id="hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-clock me-1"></i><span id="selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="hourDropdown" id="hourDropdownMenu">
+                                    {% set selected_hour = event.exact_time.hour if event else default_hour|int %}
+                                    {% for hour in range(0, 24) %}
+                                    <li><a class="dropdown-item hour-option{% if hour == selected_hour %} active selected-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                <button class="btn btn-secondary dropdown-toggle" type="button" id="minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="minuteDropdown" id="minuteDropdownMenu">
+                                    {% set selected_minute = event.exact_time.minute if event else default_minute|int %}
+                                    {% for minute in [0, 15, 30, 45] %}
+                                    <li><a class="dropdown-item minute-option{% if minute == selected_minute %} active selected-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <input type="hidden" id="modern_time_hour" name="time_hour" value="{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}">
+                            <input type="hidden" id="modern_time_minute" name="time_minute" value="{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">End Time *</label>
+                            <div class="input-group mb-2">
+                                <button class="btn btn-secondary dropdown-toggle" type="button" id="endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-clock me-1"></i><span id="selectedEndHour">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="endHourDropdown" id="endHourDropdownMenu">
+                                    {% set selected_end_hour = event.end_time.hour if (event and event.end_time) else (default_hour|int + 2) % 24 %}
+                                    {% for hour in range(0, 24) %}
+                                    <li><a class="dropdown-item end-hour-option{% if hour == selected_end_hour %} active selected-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                <button class="btn btn-secondary dropdown-toggle" type="button" id="endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="selectedEndMinute">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="endMinuteDropdown" id="endMinuteDropdownMenu">
+                                    {% set selected_end_minute = event.end_time.minute if (event and event.end_time) else default_minute|int %}
+                                    {% for minute in [0, 15, 30, 45] %}
+                                    <li><a class="dropdown-item end-minute-option{% if minute == selected_end_minute %} active selected-end-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <input type="hidden" id="end_time_hour" name="end_time_hour" value="{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}">
+                            <input type="hidden" id="end_time_minute" name="end_time_minute" value="{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}">
+                        </div>
+                    </div>
+                    
+                    <!-- Multi-day Event: Start Date/Time row, then End Date/Time row -->
+                    <div id="multiday_rows" style="display: none;">
+                        <!-- Start Date and Time -->
+                        <div class="row mb-2">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label">Start Date *</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date"
+                                    value="{% if event %}{{ event.date.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Start Time *</label>
+                                <div class="input-group mb-2">
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="multiday_hourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-clock me-1"></i><span id="multiday_selectedHour">{% if event %}{{ '%02d'|format(event.exact_time.hour) }}{% else %}{{ default_hour }}{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="multiday_hourDropdown" id="multiday_hourDropdownMenu">
+                                        {% set selected_hour = event.exact_time.hour if event else default_hour|int %}
+                                        {% for hour in range(0, 24) %}
+                                        <li><a class="dropdown-item multiday-hour-option{% if hour == selected_hour %} active selected-multiday-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="multiday_minuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span id="multiday_selectedMinute">{% if event %}{{ '%02d'|format(event.exact_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="multiday_minuteDropdown" id="multiday_minuteDropdownMenu">
+                                        {% set selected_minute = event.exact_time.minute if event else default_minute|int %}
+                                        {% for minute in [0, 15, 30, 45] %}
+                                        <li><a class="dropdown-item multiday-minute-option{% if minute == selected_minute %} active selected-multiday-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- End Date and Time -->
+                        <div class="row mb-2">
+                            <div class="col-md-6 mb-3">
+                                <label for="end_date" class="form-label">End Date *</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date"
+                                    value="{% if event and event.end_time %}{{ event.end_time.strftime('%Y-%m-%d') }}{% else %}{{ default_date }}{% endif %}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">End Time *</label>
+                                <div class="input-group mb-2">
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="multiday_endHourDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-clock me-1"></i><span id="multiday_selectedEndHour">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.hour) }}{% else %}{{ '%02d'|format((default_hour|int + 2) % 24) }}{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="multiday_endHourDropdown" id="multiday_endHourDropdownMenu">
+                                        {% set selected_end_hour = event.end_time.hour if (event and event.end_time) else (default_hour|int + 2) % 24 %}
+                                        {% for hour in range(0, 24) %}
+                                        <li><a class="dropdown-item multiday-end-hour-option{% if hour == selected_end_hour %} active selected-multiday-end-hour{% endif %}" href="#" data-value="{{ '%02d'|format(hour) }}">{{ '%02d'|format(hour) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="multiday_endMinuteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span id="multiday_selectedEndMinute">{% if event and event.end_time %}{{ '%02d'|format(event.end_time.minute) }}{% else %}{{ default_minute }}{% endif %}</span>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="multiday_endMinuteDropdown" id="multiday_endMinuteDropdownMenu">
+                                        {% set selected_end_minute = event.end_time.minute if (event and event.end_time) else default_minute|int %}
+                                        {% for minute in [0, 15, 30, 45] %}
+                                        <li><a class="dropdown-item multiday-end-minute-option{% if minute == selected_end_minute %} active selected-multiday-end-minute{% endif %}" href="#" data-value="{{ '%02d'|format(minute) }}">{{ '%02d'|format(minute) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Multi-day Event Checkbox -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_multiday" name="is_multiday"
+                                    {% if event and event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date() %}checked{% endif %}>
+                                <label class="form-check-label" for="is_multiday">
+                                    This is a multi-day event
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <!-- Consolidated JavaScript for all time dropdowns -->
+                            <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // Start Time - Hour dropdown
+                                const selectedHour = document.getElementById('selectedHour').textContent;
+                                const hourOptions = document.querySelectorAll('#hourDropdownMenu .hour-option');
+                                hourOptions.forEach(function(item) {
+                                    if (item.dataset.value === selectedHour) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('selectedHour').textContent = this.dataset.value;
+                                        document.getElementById('modern_time_hour').value = this.dataset.value;
+                                        hourOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                    });
+                                });
+                                
+                                // Start Time - Minute dropdown
+                                const selectedMinute = document.getElementById('selectedMinute').textContent;
+                                const minuteOptions = document.querySelectorAll('#minuteDropdownMenu .minute-option');
+                                minuteOptions.forEach(function(item) {
+                                    if (item.dataset.value === selectedMinute) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('selectedMinute').textContent = this.dataset.value;
+                                        document.getElementById('modern_time_minute').value = this.dataset.value;
+                                        minuteOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                    });
+                                });
+                                
+                                // End Time - Hour dropdown
+                                const selectedEndHour = document.getElementById('selectedEndHour').textContent;
+                                const endHourOptions = document.querySelectorAll('#endHourDropdownMenu .end-hour-option');
+                                endHourOptions.forEach(function(item) {
+                                    if (item.dataset.value === selectedEndHour) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('selectedEndHour').textContent = this.dataset.value;
+                                        document.getElementById('end_time_hour').value = this.dataset.value;
+                                        endHourOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                    });
+                                });
+                                
+                                // End Time - Minute dropdown
+                                const selectedEndMinute = document.getElementById('selectedEndMinute').textContent;
+                                const endMinuteOptions = document.querySelectorAll('#endMinuteDropdownMenu .end-minute-option');
+                                endMinuteOptions.forEach(function(item) {
+                                    if (item.dataset.value === selectedEndMinute) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('selectedEndMinute').textContent = this.dataset.value;
+                                        document.getElementById('end_time_minute').value = this.dataset.value;
+                                        endMinuteOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes(); // Validate after end time change
+                                    });
+                                });
+                                
+                                // Add validation listeners to all time dropdowns
+                                hourOptions.forEach(function(item) {
+                                    item.addEventListener('click', function() {
+                                        setTimeout(validateEventTimes, 100); // Small delay to ensure DOM updates
+                                    });
+                                });
+                                minuteOptions.forEach(function(item) {
+                                    item.addEventListener('click', function() {
+                                        setTimeout(validateEventTimes, 100);
+                                    });
+                                });
+                                endHourOptions.forEach(function(item) {
+                                    item.addEventListener('click', function() {
+                                        setTimeout(validateEventTimes, 100);
+                                    });
+                                });
+                                
+                                // Initial validation on page load
+                                setTimeout(validateEventTimes, 500);
+                                
+                                // Scroll to selected hour when hour dropdowns are opened
+                                const hourDropdown = document.getElementById('hourDropdown');
+                                if (hourDropdown) {
+                                    hourDropdown.addEventListener('shown.bs.dropdown', function () {
+                                        const activeHour = document.querySelector('#hourDropdownMenu .hour-option.active');
+                                        if (activeHour) {
+                                            activeHour.scrollIntoView({block: 'nearest', behavior: 'instant'});
+                                        }
+                                    });
+                                }
+                                
+                                const endHourDropdown = document.getElementById('endHourDropdown');
+                                if (endHourDropdown) {
+                                    endHourDropdown.addEventListener('shown.bs.dropdown', function () {
+                                        const activeEndHour = document.querySelector('#endHourDropdownMenu .end-hour-option.active');
+                                        if (activeEndHour) {
+                                            activeEndHour.scrollIntoView({block: 'nearest', behavior: 'instant'});
+                                        }
+                                    });
+                                }
+                                
+                                // Multi-day Start Time - Hour dropdown
+                                const multidaySelectedHour = document.getElementById('multiday_selectedHour').textContent;
+                                const multidayHourOptions = document.querySelectorAll('#multiday_hourDropdownMenu .multiday-hour-option');
+                                multidayHourOptions.forEach(function(item) {
+                                    if (item.dataset.value === multidaySelectedHour) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('multiday_selectedHour').textContent = this.dataset.value;
+                                        document.getElementById('modern_time_hour').value = this.dataset.value;
+                                        multidayHourOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes();
+                                    });
+                                });
+                                
+                                // Multi-day Start Time - Minute dropdown
+                                const multidaySelectedMinute = document.getElementById('multiday_selectedMinute').textContent;
+                                const multidayMinuteOptions = document.querySelectorAll('#multiday_minuteDropdownMenu .multiday-minute-option');
+                                multidayMinuteOptions.forEach(function(item) {
+                                    if (item.dataset.value === multidaySelectedMinute) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('multiday_selectedMinute').textContent = this.dataset.value;
+                                        document.getElementById('modern_time_minute').value = this.dataset.value;
+                                        multidayMinuteOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes();
+                                    });
+                                });
+                                
+                                // Multi-day End Time - Hour dropdown
+                                const multidaySelectedEndHour = document.getElementById('multiday_selectedEndHour').textContent;
+                                const multidayEndHourOptions = document.querySelectorAll('#multiday_endHourDropdownMenu .multiday-end-hour-option');
+                                multidayEndHourOptions.forEach(function(item) {
+                                    if (item.dataset.value === multidaySelectedEndHour) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('multiday_selectedEndHour').textContent = this.dataset.value;
+                                        document.getElementById('end_time_hour').value = this.dataset.value;
+                                        multidayEndHourOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes();
+                                    });
+                                });
+                                
+                                // Multi-day End Time - Minute dropdown
+                                const multidaySelectedEndMinute = document.getElementById('multiday_selectedEndMinute').textContent;
+                                const multidayEndMinuteOptions = document.querySelectorAll('#multiday_endMinuteDropdownMenu .multiday-end-minute-option');
+                                multidayEndMinuteOptions.forEach(function(item) {
+                                    if (item.dataset.value === multidaySelectedEndMinute) {
+                                        item.classList.add('active');
+                                        setTimeout(() => { item.scrollIntoView({block: 'nearest'}); }, 0);
+                                    } else {
+                                        item.classList.remove('active');
+                                    }
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        document.getElementById('multiday_selectedEndMinute').textContent = this.dataset.value;
+                                        document.getElementById('end_time_minute').value = this.dataset.value;
+                                        multidayEndMinuteOptions.forEach(opt => opt.classList.remove('active'));
+                                        this.classList.add('active');
+                                        validateEventTimes();
+                                    });
+                                });
+                                
+                                // Scroll to selected hour when multiday hour dropdowns are opened
+                                const multidayHourDropdown = document.getElementById('multiday_hourDropdown');
+                                if (multidayHourDropdown) {
+                                    multidayHourDropdown.addEventListener('shown.bs.dropdown', function () {
+                                        const activeHour = document.querySelector('#multiday_hourDropdownMenu .multiday-hour-option.active');
+                                        if (activeHour) {
+                                            activeHour.scrollIntoView({block: 'nearest', behavior: 'instant'});
+                                        }
+                                    });
+                                }
+                                
+                                const multidayEndHourDropdown = document.getElementById('multiday_endHourDropdown');
+                                if (multidayEndHourDropdown) {
+                                    multidayEndHourDropdown.addEventListener('shown.bs.dropdown', function () {
+                                        const activeEndHour = document.querySelector('#multiday_endHourDropdownMenu .multiday-end-hour-option.active');
+                                        if (activeEndHour) {
+                                            activeEndHour.scrollIntoView({block: 'nearest', behavior: 'instant'});
+                                        }
+                                    });
+                                }
+                                
+                                // Handle multi-day event checkbox
+                                const multidayCheckbox = document.getElementById('is_multiday');
+                                const multidayRows = document.getElementById('multiday_rows');
+                                const singleDayRow = document.getElementById('single_day_row');
+                                const startDateInput = document.getElementById('start_date');
+                                const endDateInput = document.getElementById('end_date');
+                                const dateInput = document.getElementById('date');
+                                
+                                function toggleMultidayFields() {
+                                    const timePeriodRow = document.getElementById('time_period_row');
+                                    const timePeriodSelect = document.getElementById('time_period');
+                                    
+                                    if (multidayCheckbox.checked) {
+                                        // Show multiday rows, hide single day row
+                                        multidayRows.style.display = '';
+                                        singleDayRow.style.display = 'none';
+                                        startDateInput.required = true;
+                                        endDateInput.required = true;
+                                        dateInput.required = false;
+                                        // Hide time period for multi-day events
+                                        if (timePeriodRow) {
+                                            timePeriodRow.style.display = 'none';
+                                            timePeriodSelect.required = false;
+                                        }
+                                        // Copy date value to start_date if start_date is empty
+                                        if (!startDateInput.value && dateInput.value) {
+                                            startDateInput.value = dateInput.value;
+                                        }
+                                        // Set end_date to start_date if end_date is empty
+                                        if (!endDateInput.value && startDateInput.value) {
+                                            endDateInput.value = startDateInput.value;
+                                        }
+                                        // Sync time values from single-day to multi-day dropdowns
+                                        syncTimeToMultiday();
+                                    } else {
+                                        // Show single day row, hide multiday rows
+                                        multidayRows.style.display = 'none';
+                                        singleDayRow.style.display = '';
+                                        startDateInput.required = false;
+                                        endDateInput.required = false;
+                                        dateInput.required = true;
+                                        // Show time period for single-day events
+                                        if (timePeriodRow) {
+                                            timePeriodRow.style.display = '';
+                                            timePeriodSelect.required = true;
+                                        }
+                                        // Sync time values from multi-day to single-day dropdowns
+                                        syncTimeToSingleday();
+                                    }
+                                    validateEventTimes();
+                                }
+                                
+                                function syncTimeToMultiday() {
+                                    // Copy single-day time values to multi-day fields
+                                    document.getElementById('multiday_selectedHour').textContent = document.getElementById('selectedHour').textContent;
+                                    document.getElementById('multiday_selectedMinute').textContent = document.getElementById('selectedMinute').textContent;
+                                    document.getElementById('multiday_selectedEndHour').textContent = document.getElementById('selectedEndHour').textContent;
+                                    document.getElementById('multiday_selectedEndMinute').textContent = document.getElementById('selectedEndMinute').textContent;
+                                }
+                                
+                                function syncTimeToSingleday() {
+                                    // Copy multi-day time values to single-day fields
+                                    document.getElementById('selectedHour').textContent = document.getElementById('multiday_selectedHour').textContent;
+                                    document.getElementById('selectedMinute').textContent = document.getElementById('multiday_selectedMinute').textContent;
+                                    document.getElementById('selectedEndHour').textContent = document.getElementById('multiday_selectedEndHour').textContent;
+                                    document.getElementById('selectedEndMinute').textContent = document.getElementById('multiday_selectedEndMinute').textContent;
+                                    
+                                    // Update hidden fields
+                                    document.getElementById('modern_time_hour').value = document.getElementById('multiday_selectedHour').textContent;
+                                    document.getElementById('modern_time_minute').value = document.getElementById('multiday_selectedMinute').textContent;
+                                    document.getElementById('end_time_hour').value = document.getElementById('multiday_selectedEndHour').textContent;
+                                    document.getElementById('end_time_minute').value = document.getElementById('multiday_selectedEndMinute').textContent;
+                                }
+                                
+                                multidayCheckbox.addEventListener('change', toggleMultidayFields);
+                                
+                                // Add validation listeners for multiday date fields
+                                startDateInput.addEventListener('change', validateEventTimes);
+                                endDateInput.addEventListener('change', validateEventTimes);
+                                
+                                // Initialize multiday fields state
+                                toggleMultidayFields();
+                            });
+                            </script>
+                        </div>
+                        
+                    </div> <!-- close previous row -->
+                    <div class="row mb-4" id="time_period_row">
+                        
+                        <div class="col-12 mb-3">
+                            <label for="time_period" class="form-label">Time Period (Public) *</label>
+                            <select class="form-select" id="time_period" name="time_period" required>
+                                <option value="">Select time period...</option>
+                                <option value="morning"{% if (clone_data and clone_data.time_period == 'morning') or (event and event.time_period == 'morning') %} selected{% endif %}>Morning</option>
+                                <option value="mid day"{% if (clone_data and clone_data.time_period == 'mid day') or (event and event.time_period == 'mid day') %} selected{% endif %}>Mid Day</option>
+                                <option value="afternoon"{% if (clone_data and clone_data.time_period == 'afternoon') or (event and event.time_period == 'afternoon') %} selected{% endif %}>Afternoon</option>
+                                <option value="evening"{% if (clone_data and clone_data.time_period == 'evening') or (event and event.time_period == 'evening') %} selected{% endif %}>Evening</option>
+                                <option value="night"{% if (clone_data and clone_data.time_period == 'night') or (event and event.time_period == 'night') %} selected{% endif %}>Night</option>
+                                <option value="other"{% if (clone_data and clone_data.time_period == 'other') or (event and event.time_period == 'other') %} selected{% endif %}>Other (see description)</option>
+                            </select>
+                            <div class="form-text">This is what non-approved members will see instead of the exact time</div>
+                        </div>
+                    </div>                    <!-- Location -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">Location</h5>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="establishment_name" class="form-label">Establishment Name *</small></label>
+                            <input type="text" class="form-control" id="establishment_name" name="establishment_name" required maxlength="64"
+                                   placeholder="e.g., Port Bay, Barna Brew, Venus"
+                                   value="{% if clone_data %}{{ clone_data.establishment_name }}{% elif event %}{{ event.establishment_name }}{% endif %}">
+                            <div class="form-text">Name of the venue, restaurant, or meeting place. <span id="establishment-counter">0</span>/64 characters</div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="google_maps_link" class="form-label">Google Maps Link</label>
+                            <input type="url" class="form-control" id="google_maps_link" name="google_maps_link" maxlength="2000"
+                                   placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/@..."
+                                   value="{% if clone_data %}{{ clone_data.google_maps_link }}{% elif event %}{{ event.google_maps_link }}{% endif %}">
+                            <div id="maps-url-feedback" class="form-text" style="display: none;"></div>
+                            <div class="form-text">Optional. Approved members will see an embedded map preview if provided. <span id="maps-counter">0</span>/2000 characters</div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="barrio" class="form-label">Barrio (Public) *</label>
+                            <input type="text" class="form-control" id="barrio" name="barrio" required maxlength="64"
+                                   placeholder="e.g., The Born, Gòtic, Poble Sec"
+                                   value="{% if clone_data %}{{ clone_data.barrio }}{% elif event %}{{ event.barrio }}{% endif %}">
+                            <div class="form-text">This is what non-approved members will see instead of the exact location. <span id="barrio-counter">0</span>/64 characters</div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="location_notes" class="form-label">Location Notes</label>
+                            <textarea class="form-control" id="location_notes" name="location_notes" rows="2" maxlength="1000"
+                                      placeholder="e.g., Enter via side door, look for the group in the back room, second floor">{% if clone_data %}{{ clone_data.location_notes }}{% elif event %}{{ event.location_notes }}{% endif %}</textarea>
+                            <div class="form-text">Additional directions or meeting details. <span id="location-notes-counter">0</span>/1000 characters</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Event Settings -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">Event Settings</h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="organizer_id" class="form-label">Primary Organizer *</label>
+                            <select class="form-select" id="organizer_id" name="organizer_id" required>
+                                <option value="">Loading organizers...</option>
+                            </select>
+                            <div class="form-text">The primary organizer responsible for the event</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="co_host_id" class="form-label">Co-host (Optional)</label>
+                            <select class="form-select" id="co_host_id" name="co_host_id">
+                                <option value="">No co-host</option>
+                            </select>
+                            <div class="form-text">Optional second organizer to help with the event</div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="max_attendees" class="form-label">Maximum Attendees</label>
+                            <input type="number" class="form-control" id="max_attendees" name="max_attendees" 
+                                   min="1" placeholder="Unlimited"
+                                   value="{% if clone_data %}{{ clone_data.max_attendees }}{% elif event and event.max_attendees %}{{ event.max_attendees }}{% endif %}">
+                            <div class="form-text">Leave empty for unlimited capacity</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Event Notes</label>
+                            <select class="form-select mb-2" id="event_note_select" name="event_note_id">
+                                <option value="">Do not include an event note</option>
+                                {% for note in event_notes %}
+                                    <option value="{{ note.id }}" data-note='{{ note.note|tojson }}'{% if event and event.event_note_id == note.id %} selected{% endif %}>{{ note.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <a href="{{ url_for('admin.event_notes') }}" target="_blank" class="btn btn-secondary">
+                                    Edit event notes
+                                    <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75em;"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <div id="selected_event_note_box" class="border rounded bg-light p-2 mb-2" style="display:none; white-space:pre-line;"></div>
+                            <label for="tips_for_attendees" class="form-label">Additional notes for this event</label>
+                            <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3" maxlength="5000"
+                                      placeholder="Add any event-specific notes here">{% if clone_data %}{{ clone_data.tips_for_attendees }}{% elif event and event.tips_for_attendees %}{{ event.tips_for_attendees }}{% endif %}</textarea>
+                            <div class="form-text">You can add extra notes for this event. The selected standard note will be shown above. <span id="tips-counter">0</span>/5000 characters</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Publish Option -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="publish_immediately" name="publish_immediately"
+                                    {% if is_edit and event.published %}checked{% endif %}>
+                                <label class="form-check-label" for="publish_immediately">
+                                    <strong>{% if is_edit %}Publish{% else %}Publish this event{% endif %}</strong>
+                                </label>
+                                <div class="form-text">
+                                    {% if is_edit %}
+                                        Tick this box to make the event visible to users; if unticked the event will be unpublished.
+                                    {% else %}
+                                        Tick this box to publish event; if left unticked the event is not visible to users.
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% if event %}{{ url_for('events.event_detail', event_id=event.id) }}{% else %}{{ url_for('events.events_list') }}{% endif %}" class="btn btn-secondary btn-lg me-md-2">
+                            Cancel
+                        </a>
+                        {% if is_edit %}
+                        <button type="button" class="btn btn-secondary btn-lg me-md-2" onclick="confirmDeleteEvent()">
+                            Delete Event
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-lg me-md-2" onclick="confirmCloneEvent()">
+                            Clone Event
+                        </button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            {% if is_edit %}Update Event{% else %}Create Event{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Organizers data from server
+const organizersData = {{ organizers|tojson if organizers else "[]" }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        // Set value only if it's a new event
+        if (!dateInput.value) {
+            dateInput.min = today;
+            dateInput.value = today;
+        }
+    }
+    
+    // Set default time to next hour for new events
+    const timeInput = document.getElementById('time');
+    const timeHourSelect = document.getElementById('time_hour');
+    const timeMinuteSelect = document.getElementById('time_minute');
+    
+    // Function to update the hidden time input when dropdowns change
+    function updateTimeInput() {
+        const hour = timeHourSelect.value;
+        const minute = timeMinuteSelect.value;
+        if (hour && minute) {
+            timeInput.value = hour + ':' + minute;
+        }
+    }
+    
+    // Add event listeners to time dropdowns
+    if (timeHourSelect) {
+        timeHourSelect.addEventListener('change', updateTimeInput);
+    }
+    if (timeMinuteSelect) {
+        timeMinuteSelect.addEventListener('change', updateTimeInput);
+    }
+    
+    // Set default time for new events
+    if (timeInput && !timeInput.value) {
+        const now = new Date();
+        now.setHours(now.getHours() + 1, 0, 0, 0);
+        const defaultHour = String(now.getHours()).padStart(2, '0');
+        const defaultMinute = '00';
+        
+        if (timeHourSelect) timeHourSelect.value = defaultHour;
+        if (timeMinuteSelect) timeMinuteSelect.value = defaultMinute;
+        updateTimeInput();
+    }
+    
+    // Load organizers from server data
+    loadOrganizers();
+    
+    // Handle cloned event data (pre-populate from query parameters)
+    {% if clone_data %}
+    // Set time dropdowns if cloning
+    {% if clone_data.time_hour %}
+    if (timeHourSelect) timeHourSelect.value = '{{ clone_data.time_hour }}';
+    {% endif %}
+    {% if clone_data.time_minute %}
+    if (timeMinuteSelect) timeMinuteSelect.value = '{{ clone_data.time_minute }}';
+    {% endif %}
+    updateTimeInput();
+    
+    // Set organizer and co-host after organizers are loaded
+    setTimeout(function() {
+        {% if clone_data.organizer_id %}
+        const organizerSelect = document.getElementById('organizer_id');
+        if (organizerSelect) organizerSelect.value = '{{ clone_data.organizer_id }}';
+        {% endif %}
+        {% if clone_data.co_host_id %}
+        const coHostSelect = document.getElementById('co_host_id');
+        if (coHostSelect) coHostSelect.value = '{{ clone_data.co_host_id }}';
+        {% endif %}
+        {% if clone_data.event_note_id %}
+        const eventNoteSelect = document.getElementById('event_note_select');
+        if (eventNoteSelect) {
+            eventNoteSelect.value = '{{ clone_data.event_note_id }}';
+            // Trigger change event to show note preview
+            eventNoteSelect.dispatchEvent(new Event('change'));
+        }
+        {% endif %}
+    }, 100);
+    
+    // Show alert about cloning
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <i class="fas fa-clone me-2"></i>
+        <strong>Event cloned!</strong> Review the details below and click "Create Event" to save as a new event.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    const cardBody = document.querySelector('.card-body');
+    const form = document.querySelector('form');
+    cardBody.insertBefore(alertDiv, form);
+    {% endif %}
+
+    // Setup event notes preview
+    setupEventNotes();
+    
+    // Setup Google Maps validation
+    setupGoogleMapsValidation();
+});
+
+function setupEventNotes() {
+    const select = document.getElementById('event_note_select');
+    const noteBox = document.getElementById('selected_event_note_box');
+
+    function updateNotePreview() {
+        if (!select) return;
+        const selected = select.options[select.selectedIndex];
+        let note = selected.getAttribute('data-note');
+
+        if (note && select.value) {
+            try {
+                note = JSON.parse(note);
+            } catch (e) {
+                // fallback: use as-is
+            }
+            
+            const lines = note.split(/\r?\n/).slice(0, 5);
+            const preview = lines.join('\n');
+            const paragraphs = preview.split(/\n\s*\n/);
+            
+            noteBox.innerHTML = '';
+            paragraphs.forEach(paragraph => {
+                if (paragraph.trim()) {
+                    const p = document.createElement('p');
+                    p.textContent = paragraph;
+                    noteBox.appendChild(p);
+                }
+            });
+            noteBox.style.display = 'block';
+        } else {
+            noteBox.innerHTML = '';
+            noteBox.style.display = 'none';
+        }
+    }
+
+    if (select && noteBox) {
+        select.addEventListener('change', updateNotePreview);
+        // Initial call to show preview on page load if a note is already selected
+        updateNotePreview();
+    }
+}
+
+function loadOrganizers() {
+    const organizerSelect = document.getElementById('organizer_id');
+    const coHostSelect = document.getElementById('co_host_id');
+    const form = document.querySelector('form');
+    
+    if (organizersData.length === 0) {
+        organizerSelect.innerHTML = '<option value="">No organizers available</option>';
+        coHostSelect.innerHTML = '<option value="">No co-host</option>';
+        return;
+    }
+    
+    // Clear existing options (except placeholder for co-host)
+    organizerSelect.innerHTML = '';
+    coHostSelect.innerHTML = '<option value="">No co-host</option>';
+    
+    // Add organizers to both dropdowns
+    organizersData.forEach(organizer => {
+        const option1 = document.createElement('option');
+        option1.value = organizer.id;
+        option1.textContent = organizer.name;
+        
+        const option2 = document.createElement('option');
+        option2.value = organizer.id;
+        option2.textContent = organizer.name;
+        
+        organizerSelect.appendChild(option1);
+        coHostSelect.appendChild(option2);
+        
+        // Select current user as default organizer for new events
+        if (organizer.is_current_user && !form.dataset.currentOrganizer) {
+            option1.selected = true;
+        }
+    });
+    
+    // If we're editing an event, select the current organizer and co-host
+    if (form.dataset.currentOrganizer) {
+        organizerSelect.value = form.dataset.currentOrganizer;
+    }
+    if (form.dataset.currentCohost) {
+        coHostSelect.value = form.dataset.currentCohost;
+    }
+    
+    // Add validation to prevent same person as organizer and co-host
+    function validateOrganizerSelection() {
+        const organizerId = organizerSelect.value;
+        const coHostId = coHostSelect.value;
+        
+        if (organizerId && coHostId && organizerId === coHostId) {
+            // Show error message
+            const errorDiv = document.getElementById('organizer-error') || document.createElement('div');
+            errorDiv.id = 'organizer-error';
+            errorDiv.className = 'alert alert-danger mt-2';
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>The primary organizer and co-host cannot be the same person.';
+            
+            // Insert error message after co-host select
+            const coHostContainer = coHostSelect.parentElement;
+            if (!document.getElementById('organizer-error')) {
+                coHostContainer.appendChild(errorDiv);
+            }
+            
+            // Reset co-host selection
+            coHostSelect.value = '';
+            return false;
+        } else {
+            // Remove error message if it exists
+            const errorDiv = document.getElementById('organizer-error');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+            return true;
+        }
+    }
+    
+    // Add event listeners for validation
+    organizerSelect.addEventListener('change', validateOrganizerSelection);
+    coHostSelect.addEventListener('change', validateOrganizerSelection);
+    
+    // Add form submission validation
+    form.addEventListener('submit', function(e) {
+        if (!validateOrganizerSelection()) {
+            e.preventDefault();
+            return false;
+        }
+    });
+}
+// Event Notes dropdown logic
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('event_note_select');
+    const noteBox = document.getElementById('selected_event_note_box');
+    function updateNotePreview() {
+        const selected = select.options[select.selectedIndex];
+        let note = selected.getAttribute('data-note');
+        if (note && select.value) {
+            try {
+                note = JSON.parse(note);
+            } catch (e) {
+                // fallback: use as-is
+            }
+            let lines = note.split(/\r?\n/).slice(0, 5);
+            let html = lines.map(line => line.trim() ? `<p>${line.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : '').join('');
+            noteBox.innerHTML = html;
+            noteBox.style.display = '';
+        } else {
+            noteBox.innerHTML = '';
+            noteBox.style.display = 'none';
+        }
+    }
+    if (select && noteBox) {
+        select.addEventListener('change', updateNotePreview);
+        updateNotePreview();
+    }
+});
+
+// Capacity increase and waitlist promotion handling
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const maxAttendeesInput = document.getElementById('max_attendees');
+    
+    if (form && maxAttendeesInput) {
+        form.addEventListener('submit', function(e) {
+            // Only handle this for edit events
+            {% if is_edit %}
+            e.preventDefault();
+            handleFormSubmission();
+            {% endif %}
+        });
+    }
+});
+
+{% if is_edit %}
+function handleFormSubmission() {
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    
+    // Make AJAX request to check for waitlist promotions
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.needs_confirmation) {
+            showPromotionModal(data.users_to_promote, data.available_spots);
+        } else {
+            // No confirmation needed, submit form normally
+            form.submit();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Fall back to normal form submission
+        form.submit();
+    });
+}
+
+function showPromotionModal(usersToPromote, availableSpots) {
+    const modal = document.getElementById('capacityIncreaseModal');
+    const usersList = document.getElementById('promotionUsersList');
+    const confirmBtn = document.getElementById('confirmPromotionBtn');
+    
+    // Clear and populate users list
+    usersList.innerHTML = '';
+    usersToPromote.forEach(user => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex align-items-center';
+        li.innerHTML = `<i class="fas fa-user me-2 text-primary"></i>${user.name}`;
+        usersList.appendChild(li);
+    });
+    
+    // Update the count text
+    const countText = document.getElementById('promotionCount');
+    countText.textContent = usersToPromote.length;
+    
+    // Show modal
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Handle confirmation
+    confirmBtn.onclick = function() {
+        modalInstance.hide();
+        submitWithConfirmation();
+    };
+}
+
+function submitWithConfirmation() {
+    const form = document.querySelector('form');
+    
+    // Add confirmation flag to form data
+    const confirmInput = document.createElement('input');
+    confirmInput.type = 'hidden';
+    confirmInput.name = 'confirm_promotions';
+    confirmInput.value = 'true';
+    form.appendChild(confirmInput);
+    
+    // Submit form normally
+    form.submit();
+}
+{% endif %}
+
+function confirmDeleteEvent() {
+    // Show the delete confirmation modal
+    const modal = document.getElementById('deleteEventModal');
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Handle the confirmation button click
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        modalInstance.hide();
+        deleteEvent();
+    };
+}
+
+function deleteEvent() {
+    // Create form to submit DELETE request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("events.delete_event", event_id=event.id) if event else "" }}';
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function confirmCloneEvent() {
+    // Show the clone confirmation modal
+    const modal = document.getElementById('cloneEventModal');
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Handle the confirmation button click
+    document.getElementById('confirmCloneBtn').onclick = function() {
+        modalInstance.hide();
+        cloneEvent();
+    };
+}
+
+function cloneEvent() {
+    // Collect all form data
+    const params = new URLSearchParams();
+    
+    // Calculate new date (1 month from today)
+    const today = new Date();
+    let newMonth = today.getMonth() + 1;
+    let newYear = today.getFullYear();
+    let newDay = today.getDate();
+    
+    if (newMonth > 11) {
+        newMonth = 0;
+        newYear++;
+    }
+    
+    // Handle month-end edge cases
+    const daysInNewMonth = new Date(newYear, newMonth + 1, 0).getDate();
+    if (newDay > daysInNewMonth) {
+        newDay = daysInNewMonth;
+    }
+    
+    const newDate = new Date(newYear, newMonth, newDay);
+    const formattedDate = newDate.toISOString().split('T')[0];
+    
+    // Helper function to safely get element value
+    function getValue(id) {
+        const el = document.getElementById(id);
+        return el ? el.value : '';
+    }
+    
+    // Add "Copy of " to title if not already present
+    const currentTitle = getValue('title');
+    const newTitle = currentTitle.startsWith('Copy of ') ? currentTitle : 'Copy of ' + currentTitle;
+    params.append('title', newTitle);
+    
+    // Add all other form fields
+    const description = getValue('description');
+    const barrio = getValue('barrio');
+    const timePeriod = getValue('time_period');
+    if (description) params.append('description', description);
+    if (barrio) params.append('barrio', barrio);
+    if (timePeriod) params.append('time_period', timePeriod);
+    params.append('date', formattedDate);
+    
+    // Time fields - use hidden inputs
+    const timeHour = getValue('modern_time_hour');
+    const timeMinute = getValue('modern_time_minute');
+    if (timeHour) params.append('time_hour', timeHour);
+    if (timeMinute) params.append('time_minute', timeMinute);
+    
+    // Location fields
+    const establishmentName = getValue('establishment_name');
+    const googleMapsLink = getValue('google_maps_link');
+    const locationNotes = getValue('location_notes');
+    if (establishmentName) params.append('establishment_name', establishmentName);
+    if (googleMapsLink) params.append('google_maps_link', googleMapsLink);
+    if (locationNotes) params.append('location_notes', locationNotes);
+    
+    // Organizer and co-host
+    const organizerId = getValue('organizer_id');
+    const coHostId = getValue('co_host_id');
+    if (organizerId) params.append('organizer_id', organizerId);
+    if (coHostId) params.append('co_host_id', coHostId);
+    
+    // Tips and notes
+    const tipsForAttendees = getValue('tips_for_attendees');
+    if (tipsForAttendees) params.append('tips_for_attendees', tipsForAttendees);
+    
+    // Max attendees
+    const maxAttendees = getValue('max_attendees');
+    if (maxAttendees) params.append('max_attendees', maxAttendees);
+    
+    // Event note - use correct ID
+    const eventNoteSelect = document.getElementById('event_note_select');
+    if (eventNoteSelect && eventNoteSelect.value) {
+        params.append('event_note_id', eventNoteSelect.value);
+    }
+    
+    // Multi-day event fields
+    const isMultidayEl = document.getElementById('is_multiday');
+    const isMultiday = isMultidayEl ? isMultidayEl.checked : false;
+    if (isMultiday) {
+        params.append('is_multiday', 'on');
+        const startDate = getValue('start_date');
+        const endDate = getValue('end_date');
+        const endTimeHour = getValue('end_time_hour');
+        const endTimeMinute = getValue('end_time_minute');
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (endTimeHour) params.append('end_time_hour', endTimeHour);
+        if (endTimeMinute) params.append('end_time_minute', endTimeMinute);
+    }
+    
+    // Redirect to create event page with all parameters
+    window.location.href = '{{ url_for("events.create_event") }}?' + params.toString();
+}
+
+// Google Maps URL validation
+function validateGoogleMapsURL(url) {
+    if (!url || url.trim() === '') {
+        return { valid: true, message: '', type: 'empty' };
+    }
+    
+    try {
+        // Check if it's a valid URL
+        new URL(url);
+        
+        // Check for Google Maps patterns
+        const patterns = [
+            // Format 1: Coordinates in URL path (/@lat,lng,zoom)
+            /@-?\d+\.?\d*,-?\d+\.?\d*,\d+\.?\d*z/,
+            
+            // Format 2: Place with coordinates (/place/Name/@lat,lng)
+            /\/place\/[^/@]+\/@-?\d+\.?\d*,-?\d+\.?\d*/,
+            
+            // Format 3: URL parameters (3d41.381138!4d2.186112)
+            /3d-?\d+\.?\d*!4d-?\d+\.?\d*/,
+            
+            // Format 4: Place ID format (/place/LocationName)
+            /\/place\/[^/@?]+/,
+            
+            // Format 5: Query parameter format (?q=location)
+            /[?&]q=[^&]+/,
+            
+            // Format 6: Short URLs (will need server-side resolution)
+            /goo\.gl\/maps/,
+            /maps\.app\.goo\.gl/
+        ];
+        
+        const isValidFormat = patterns.some(pattern => pattern.test(url));
+        
+        if (isValidFormat) {
+            return { 
+                valid: true, 
+                message: '✓ Valid Google Maps URL format', 
+                type: 'success' 
+            };
+        } else {
+            return { 
+                valid: false, 
+                message: '⚠ URL format not recognized. Please use a Google Maps link.', 
+                type: 'warning' 
+            };
+        }
+        
+    } catch (e) {
+        return { 
+            valid: false, 
+            message: '✗ Invalid URL format', 
+            type: 'error' 
+        };
+    }
+}
+
+function setupGoogleMapsValidation() {
+    const mapsInput = document.getElementById('google_maps_link');
+    const feedbackDiv = document.getElementById('maps-url-feedback');
+    
+    if (!mapsInput || !feedbackDiv) return;
+    
+    function updateValidation() {
+        const url = mapsInput.value.trim();
+        const validation = validateGoogleMapsURL(url);
+        
+        // Clear previous states
+        mapsInput.classList.remove('is-valid', 'is-invalid');
+        feedbackDiv.style.display = 'none';
+        
+        if (validation.type === 'empty') {
+            // No validation feedback for empty field
+            return;
+        }
+        
+        // Show feedback
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.textContent = validation.message;
+        
+        if (validation.type === 'success') {
+            mapsInput.classList.add('is-valid');
+            feedbackDiv.className = 'form-text text-success';
+        } else if (validation.type === 'warning') {
+            feedbackDiv.className = 'form-text text-warning';
+            // Add examples
+            feedbackDiv.innerHTML = validation.message + '<br><small>Supported formats:<br>' +
+                '• <code>https://maps.google.com/maps?q=Location+Name</code><br>' +
+                '• <code>https://www.google.com/maps/place/Location+Name</code><br>' +
+                '• <code>https://goo.gl/maps/shorturl</code><br>' +
+                '• <code>https://maps.app.goo.gl/shorturl</code></small>';
+        } else {
+            mapsInput.classList.add('is-invalid');
+            feedbackDiv.className = 'form-text text-danger';
+        }
+    }
+    
+    // Real-time validation with debounce
+    let validationTimeout;
+    mapsInput.addEventListener('input', function() {
+        clearTimeout(validationTimeout);
+        validationTimeout = setTimeout(updateValidation, 500);
+    });
+    
+    // Initial validation if field has value
+    if (mapsInput.value.trim()) {
+        updateValidation();
+    }
+}
+
+// Time validation function
+function validateEventTimes() {
+    const multidayCheckbox = document.getElementById('is_multiday');
+    const dateInput = document.getElementById('date');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const startHour = parseInt(document.getElementById('modern_time_hour').value);
+    const startMinute = parseInt(document.getElementById('modern_time_minute').value);
+    const endHour = parseInt(document.getElementById('end_time_hour').value);
+    const endMinute = parseInt(document.getElementById('end_time_minute').value);
+    
+    // Remove any existing time validation messages
+    const existingError = document.getElementById('time-validation-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Clear any existing validation states
+    const startTimeContainer = document.querySelector('[id*="hourDropdown"]').closest('.col-md-3');
+    const endTimeContainer = document.querySelector('[id*="endHourDropdown"]').closest('.col-md-4');
+    if (startTimeContainer) {
+        startTimeContainer.classList.remove('has-error');
+    }
+    if (endTimeContainer) {
+        endTimeContainer.classList.remove('has-error');
+    }
+    
+    // Check if all values are present
+    if (isNaN(startHour) || isNaN(startMinute) || isNaN(endHour) || isNaN(endMinute)) {
+        return true; // Not all times set yet, skip validation
+    }
+    
+    // Determine which dates to use
+    let startDateValue, endDateValue;
+    if (multidayCheckbox && multidayCheckbox.checked) {
+        startDateValue = startDateInput.value;
+        endDateValue = endDateInput.value;
+        
+        if (!startDateValue || !endDateValue) {
+            return true; // Dates not set yet
+        }
+    } else {
+        startDateValue = dateInput.value;
+        endDateValue = dateInput.value;
+        
+        if (!startDateValue) {
+            return true; // Date not set yet
+        }
+    }
+    
+    // Create datetime objects for comparison
+    const startDateTime = new Date(startDateValue + 'T' + String(startHour).padStart(2, '0') + ':' + String(startMinute).padStart(2, '0'));
+    const endDateTime = new Date(endDateValue + 'T' + String(endHour).padStart(2, '0') + ':' + String(endMinute).padStart(2, '0'));
+    
+    // Check if end time is after start time
+    if (endDateTime <= startDateTime) {
+        // Show error message
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'time-validation-error';
+        errorDiv.className = 'alert alert-danger mt-3';
+        
+        if (multidayCheckbox && multidayCheckbox.checked && endDateValue < startDateValue) {
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Invalid end date:</strong> The end date must be on or after the start date.';
+        } else if (endDateValue === startDateValue) {
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Invalid end time:</strong> The end time must be after the start time.';
+        } else {
+            errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Invalid date/time:</strong> The event end must be after the event start.';
+        }
+        
+        // Insert error after the end time container
+        if (endTimeContainer) {
+            endTimeContainer.parentNode.insertBefore(errorDiv, endTimeContainer.nextSibling);
+            endTimeContainer.classList.add('has-error');
+            startTimeContainer.classList.add('has-error');
+        }
+        
+        // Focus on end time to help user correct
+        const endHourBtn = document.getElementById('endHourDropdown');
+        if (endHourBtn) {
+            endHourBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        return false;
+    }
+    
+    return true;
+}
+
+// Add form submission validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateEventTimes()) {
+                e.preventDefault();
+                
+                // Show alert to user
+                alert('Please correct the event times. The end time must be after the start time.');
+                
+                return false;
+            }
+        });
+    }
+    
+    // Character counters for form fields
+    function updateCharacterCounter(inputId, counterId, maxLength) {
+        const input = document.getElementById(inputId);
+        const counter = document.getElementById(counterId);
+        
+        if (input && counter) {
+            function updateCount() {
+                const currentLength = input.value.length;
+                counter.textContent = currentLength;
+                
+                // Change color based on usage
+                if (currentLength > maxLength * 0.9) {
+                    counter.style.color = '#dc3545'; // Red
+                } else if (currentLength > maxLength * 0.75) {
+                    counter.style.color = '#fd7e14'; // Orange
+                } else {
+                    counter.style.color = '#6c757d'; // Gray
+                }
+            }
+            
+            // Update on page load
+            updateCount();
+            
+            // Update on input
+            input.addEventListener('input', updateCount);
+        }
+    }
+    
+    // Initialize character counters
+    updateCharacterCounter('title', 'title-counter', 255);
+    updateCharacterCounter('description', 'description-counter', 5000);
+    updateCharacterCounter('barrio', 'barrio-counter', 64);
+    updateCharacterCounter('establishment_name', 'establishment-counter', 64);
+    updateCharacterCounter('location_notes', 'location-notes-counter', 1000);
+    updateCharacterCounter('google_maps_link', 'maps-counter', 2000);
+    updateCharacterCounter('tips_for_attendees', 'tips-counter', 5000);
+});
+</script>
+
+<!-- Capacity Increase Modal -->
+{% if is_edit %}
+<div class="modal fade" id="capacityIncreaseModal" tabindex="-1" aria-labelledby="capacityIncreaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="capacityIncreaseModalLabel">
+                    <i class="fas fa-arrow-up me-2"></i>Confirm Capacity Increase
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Increasing the event capacity will automatically promote <strong><span id="promotionCount">0</span> people</strong> from the waitlist to attending.
+                </div>
+                
+                <h6 class="mb-3">People who will be promoted to attending:</h6>
+                <ul class="list-group list-group-flush" id="promotionUsersList">
+                    <!-- Users will be populated by JavaScript -->
+                </ul>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Promotions are based on waitlist order (first come, first served).
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmPromotionBtn">
+                    <i class="fas fa-check me-2"></i>Confirm and Update Event
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Delete Event Confirmation Modal -->
+{% if is_edit %}
+<div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteEventModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Event Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-warning me-2"></i>
+                    <strong>This action cannot be undone!</strong>
+                </div>
+                
+                <p class="mb-3">Are you sure you want to delete this event?</p>
+                
+                <div class="bg-light p-3 rounded mb-3">
+                    <h6 class="mb-2">Event: <strong>{{ event.title if event else '' }}</strong></h6>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        {{ event.date.strftime('%B %d, %Y at %I:%M %p') if event else '' }}
+                    </small>
+                </div>
+                
+                <p class="text-muted">This will permanently remove:</p>
+                <ul class="text-muted">
+                    <li>All event information</li>
+                    <li>All attendance data</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-secondary" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-2"></i>Delete Event
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clone Event Confirmation Modal -->
+<div class="modal fade" id="cloneEventModal" tabindex="-1" aria-labelledby="cloneEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="cloneEventModalLabel">
+                    <i class="fas fa-clone me-2"></i>Clone Event
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">All the details from this event will be copied to the new event and the event title will have
+                    "Copy of ... " prepended and date will be set to 1 month from today. </p>
+                
+                <p class="mb-3">All other details will remain the same:</p>
+                <ul class="mb-3">
+                    <li>Description, and location</li>
+                    <li>Same time of day as the original</li>
+                    <li>Same organizers and settings</li>
+                </ul>
+                
+                <div class="bg-light p-3 rounded mb-3">
+                    <h6 class="mb-2">Original Event: <strong>{{ event.title if event else '' }}</strong></h6>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        Current date: {{ event.date.strftime('%B %d, %Y at %I:%M %p') if event else '' }}
+                    </small>
+                </div>
+                
+                <p class="text-muted small"><strong>Note:</strong> You can review and modify the details before clicking "Update Event" to save the cloned event.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmCloneBtn">
+                    Clone Event
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

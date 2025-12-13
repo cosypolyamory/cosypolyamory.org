@@ -1,0 +1,1194 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Event Actions Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                        <!-- Primary Navigation -->
+                        <div>
+                            <a href="{{ url_for('events.events_list') }}" class="btn btn-secondary btn-sm">
+                                Back to Events
+                            </a>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="d-flex flex-wrap gap-2">
+                            
+                            <!-- Combined Event Action Button -->
+                            {% if current_user.is_authenticated %}
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('pages.event_feedback', event_id=event.id) }}" class="btn btn-secondary btn-sm">
+                                        Feedback
+                                    </a>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
+                                        Share
+                                    </button>
+                                </div>
+                            {% endif %}
+
+                            <!-- Event Management Dropdown (for organizers) -->
+                            {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id) %}
+                                <div class="dropdown">
+                                    <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="eventManagementDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Manage Event
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventManagementDropdown">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ url_for('events.edit_event', event_id=event.id) }}">
+                                                Edit Event
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{{ url_for('attendance.edit_attendance', event_id=event.id) }}">
+                                                Manage Attendance
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message|safe }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+
+    <!-- Publish/Unpublished Status - Only for organizers -->
+    {% if current_user.is_authenticated and (current_user.role in ['admin', 'organizer'] or event.organizer_id == current_user.id or (event.co_host and event.co_host_id == current_user.id)) %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">
+                                {% if event.published %}
+                                    Published Event
+                                {% else %}
+                                    Unpublished Event
+                                {% endif %}
+                            </h6>
+                            <p class="mb-0 text-muted">
+                                {% if event.published %}
+                                    This event is visible to all users.
+                                {% else %}
+                                    This event is unpublished and only visible to organizers.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <form method="POST" action="{{ url_for('events.publish_event', event_id=event.id) }}" style="display: inline;">
+                                {% if event.published %}
+                                    <input type="hidden" name="action" value="unpublish">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        Unpublish
+                                    </button>
+                                {% else %}
+                                    <input type="hidden" name="action" value="publish">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        Publish
+                                    </button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <div class="row">
+        <div class="col-12">
+            <!-- Event Header -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
+                                <!-- Left side: Attendance and Calendar buttons -->
+                                <div class="d-flex flex-column flex-sm-row align-items-start gap-2">
+                                    {% if event.exact_time > now and current_user.is_authenticated %}
+                                        {% set user_rsvp = user_rsvp %}
+                                        {% set is_host_or_cohost = current_user.is_authenticated and (current_user.id == event.organizer_id or (event.co_host and current_user.id == event.co_host.id)) %}
+                                        
+                        <!-- Attendance Section -->
+                        {% if not is_host_or_cohost %}
+                            <div class="attendance-container" style="min-width: 160px;">
+                                {% if not user_rsvp %}
+                                    <!-- Three initial buttons for new RSVP -->
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-rsvp-none btn-sm attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="yes">
+                                            Yes
+                                        </button>
+                                        <button class="btn btn-rsvp-none btn-sm attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="no">
+                                            No
+                                        </button>
+                                        <button class="btn btn-rsvp-none btn-sm attendance-btn" type="button" data-event-id="{{ event.id }}" data-status="maybe">
+                                            Maybe
+                                        </button>
+                                    </div>
+                                {% elif user_rsvp.status == 'yes' %}
+                                    <!-- Status dropdown for confirmed attendance -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-rsvp-yes dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px;">
+                                            Yes
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                No
+                                            </a></li>
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                Maybe
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% elif user_rsvp.status == 'waitlist' %}
+                                    <!-- Status dropdown for waitlisted -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-rsvp-waitlisted dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px;">
+                                            Waitlisted
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                No
+                                            </a></li>
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                Maybe
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% elif user_rsvp.status == 'maybe' %}
+                                    <!-- Status dropdown for maybe -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-rsvp-maybe dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px;">
+                                            Maybe
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                Yes
+                                            </a></li>
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="no">
+                                                No
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% elif user_rsvp.status == 'no' %}
+                                    <!-- Status dropdown for not going -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-rsvp-no dropdown-toggle btn-sm" type="button" id="rsvpDropdown{{ event.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px;">
+                                            No
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="rsvpDropdown{{ event.id }}">
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="yes">
+                                                Yes
+                                            </a></li>
+                                            <li><a class="dropdown-item attendance-dropdown-item" href="#" data-event-id="{{ event.id }}" data-status="maybe">
+                                                Maybe
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% elif user_rsvp.status == 'banned' %}
+                                    <!-- Normal buttons for banned users that show modal on click -->
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-rsvp-none btn-sm banned-user-btn" type="button" data-event-id="{{ event.id }}">
+                                            Yes
+                                        </button>
+                                        <button class="btn btn-rsvp-none btn-sm banned-user-btn" type="button" data-event-id="{{ event.id }}">
+                                            No
+                                        </button>
+                                        <button class="btn btn-rsvp-none btn-sm banned-user-btn" type="button" data-event-id="{{ event.id }}">
+                                            Maybe
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <!-- Disabled button for hosts/co-hosts -->
+                            <button class="btn btn-primary btn-sm" type="button" disabled style="min-width: 160px;">
+                                {% if current_user.id == event.organizer_id %}You're hosting{% else %}You're co-hosting{% endif %}
+                            </button>
+                        {% endif %}
+                                <!-- Add to Calendar Button -->
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#addToCalendarModal">
+                                            Add to Calendar
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Right side: Status pills -->
+                                <span id="header-pills">
+                                {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %}
+                                    <span class="badge bg-warning text-dark ms-2 align-middle">
+                                        Unpublished
+                                    </span>
+                                {% endif %}
+                                {% if event.exact_time < now %}
+                                    <span class="badge bg-secondary fs-6{% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %} ms-2{% endif %}">Past Event</span>
+                                {% else %}
+                                    {% if event.max_attendees and rsvp_count >= event.max_attendees %}
+                                        <span class="badge bg-warning text-dark align-middle{% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %} ms-2{% endif %}">Full</span>
+                                    {% endif %}
+                                    {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
+                                        <span class="badge badge-rsvp-waitlisted align-middle ms-2">Waitlist</span>
+                                    {% endif %}
+                                    <span class="badge bg-primary fs-6 ms-2">Upcoming</span>
+                                {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <h1 class="card-title mb-0">{{ event.title }}</h1>
+                        </div>
+                    </div>
+
+                    <!-- Hosts Section -->
+                    {% if can_see_details %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Host</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-crown text-white" style="font-size: 16px;"></i>
+                                </div>
+                                <div class="text-truncate" style="max-width: calc(100% - 52px);">
+                                    <strong>{{ event.organizer.name }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% if event.co_host %}
+                        <div class="col-md-6">
+                            <h6>Co-host</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 40px; height: 40px; background-color: #6c757d;">
+                                    <i class="fas fa-handshake text-white" style="font-size: 16px;"></i>
+                                </div>
+                                <div class="text-truncate" style="max-width: calc(100% - 52px);">
+                                    <strong>{{ event.co_host.name }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Event Details Section -->
+                    {% if event.end_time and event.exact_time.date() != event.end_time.date() %}
+                        {# Multi-day event: Show two rows #}
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-calendar-day me-2 text-primary"></i>Start Date</h6>
+                                <p>{{ event.exact_time.strftime('%A, %b %d, %Y') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-clock me-2 text-primary"></i>Start Time</h6>
+                                {% if can_see_details %}
+                                    <p>
+                                        {{ event.exact_time.strftime('%H:%M') }}
+                                        {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                            {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
+                                            {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                        {% endif %}
+                                    </p>
+                                {% else %}
+                                    {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                        <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-calendar-day me-2 text-primary"></i>End Date</h6>
+                                <p>{{ event.end_time.strftime('%A, %b %d, %Y') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-clock me-2 text-primary"></i>End Time</h6>
+                                {% if can_see_details %}
+                                    <p>{{ event.end_time.strftime('%H:%M') }}</p>
+                                {% else %}
+                                    {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                        <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
+                                {% if can_see_details %}
+                                    <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
+                                {% else %}
+                                    <p>{{ event.barrio }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        {# Single-day event: Show one row #}
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <h6><i class="fas fa-calendar-day me-2 text-primary"></i>Date</h6>
+                                <p>{{ event.exact_time.strftime('%A, %b %d, %Y') }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6><i class="fas fa-clock me-2 text-primary"></i>Time</h6>
+                                {% if can_see_details %}
+                                    <p>
+                                        {% if event.end_time %}
+                                            {{ event.exact_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}
+                                        {% else %}
+                                            {{ event.exact_time.strftime('%H:%M') }}
+                                        {% endif %}
+                                        {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                            {% if event.time_period %} <span class="text-muted">({{ event.time_period }})</span>{% endif %}
+                                            {% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}
+                                        {% endif %}
+                                    </p>
+                                {% else %}
+                                    {% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}
+                                        <p>{{ event.time_period }}{% if event.public_time_period %} <span class="text-muted">({{ event.public_time_period }})</span>{% endif %}</p>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-5">
+                                <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
+                                {% if can_see_details %}
+                                    <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
+                                {% else %}
+                                    <p>{{ event.barrio }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Description Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6><i class="fas fa-info-circle me-2 text-primary"></i>Description</h6>
+                            <div class="card-text">
+                                {% if event.description %}
+                                    {% for paragraph in event.description.split('\n') %}
+                                        {% if paragraph.strip() %}
+                                            <p>{{ paragraph.strip() }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Important notes about our events Section -->
+                    {% if event.event_note or (event.tips_for_attendees and event.tips_for_attendees.strip()) %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-warning bg-light">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-3">
+                                            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                                            Important notes about our events
+                                        </h5>
+                                        <div class="card-text">
+                                            {% if event.event_note %}
+                                                {% for paragraph in event.event_note.note.split('\n\n') %}
+                                                    {% if paragraph.strip() %}
+                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                            {% if event.event_note and event.tips_for_attendees and event.tips_for_attendees.strip() %}
+                                                <p></p>
+                                            {% endif %}
+                                            {% if event.tips_for_attendees and event.tips_for_attendees.strip() %}
+                                                {% for paragraph in event.tips_for_attendees.split('\n\n') %}
+                                                    {% if paragraph.strip() %}
+                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
+                    <!-- Google Maps Preview - full width under time/location -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="mt-4"><i class="fas fa-map-marker-alt me-2 text-primary"></i>Event Location</h6>
+                            {% if event.google_maps_link %}
+                                {% if google_maps_api_key %}
+                                    {% if google_maps_info %}
+                                        {% if google_maps_info.lat and google_maps_info.lng %}
+                                            <!-- Embedded Google Maps with coordinates -->
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                style="border:0; border-radius: 0.375rem;"
+                                                loading="lazy"
+                                                allowfullscreen
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                src="https://www.google.com/maps/embed/v1/view?key={{ google_maps_api_key }}&center={{ google_maps_info.lat }},{{ google_maps_info.lng }}&zoom=15">
+                                            </iframe>
+                                        {% elif google_maps_info.place_name %}
+                                            <!-- Embedded Google Maps with place name -->
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                style="border:0; border-radius: 0.375rem;"
+                                                loading="lazy"
+                                                allowfullscreen
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_api_key }}&q={{ google_maps_info.place_name | urlencode }}">
+                                            </iframe>
+                                        {% elif google_maps_info.embed_url %}
+                                            <!-- Embedded Google Maps with URL (for short URLs like goo.gl) -->
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                style="border:0; border-radius: 0.375rem;"
+                                                loading="lazy"
+                                                allowfullscreen
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                src="{{ google_maps_info.embed_url }}">
+                                            </iframe>
+                                        {% elif google_maps_info.search_url %}
+                                            <!-- Use Google Maps Embed API search mode for short URLs -->
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                style="border:0; border-radius: 0.375rem;"
+                                                loading="lazy"
+                                                allowfullscreen
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                src="https://www.google.com/maps/embed/v1/search?key={{ google_maps_api_key }}&q={{ google_maps_info.search_url | urlencode }}">
+                                            </iframe>
+                                        {% endif %}
+                                    {% else %}
+                                        <!-- URL parsing failed - show helpful error with examples -->
+                                        <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                            <div class="text-center text-muted">
+                                                <i class="fas fa-exclamation-triangle fa-3x mb-2 text-warning"></i>
+                                                <br>
+                                                <small><strong>Unable to parse Google Maps URL</strong></small>
+                                                <br>
+                                                <small class="mt-2 d-block">Please use one of these formats:</small>
+                                                <small class="d-block mt-1">
+                                                    • <code>https://maps.google.com/maps?q=Location+Name</code><br>
+                                                    • <code>https://www.google.com/maps/place/Location+Name</code><br>
+                                                    • <code>https://goo.gl/maps/shorturl</code><br>
+                                                    • <code>https://maps.app.goo.gl/shorturl</code>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <!-- No API key configured - show placeholder -->
+                                    <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-map fa-3x mb-2"></i>
+                                            <br>
+                                            <small>Map preview will be available when Google Maps API key is added.</small>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <!-- No Google Maps link provided -->
+                                <div class="border rounded" style="height: 200px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-map-marker-alt fa-3x mb-2"></i>
+                                        <br>
+                                        <small>No map location provided for this event</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {% if event.google_maps_link %}
+                            <div class="mt-2">
+                                <a href="{{ event.google_maps_link }}" target="_blank" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in Google Maps
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    
+                    {% endif %}
+                    
+                    <!-- Attendees Section -->
+                    
+                    <!-- Event Attendance & Responses -->
+                    {% if can_see_details %}
+                    <div class="row mt-4 mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-users me-2"></i>
+                                        Event Attendance ({{ consolidated_attendance|length }})
+                                    </h6>
+                                </div>
+                                {% if consolidated_attendance %}
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                        <table class="table table-hover">
+                                            <tbody>
+                                                {% for attendance in consolidated_attendance %}
+                                                <tr>
+                                                    <td style="max-width: 1px; width: 100%;">
+                                                        <div class="d-flex align-items-center" style="min-width: 0;">
+                                                            <div class="text-truncate">
+                                                                <strong>{{ attendance.user.name }}</strong>
+                                                                {% if attendance.user.pronouns %}
+                                                                    <span class="text-muted">({{ attendance.user.pronouns }})</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end" style="white-space: nowrap;">
+                                                        {% if attendance.status == 'host' %}
+                                                            <span class="badge badge-rsvp-host">Host</span>
+                                                        {% elif attendance.status == 'co-host' %}
+                                                            <span class="badge badge-rsvp-cohost">Co-host</span>
+                                                        {% elif attendance.status == 'yes' %}
+                                                            <span class="badge badge-rsvp-yes">Attending</span>
+                                                        {% elif attendance.status == 'maybe' %}
+                                                            <span class="badge badge-rsvp-maybe">Maybe</span>
+                                                        {% elif attendance.status == 'waitlist' %}
+                                                            <span class="badge badge-rsvp-waitlisted">Waitlisted</span>
+                                                        {% elif attendance.status == 'no' %}
+                                                            <span class="badge badge-rsvp-no">Not Attending</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-muted text-center py-3">
+                                        <i class="fas fa-users fa-2x mb-2"></i>
+                                        <p>No responses yet</p>
+                                    </div>
+                                    {% endif %}
+                                    <!-- Capacity Information -->
+                                    {% if event.max_attendees %}
+                                    <div class="mb-4 pt-4" style="margin: 1em;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold">Capacity:</span>
+                                            <span>
+                                                {{ rsvp_count }}/{{ event.max_attendees }} attendees
+                                                <span id="capacity-pills">
+                                                    {% if current_user.is_authenticated and current_user.role in ['admin', 'organizer'] and not event.published %}
+                                                        <span class="badge bg-warning text-dark ms-2 align-middle">
+                                                            Unpublished
+                                                        </span>
+                                                    {% endif %}
+                                                    {% if event.max_attendees and rsvp_count >= event.max_attendees %}
+                                                        <span class="badge bg-warning text-dark ms-2 align-middle">Full</span>
+                                                    {% endif %}
+                                                    {% if rsvps_waitlist and rsvps_waitlist|length > 0 %}
+                                                        <span class="badge badge-rsvp-waitlisted ms-2 align-middle">Waitlist</span>
+                                                    {% endif %}
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="progress mb-3" style="height: 8px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ (rsvp_count / event.max_attendees * 100) if event.max_attendees else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Event Feedback Information -->
+                    {% if current_user.is_authenticated %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-light border">
+                                <i class="fas fa-comment-dots me-2 text-muted"></i>
+                                <span class="text-muted">
+                                    If you would like to report an attendee for inappropriate behaviour or would like to give us feedback, please see our 
+                                    <a href="{{ url_for('pages.event_feedback', event_id=event.id) }}" class="text-decoration-none">event feedback page</a>.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    {% if not can_see_details %}
+                    <div class="row mt-4 mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Exact time and location details are visible to approved members only.</strong>
+                                {% if not current_user.is_authenticated %}
+                                <br><small>Login and apply to join the community to access full event details and RSVP.</small>
+                                {% elif current_user.role in ['pending', 'rejected'] %}
+                                <br><small>Apply to join the community to access full event details and RSVP.</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    
+                    <!-- Member-only notice -->
+                    {% if not can_see_details %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle me-2"></i>Want to attend events?</h6>
+                                <p class="mb-2">You need to be an approved community member to confirm your attendance at events.</p>
+                                {% if not current_user.is_authenticated %}
+                                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Login to Apply
+                                    </a>
+                                {% elif current_user.role == 'rejected' %}
+                                    <p class="text-muted">Your application was not approved.</p>
+                                {% elif not current_user.application.count() %}
+                                    <a href="{{ url_for('user.apply') }}" class="btn btn-primary">
+                                        <i class="fas fa-edit me-2"></i>Apply to Join Community
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('auth.profile') }}" class="btn btn-primary">
+                                        <i class="fas fa-clock me-2"></i>Check Application Status
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Event Stats (full width) -->
+            {% if current_user.is_authenticated %}
+            <div class="row mt-4 mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Event Stats
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6 col-md-2 mb-3 mb-md-0">
+                                    <h4 class="text-success">{{ rsvp_count }}</h4>
+                                    <small class="text-muted">Going</small>
+                                </div>
+                                <div class="col-6 col-md-2 mb-3 mb-md-0">
+                                    <h4 class="text-danger">{{ rsvp_no_count or 0 }}</h4>
+                                    <small class="text-muted">Can't Go</small>
+                                </div>
+                                <div class="col-6 col-md-2 mb-3 mb-md-0">
+                                    <h4 class="text-info">{{ views_count or 0 }}</h4>
+                                    <small class="text-muted">Views</small>
+                                </div>
+                                <div class="col-6 col-md-3 mb-3 mb-md-0">
+                                    <h4 class="text-primary">{{ event.max_attendees or '∞' }}</h4>
+                                    <small class="text-muted">Max Capacity</small>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <h4 class="text-warning">{{ ((event.max_attendees - rsvp_count) if event.max_attendees else '∞') }}</h4>
+                                    <small class="text-muted">Spots Left</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+    </div>
+</div>
+
+<!-- Share Event Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">
+                    <i class="fas fa-share me-2"></i>Share Event
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-4">Choose the format you'd like to copy and share:</p>
+                
+                <!-- Format Selection Tabs -->
+                <ul class="nav nav-tabs mb-3" id="shareFormatTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="plain-tab" data-bs-toggle="tab" data-bs-target="#plain-content" type="button" role="tab">
+                            <i class="fas fa-file-alt me-2"></i>Plain Text
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" type="button" role="tab">
+                            <i class="fab fa-html5 me-2"></i>HTML
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="markdown-tab" data-bs-toggle="tab" data-bs-target="#markdown-content" type="button" role="tab">
+                            <i class="fab fa-markdown me-2"></i>Markdown
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Tab Content -->
+                <div class="tab-content" id="shareFormatTabsContent">
+                    <!-- Plain Text -->
+                    <div class="tab-pane fade show active" id="plain-content" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Plain Text Format:</strong>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="copyToClipboard('plain-text')">
+                                <i class="fas fa-copy me-2"></i>Copy
+                            </button>
+                        </div>
+                        <textarea id="plain-text" class="form-control share-text" rows="8" readonly>{{ event.title }}
+
+Date: {{ event.exact_time.strftime('%A, %B %d, %Y') }}
+{% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}Time: {{ event.time_period }}
+{% endif %}Location: {{ event.barrio }}
+
+{{ event.description }}
+
+Log in or join our community for more details: {{ request.url }}</textarea>
+                    </div>
+                    
+                    <!-- HTML -->
+                    <div class="tab-pane fade" id="html-content" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>HTML Format:</strong>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="copyToClipboard('html-text')">
+                                <i class="fas fa-copy me-2"></i>Copy
+                            </button>
+                        </div>
+                        <textarea id="html-text" class="form-control share-text" rows="8" readonly><h2>{{ event.title | e }}</h2>
+
+<p><strong>📅 Date:</strong> {{ event.exact_time.strftime('%A, %B %d, %Y') }}</p>
+{% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}<p><strong>🕐 Time:</strong> {{ event.time_period }}</p>
+{% endif %}<p><strong>📍 Location:</strong> {{ event.barrio | e }}</p>
+
+<div>{{ event.description | safe }}</div>
+
+<p><a href="{{ request.url }}">Log in or join our community for more details</a></p></textarea>
+                    </div>
+                    
+                    <!-- Markdown -->
+                    <div class="tab-pane fade" id="markdown-content" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Markdown Format:</strong>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="copyToClipboard('markdown-text')">
+                                <i class="fas fa-copy me-2"></i>Copy
+                            </button>
+                        </div>
+                        <textarea id="markdown-text" class="form-control share-text" rows="8" readonly>## {{ event.title }}
+
+**📅 Date:** {{ event.exact_time.strftime('%A, %B %d, %Y') }}
+{% if not (event.end_time and event.exact_time and event.exact_time.date() != event.end_time.date()) %}**🕐 Time:** {{ event.time_period }}
+{% endif %}**📍 Location:** {{ event.barrio }}
+
+{{ event.description }}
+
+[Log in or join our community for more details]({{ request.url }})</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Banned User Modal -->
+<div class="modal fade" id="bannedUserModal" tabindex="-1" aria-labelledby="bannedUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="bannedUserModalLabel">
+                    <i class="fas fa-ban me-2"></i>Cannot RSVP to This Event
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">We're sorry but you can't join this event. You should know why, but if you don't, please contact an organiser.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let eventId = "{{ event.id }}";
+    let currentUserId = {% if current_user.is_authenticated %}"{{ current_user.id }}"{% else %}null{% endif %};
+    let eventOrganizerId = "{{ event.organizer_id }}";
+    let eventCoHostId = {% if event.co_host %}"{{ event.co_host.id }}"{% else %}null{% endif %};
+    let isHostOrCohost = currentUserId && (currentUserId === eventOrganizerId || (eventCoHostId && currentUserId === eventCoHostId));
+
+    // Override page-specific functions for event detail page
+    window.updateAttendeeInfo = function(eventId, data) {
+        // Update the consolidated attendance list if provided
+        if (data.consolidated_attendance_html) {
+            const attendanceTable = document.querySelector('.table-responsive');
+            if (attendanceTable) attendanceTable.innerHTML = data.consolidated_attendance_html;
+        }
+        
+        // Update the attendance count in the header
+        if (data.total_attendance_count !== undefined) {
+            const attendanceHeader = document.querySelector('h6.text-dark');
+            if (attendanceHeader) {
+                attendanceHeader.innerHTML = `<i class="fas fa-users me-2"></i>Event Attendance (${data.total_attendance_count})`;
+            }
+        }
+        
+        // Update capacity pills if provided
+        if (data.capacity_pills_html) {
+            const pillsContainer = document.getElementById('capacity-pills');
+            if (pillsContainer) pillsContainer.innerHTML = data.capacity_pills_html;
+        }
+        // Update header pills if provided
+        if (data.header_pills_html) {
+            const headerPills = document.getElementById('header-pills');
+            if (headerPills) headerPills.innerHTML = data.header_pills_html;
+        }
+        
+        // Update capacity section if there's attendance data
+        if (data.rsvp_count !== undefined) {
+            // Update capacity text
+            const capacitySection = document.querySelector('.d-flex.justify-content-between .fw-bold');
+            if (capacitySection && capacitySection.textContent === 'Capacity:') {
+                const capacitySpan = capacitySection.parentElement.querySelector('span:last-child');
+                if (capacitySpan) {
+                    // Extract max_attendees from the existing text or use a data attribute if available
+                    const maxAttendees = capacitySpan.textContent.match(/\/(\d+) attendees/);
+                    if (maxAttendees) {
+                        const maxAttendeesCount = parseInt(maxAttendees[1]);
+                        // Update the text content
+                        const pillsElement = capacitySpan.querySelector('#capacity-pills');
+                        const pillsHtml = pillsElement ? pillsElement.outerHTML : '';
+                        capacitySpan.innerHTML = `${data.rsvp_count}/${maxAttendeesCount} attendees <span id="capacity-pills">${data.capacity_pills_html || ''}</span>`;
+                    }
+                }
+            }
+            
+            // Update progress bar
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                // Extract max_attendees from the capacity text or calculate from current percentage
+                const capacityText = document.querySelector('.d-flex.justify-content-between span:last-child');
+                if (capacityText) {
+                    const maxAttendees = capacityText.textContent.match(/\/(\d+) attendees/);
+                    if (maxAttendees) {
+                        const maxAttendeesCount = parseInt(maxAttendees[1]);
+                        const percentage = maxAttendeesCount > 0 ? (data.rsvp_count / maxAttendeesCount * 100) : 0;
+                        progressBar.style.width = `${percentage}%`;
+                    }
+                }
+            }
+        }
+    };
+    
+    window.showToast = function(message, type) {
+        // Create a simple alert message
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert the message at the top of the page container
+        const container = document.querySelector('.container');
+        if (container && container.firstChild) {
+            container.insertBefore(alertDiv, container.firstChild);
+        } else if (container) {
+            container.appendChild(alertDiv);
+        } else {
+            // Fallback: insert at top of body
+            document.body.insertBefore(alertDiv, document.body.firstChild);
+        }
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+    };
+    
+    // Handle banned user button clicks
+    document.querySelectorAll('.banned-user-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('bannedUserModal'));
+            modal.show();
+        });
+    });
+});
+
+// Copy to clipboard function for share modal
+function copyToClipboard(elementId) {
+    const textarea = document.getElementById(elementId);
+    textarea.select();
+    textarea.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+        document.execCommand('copy');
+        
+        // Show success feedback
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-primary');
+        }, 2000);
+        
+    } catch (err) {
+        // Fallback for modern browsers
+        navigator.clipboard.writeText(textarea.value).then(() => {
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-success');
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+            }, 2000);
+        }).catch(() => {
+            alert('Could not copy to clipboard. Please select and copy manually.');
+        });
+    }
+}
+
+// Add to Calendar functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Store event data for calendar functions
+    window.eventData = {
+        title: {{ event.title|tojson }},
+        startDate: {{ calendar_start|tojson }},
+        endDate: {{ calendar_end|tojson }},
+        location: {{ calendar_location|tojson }},
+        description: {{ event.description|tojson }}
+        {% if can_see_details and event.tips_for_attendees %}
+        + "\n\nTips for attendees: " + {{ event.tips_for_attendees|tojson }}
+        {% endif %}
+        {% if not can_see_details %}
+        + "\n\n" + {{ event.time_period|tojson }}
+        {% endif %}
+    };
+});
+
+function addToGoogleCalendar() {
+    const event = window.eventData;
+    const encodedTitle = encodeURIComponent(event.title);
+    const encodedDescription = encodeURIComponent(event.description);
+    const encodedLocation = encodeURIComponent(event.location);
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${event.startDate}/${event.endDate}&details=${encodedDescription}&location=${encodedLocation}`;
+    window.open(url, '_blank');
+}
+
+function addToOutlookCalendar() {
+    const event = window.eventData;
+    const startISO = formatDateForOutlook(event.startDate);
+    const endISO = formatDateForOutlook(event.endDate);
+    const encodedTitle = encodeURIComponent(event.title);
+    const encodedDescription = encodeURIComponent(event.description);
+    const encodedLocation = encodeURIComponent(event.location);
+    const url = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodedTitle}&startdt=${startISO}&enddt=${endISO}&body=${encodedDescription}&location=${encodedLocation}`;
+    window.open(url, '_blank');
+}
+
+function addToYahooCalendar() {
+    const event = window.eventData;
+    const encodedTitle = encodeURIComponent(event.title);
+    const encodedDescription = encodeURIComponent(event.description);
+    const encodedLocation = encodeURIComponent(event.location);
+    const url = `https://calendar.yahoo.com/?v=60&view=d&type=20&title=${encodedTitle}&st=${event.startDate}&dur=0200&desc=${encodedDescription}&in_loc=${encodedLocation}`;
+    window.open(url, '_blank');
+}
+
+function addToAppleCalendar() {
+    const event = window.eventData;
+    // Extract domain from base_url for calendar entries
+    const baseUrl = '{{ base_url }}';
+    const domain = baseUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//${domain}//Event//EN
+BEGIN:VEVENT
+UID:event-{{ event.id }}-${Date.now()}@${domain}
+DTSTART:${event.startDate}
+DTEND:${event.endDate}
+SUMMARY:${event.title}
+DESCRIPTION:${event.description.replace(/\n/g, '\\n')}
+LOCATION:${event.location}
+END:VEVENT
+END:VCALENDAR`;
+    
+    const blob = new Blob([icsContent], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${event.title}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function formatDateForOutlook(dateString) {
+    return dateString.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/, '$1-$2-$3T$4:$5:$6');
+}
+</script>
+
+<!-- Add to Calendar Modal -->
+<div class="modal fade" id="addToCalendarModal" tabindex="-1" aria-labelledby="addToCalendarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToCalendarModalLabel">
+                    <i class="fas fa-calendar-plus me-2"></i>Add to Calendar
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Event Summary -->
+                <div class="mb-4">
+                    <h6 class="text-primary">{{ event.title }}</h6>
+                    {% if can_see_details %}
+                        <p class="mb-2">
+                            <i class="fas fa-calendar me-2"></i>
+                            <strong>{{ event.exact_time.strftime('%A, %B %d, %Y at %I:%M %p') }}</strong>
+                            {% if event.end_time %}
+                                - {{ event.end_time.strftime('%I:%M %p') }}
+                            {% endif %}
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            {{ event.establishment_name }}
+                        </p>
+                    {% else %}
+                        <p class="mb-2">
+                            <i class="fas fa-calendar me-2"></i>
+                            <strong>{{ event.time_period }}</strong>
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            {{ event.barrio }}
+                        </p>
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="fas fa-info-circle me-1"></i>
+                                Exact time and location details are available to approved community members.
+                            </small>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <h6 class="mb-2">Description:</h6>
+                        <div class="text-muted">
+                            {% set description_lines = event.description.split('\n') %}
+                            {% set excerpt_lines = description_lines[:3] %}
+                            {% for line in excerpt_lines %}
+                                {% if line.strip() %}
+                                    <p class="mb-2">{{ line.strip() }}</p>
+                                {% endif %}
+                            {% endfor %}
+                            {% if description_lines|length > 3 %}
+                                <p class="mb-0"><em>...</em></p>
+                            {% endif %}
+                        </div>
+                        {% if can_see_details and event.tips_for_attendees %}
+                            <h6 class="mb-2 mt-3">Tips for attendees:</h6>
+                            <div class="text-muted">
+                                {% set tips_lines = event.tips_for_attendees.split('\n') %}
+                                {% set tips_excerpt = tips_lines[:2] %}
+                                {% for line in tips_excerpt %}
+                                    {% if line.strip() %}
+                                        <p class="mb-2">{{ line.strip() }}</p>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if tips_lines|length > 2 %}
+                                    <p class="mb-0"><em>... (excerpt)</em></p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Calendar Options -->
+                <div class="d-grid gap-3">
+                    <button type="button" class="btn btn-primary" onclick="addToGoogleCalendar()">
+                        <i class="fab fa-google me-2"></i>Google Calendar
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="addToOutlookCalendar()">
+                        <i class="fab fa-microsoft me-2"></i>Outlook Calendar
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="addToYahooCalendar()">
+                        <i class="fab fa-yahoo me-2"></i>Yahoo Calendar
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="addToAppleCalendar()">
+                        <i class="fab fa-apple me-2"></i>Apple Calendar (Download .ics)
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

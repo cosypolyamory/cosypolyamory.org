@@ -1,0 +1,20 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Update on your Cosy Polyamory Community application{% endblock %}
+
+{% block content %}
+<h2>Application Update</h2>
+<p>Hello {{ name }},</p>
+<p>Thank you for your interest in joining the Cosy Polyamory Community.</p>
+
+<p style="margin: 0;">After careful review, we've decided not to approve your application at this time. This decision is based on ensuring the best fit for our community culture and values.</p>
+
+{% if rejection_reason %}
+<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #856404;">Feedback from our review</h3>
+    <p style="margin: 0;">{{ rejection_reason | replace('\n', '<br>') | safe }}</p>
+</div>
+{% endif %}
+
+<p>You're welcome to reapply in the future if your circumstances change.</p>
+{% endblock %}

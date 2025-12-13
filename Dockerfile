@@ -21,7 +21,3 @@ RUN apt-get purge -y build-essential && \
 
 # Now install our code, which may change frequently
 COPY . /code/cosypolyamory.org
-
-CMD uwsgi --gid=www-data --uid=www-data --http-socket :3031 \
-          --vhost --module=server --callable=app --chdir=/code/cosypolyamory.org \
-          --enable-threads --processes=15

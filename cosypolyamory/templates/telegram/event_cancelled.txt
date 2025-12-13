@@ -1,0 +1,9 @@
+❌ **Event Cancelled**
+
+**{{ event_title }}** has been cancelled.
+
+{{ cancellation_details }}
+
+We apologize for any inconvenience. Please stay tuned for future events!
+
+#CosyPolyamory #EventCancelled

@@ -1,0 +1,1047 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Manage members{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-end mb-3" style="gap: 0.5rem;">
+            <h1 class="mb-0">Manage members</h1>
+            <button class="btn btn-secondary align-self-end" id="search-icon-button" type="button" title="Search members" style="padding-bottom: 2px;">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+
+        {% if pending_applications_count > 0 %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            There {{ 'is' if pending_applications_count == 1 else 'are' }} {{ pending_applications_count }}
+            <a href="{{ url_for('admin.moderate_applications') }}" class="alert-link">
+             application{{ 's' if pending_applications_count != 1 else '' }} pending review</a>.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        <div id="search-form-container" class="mb-3" style="display: none;">
+            <div class="input-group">
+                <input type="text" id="user-search-input" class="form-control" placeholder="Type to search for members...">
+                <button class="btn btn-secondary" type="button" id="close-search-button">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="search-results-container" class="mt-2"></div>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <!-- User Management Tabs -->
+        <div class="card mt-2">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                            Pending Review <span class="badge bg-primary ms-1 tab-badge" id="pending-count">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab" aria-controls="members" aria-selected="false">
+                            Members <span class="badge bg-primary ms-1 tab-badge" id="members-count">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="organizers-tab" data-bs-toggle="tab" data-bs-target="#organizers" type="button" role="tab" aria-controls="organizers" aria-selected="false">
+                            Organizers <span class="badge bg-primary ms-1 tab-badge" id="organizers-count">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab" aria-controls="rejected" aria-selected="false">
+                            Rejected <span class="badge bg-primary ms-1 tab-badge" id="rejected-count">0</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="adminTabsContent">
+                    <!-- Pending Users Tab -->
+                    <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <h6 class="mb-0 me-3">Pending Applications</h6>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="text-muted me-3">Showing <span id="pending-showing">0</span> of <span id="pending-total">0</span></span>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-secondary" id="pending-prev" onclick="changePage('pending', -1)">&laquo;</button>
+                                    <span class="btn btn-secondary" id="pending-page">1</span>
+                                    <button class="btn btn-secondary" id="pending-next" onclick="changePage('pending', 1)">&raquo;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="pending-users" class="user-list"></div>
+                <!-- Application Review Modal -->
+                <div class="modal fade" id="applicationReviewModal" tabindex="-1" aria-labelledby="applicationReviewModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="applicationReviewModalLabel">Application Review</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="applicationReviewModalBody">
+                                <!-- Application details will be loaded here -->
+                                <div class="text-center text-muted py-5">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+
+                    <!-- Members Tab -->
+                    <div class="tab-pane fade" id="members" role="tabpanel" aria-labelledby="members-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Approved Members</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="text-muted me-3">Showing <span id="members-showing">0</span> of <span id="members-total">0</span></span>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-secondary" id="members-prev" onclick="changePage('members', -1)">&laquo;</button>
+                                    <span class="btn btn-secondary" id="members-page">1</span>
+                                    <button class="btn btn-secondary" id="members-next" onclick="changePage('members', 1)">&raquo;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="members-users" class="user-list"></div>
+                    </div>
+
+                    <!-- Organizers Tab -->
+                    <div class="tab-pane fade" id="organizers" role="tabpanel" aria-labelledby="organizers-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Event Organizers</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="text-muted me-3">Showing <span id="organizers-showing">0</span> of <span id="organizers-total">0</span></span>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-secondary" id="organizers-prev" onclick="changePage('organizers', -1)">&laquo;</button>
+                                    <span class="btn btn-secondary" id="organizers-page">1</span>
+                                    <button class="btn btn-secondary" id="organizers-next" onclick="changePage('organizers', 1)">&raquo;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="organizers-users" class="user-list"></div>
+                    </div>
+
+                    <!-- Rejected Tab -->
+                    <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Rejected Applications</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="text-muted me-3">Showing <span id="rejected-showing">0</span> of <span id="rejected-total">0</span></span>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-secondary" id="rejected-prev" onclick="changePage('rejected', -1)">&laquo;</button>
+                                    <span class="btn btn-secondary" id="rejected-page">1</span>
+                                    <button class="btn btn-secondary" id="rejected-next" onclick="changePage('rejected', 1)">&raquo;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="rejected-users" class="user-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Detail Modal -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalLabel">User Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="userModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                Are you sure you want to delete this user?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hosted Events Error Modal -->
+<div class="modal fade" id="hostedEventsModal" tabindex="-1" aria-labelledby="hostedEventsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="hostedEventsModalLabel">Cannot Delete User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="hostedEventsModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentUserRole = '{{ current_user.role }}'; // Use Jinja2 template variable as fallback
+    
+    // Get current user's role information via API (for updated info)
+    fetch('/api/user')
+        .then(response => response.json())
+        .then(data => {
+            currentUserRole = data.role;
+        })
+        .catch(error => {
+            console.error('Error fetching current user role:', error);
+            // Keep the template-provided role as fallback
+        });
+        
+    // Make currentUserRole available globally
+    window.getCurrentUserRole = function() {
+        return currentUserRole;
+    };
+    
+    const adminTabsContent = document.querySelector('.card.mt-2');
+    if (adminTabsContent) {
+        adminTabsContent.addEventListener('show.bs.dropdown', function(event) {
+            const userCard = event.target.closest('.user-card');
+            if (userCard) {
+                userCard.classList.add('dropdown-open');
+            }
+        });
+
+        adminTabsContent.addEventListener('hide.bs.dropdown', function(event) {
+            const userCard = event.target.closest('.user-card');
+            if (userCard) {
+                userCard.classList.remove('dropdown-open');
+            }
+        });
+    }
+});
+
+let currentPages = {
+    pending: 1,
+    approved: 1,
+    organizer: 1,
+    rejected: 1
+};
+
+const pageSize = 50;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load all user counts and pending users by default
+    loadAllUserCounts();
+    loadUsers('pending');
+    
+    // Add tab change listeners
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            const targetId = event.target.getAttribute('data-bs-target').substring(1);
+            const role = targetId === 'members' ? 'approved' : 
+                        targetId === 'organizers' ? 'organizer' : targetId;
+            loadUsers(role);
+        });
+    });
+});
+
+function loadAllUserCounts() {
+    const roles = ['pending', 'approved', 'organizer', 'rejected'];
+    roles.forEach(role => {
+        fetch(`/api/admin/users/${role}?page=1&per_page=1`)
+            .then(response => response.json())
+            .then(data => {
+                const tabName = role === 'approved' ? 'members' :
+                               role === 'organizer' ? 'organizers' : role;
+                updateTabCount(tabName, data.pagination.total);
+            })
+            .catch(error => {
+                console.error(`Error loading ${role} count:`, error);
+            });
+    });
+}
+
+function loadUsers(role, page = 1) {
+    currentPages[role] = page;
+    
+    fetch(`/api/admin/users/${role}?page=${page}&per_page=${pageSize}`)
+        .then(response => response.json())
+        .then(data => {
+            const tabName = role === 'approved' ? 'members' :
+                           role === 'organizer' ? 'organizers' : role;
+            updateUserList(tabName, data.users);
+            updatePagination(tabName, data.pagination);
+            updateTabCount(tabName, data.pagination.total);
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            showToast('Error loading users', 'error');
+        });
+}
+
+function updateUserList(tabName, users) {
+    const container = document.getElementById(`${tabName}-users`);
+    
+    if (users.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-5">No users found</div>';
+        return;
+    }
+    
+    container.innerHTML = users.map(user => createUserCard(user)).join('');
+}
+
+function createUserCard(user) {
+    const roleColors = {
+        admin: 'orange',  // Orange
+        organizer: 'purple',  // Purple
+        approved: 'success',
+        pending: 'warning',
+        rejected: 'danger',  // Red
+        new: 'warning' // treat new as warning for badge
+    };
+    const roleName = {
+        admin: 'Admin',
+        organizer: 'Organizer',
+        approved: 'Member',
+        pending: 'Pending',
+        rejected: 'Rejected',
+        new: 'Pending Review'
+    };
+    let applicationInfo = '';
+    // Only show application buttons for pending users
+    if (user.role === 'pending' || user.role === 'new') {
+        if (user.has_application && user.application_id) {
+            applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-primary\">Application submitted</span></div>`;
+        } else if (user.has_application && !user.application_id) {
+            applicationInfo = `<div class=\"mt-1\"><span class=\"badge bg-primary\">Application data unavailable</span></div>`;
+        } else {
+            applicationInfo = `<div class="mt-1"><span class="badge bg-secondary text-dark">No application submitted</span></div>`;
+        }
+    }
+    
+    // Add no-show count if user has any no-shows
+    let noShowInfo = '';
+    if (user.no_show_count && user.no_show_count > 0) {
+        noShowInfo = `<div class="mt-1"><span class="badge bg-secondary text-dark">${user.no_show_count} no-show${user.no_show_count > 1 ? 's' : ''}</span></div>`;
+    }
+    return `
+        <div class="user-card">
+            <div class="row align-items-center">
+                <div class="col-12 col-sm">
+                    <h6 class="mb-1">
+                        <a href="javascript:void(0)" onclick="viewUser('${user.id}')" class="text-decoration-none" title="Click to view user details">
+                            ${user.name}
+                        </a>
+                    </h6>
+                    <p class="text-muted mb-1" title="${user.email}">
+                        <i class="fas fa-envelope me-1"></i>${user.email}
+                    </p>
+                    ${applicationInfo}
+                    ${noShowInfo}
+                </div>
+                <div class="col-12 col-sm-auto mt-2 mt-sm-0">
+                    ${user.role !== 'admin' ? `
+                    <div class="btn-group dropdown position-relative">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Click to change user role" aria-expanded="false">
+                            Change role
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><h6 class="dropdown-header">Change User Role</h6></li>
+                            ${(() => {
+                                let options = [];
+                                const currentUserRole = window.getCurrentUserRole();
+                                
+                                // Organizer option (available to all admins/organizers)
+                                if (user.role === 'approved') {
+                                    options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'organizer')">
+                                        <i class="fas fa-calendar me-2" style="color: #6f42c1;"></i>Make organizer
+                                    </button></li>`);
+                                    options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'new')">
+                                        <i class="fas fa-clock text-warning me-2"></i>Mark pending review (force user to reapply)
+                                    </button></li>`);
+                                }
+                                
+                                // Standard role changes for users without pending applications
+                                if (user.role !== 'approved') {
+                                    options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'approved')">
+                                        <i class="fas fa-check text-success me-2"></i>Make member
+                                    </button></li>`);
+                                }
+                                if (user.role === 'rejected') {
+                                    options.push(`<li><button class="dropdown-item" onclick="changeRole('${user.id}', 'new')">
+                                        <i class="fas fa-clock text-warning me-2"></i>Mark pending review (force user to reapply)
+                                    </button></li>`);
+                                }
+                                
+                                // Delete option (only for admins)
+                                if (currentUserRole === "Admin" || (currentUserRole === "Organizer" && user.role === "new")) {
+                                    if (options.length > 0) {
+                                        options.push(`<li><hr class="dropdown-divider"></li>`);
+                                    }
+                                    options.push(`<li><button class="dropdown-item text-danger" onclick="deleteUser('${user.id}', '${user.name}')">
+                                        <i class="fas fa-trash me-2"></i>Delete User
+                                    </button></li>`);
+                                }
+                                
+                                return options.join('');
+                            })()}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updatePagination(tabName, pagination) {
+    const showing = Math.min(pagination.per_page, pagination.total - (pagination.page - 1) * pagination.per_page);
+    document.getElementById(`${tabName}-showing`).textContent = showing;
+    document.getElementById(`${tabName}-total`).textContent = pagination.total;
+    document.getElementById(`${tabName}-page`).textContent = pagination.page;
+    
+    const prevBtn = document.getElementById(`${tabName}-prev`);
+    const nextBtn = document.getElementById(`${tabName}-next`);
+    if (prevBtn) prevBtn.disabled = pagination.page <= 1;
+    if (nextBtn) nextBtn.disabled = pagination.page >= pagination.pages;
+}
+
+function updateTabCount(tabName, count) {
+    const countElement = document.getElementById(`${tabName}-count`);
+    if (countElement) countElement.textContent = count;
+}
+
+function changePage(tabName, direction) {
+    const role = tabName === 'members' ? 'approved' :
+                 tabName === 'organizers' ? 'organizer' : tabName;
+    const newPage = currentPages[role] + direction;
+    if (newPage >= 1) {
+        loadUsers(role, newPage);
+    }
+}
+
+function changeRole(userId, newRole) {
+    fetch('/api/admin/change-role', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            role: newRole
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Role changed to ${newRole}`, 'success');
+            // Reload current tab
+            const activeTab = document.querySelector('.nav-link.active').getAttribute('data-bs-target').substring(1);
+            const activeRole = activeTab === 'members' ? 'approved' :
+                              activeTab === 'organizers' ? 'organizer' : activeTab;
+            loadUsers(activeRole, currentPages[activeRole]);
+            // Also reload other tabs to update counts
+            ['pending', 'approved', 'organizer', 'rejected'].forEach(role => {
+                if (role !== activeRole) {
+                    fetch(`/api/admin/users/${role}?page=1&per_page=1`)
+                        .then(r => r.json())
+                        .then(d => {
+                            const tabName = role === 'approved' ? 'members' :
+                                           role === 'organizer' ? 'organizers' : role;
+                            updateTabCount(tabName, d.pagination.total);
+                        });
+                }
+            });
+        } else {
+            showToast(data.error || 'Failed to change role', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error changing role', 'error');
+    });
+}
+
+function viewUser(userId) {
+    fetch(`/api/admin/user/${userId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(userData => {
+            // Fetch application data if available
+            fetch(`/api/admin/application/user/${userId}`)
+                .then(r => r.json())
+                .then(appData => {
+                    const modalBody = document.getElementById('userModalBody');
+                    
+                    // Get role badge info
+                    const getRoleBadgeInfo = (role) => {
+                        switch(role) {
+                            case 'admin':
+                                return { class: 'bg-secondary text-dark', text: 'Administrator' };
+                            case 'organizer':
+                                return { class: 'bg-secondary text-dark', text: 'Community Organizer' };
+                            case 'approved':
+                                return { class: 'bg-secondary text-dark', text: 'Approved Member' };
+                            case 'pending':
+                                return { class: 'bg-secondary text-dark', text: 'Application Pending' };
+                            case 'rejected':
+                                return { class: 'bg-secondary text-dark', text: 'Rejected' };
+                            default:
+                                return { class: 'bg-secondary text-dark', text: 'Pending Review' };
+                        }
+                    };
+                    
+                    const roleBadge = getRoleBadgeInfo(userData.role);
+                    
+                    // Get provider badge info
+                    const getProviderBadge = (provider) => {
+                        switch(provider) {
+                            case 'google':
+                                return 'bg-secondary';
+                            case 'github':
+                                return 'bg-secondary';
+                            case 'reddit':
+                                return 'bg-secondary';
+                            case 'musicbrainz':
+                                return 'bg-secondary';
+                            default:
+                                return 'bg-secondary';
+                        }
+                    };
+                    
+                    // Create avatar or placeholder
+                    const avatarHtml = userData.avatar_url && userData.avatar_url.trim() !== '' ? 
+                        `<img src="${userData.avatar_url}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 100px; object-fit: cover;" onerror="this.parentNode.innerHTML='<div class=\\'bg-secondary rounded-circle d-flex align-items-center justify-content-center\\' style=\\'width: 100px; height: 100px;\\'><i class=\\'fas fa-user fa-2x text-white\\'></i></div>';">` :
+                        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-2x text-white"></i>
+                        </div>`;
+                    
+                    // Format pronouns
+                    const pronounsText = userData.pronouns || '';
+                    
+                    // Create basic profile content
+                    let profileContent = `
+                        <div class="row">
+                            <div class="col">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h4 class="mb-0 d-flex align-items-center">
+                                            ${userData.name}
+                                            ${pronounsText ? `<small class="text-muted ms-2 fs-6">${pronounsText}</small>` : ''}
+                                        </h4>
+                                    </div>
+                                    <span class="badge ${roleBadge.class} fs-6">
+                                        ${roleBadge.text}
+                                    </span>
+                                </div>
+                                
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>User Email:</strong></td>
+                                        <td>${userData.email}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Provider:</strong></td>
+                                        <td>
+                                            ${userData.provider}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Member since:</strong></td>
+                                        <td>${new Date(userData.created_at).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        })}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Last Login:</strong></td>
+                                        <td>${userData.last_login ? new Date(userData.last_login).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        }) : 'Never'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>No-Show Count:</strong></td>
+                                        <td>
+                                            <span class="badge ${userData.no_show_count > 0 ? 'bg-warning' : 'bg-success'}">
+                                                <i class="fas ${userData.no_show_count > 0 ? 'fa-exclamation-triangle' : 'fa-check'} me-1"></i>
+                                                ${userData.no_show_count || 0}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                    `;
+                    
+                    // Add application responses section if available
+                    let applicationSection = '';
+                    if (appData.success && appData.application && appData.application.questions_and_answers) {
+                        const app = appData.application;
+                        const questionsAndAnswers = app.questions_and_answers;
+                        
+                        let answersHtml = '';
+                        Object.entries(questionsAndAnswers).forEach(([questionKey, qaData]) => {
+                            if (qaData.answer && qaData.answer.trim() !== '') {
+                                answersHtml += `
+                                    <div class="mb-3">
+                                        <div class="fw-bold">${qaData.question}</div>
+                                        <div class="border rounded p-2 bg-light mt-1">${qaData.answer.replace(/\n/g, '<br>')}</div>
+                                    </div>
+                                `;
+                            }
+                        });
+                        
+                        if (answersHtml) {
+                            applicationSection = `
+                                <div class="mt-3">
+                                    <a href="#applicationAnswers" class="btn btn-primary btn-sm" data-bs-toggle="collapse" aria-expanded="false" aria-controls="applicationAnswers">
+                                        Show application responses
+                                    </a>
+                                    <div class="collapse mt-3" id="applicationAnswers">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Application Responses</h6>
+                                                <small class="text-muted">Submitted ${new Date(app.submitted_at).toLocaleDateString('en-US', { 
+                                                    year: 'numeric', 
+                                                    month: 'long', 
+                                                    day: 'numeric' 
+                                                })}</small>
+                                            </div>
+                                            <div class="card-body">
+                                                ${answersHtml}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            applicationSection = `
+                                <div class="mt-3">
+                                    <span class="badge bg-secondary text-dark">
+                                        No application submitted
+                                    </span>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        applicationSection = `
+                            <div class="mt-3">
+                                <span class="badge bg-secondary text-dark">
+                                    No application submitted
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    modalBody.innerHTML = profileContent + '        </div>\n    </div>' + applicationSection;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                    modal.show();
+                })
+                .catch(() => {
+                    // fallback: show user info only without application data
+                    const modalBody = document.getElementById('userModalBody');
+                    
+                    const getRoleBadgeInfo = (role) => {
+                        switch(role) {
+                            case 'admin':
+                                return { class: 'bg-danger', text: 'Administrator' };
+                            case 'organizer':
+                                return { class: 'bg-primary', text: 'Community Organizer' };
+                            case 'approved':
+                                return { class: 'bg-success text-dark', text: 'Approved Member' };
+                            case 'pending':
+                                return { class: 'bg-warning text-dark', text: 'Application Pending' };
+                            case 'rejected':
+                                return { class: 'bg-danger', text: 'Rejected' };
+                            default:
+                                return { class: 'bg-secondary', text: 'Pending Review' };
+                        }
+                    };
+                    
+                    const roleBadge = getRoleBadgeInfo(userData.role);
+                    
+                    const avatarHtml = userData.avatar_url && userData.avatar_url.trim() !== '' ? 
+                        `<img src="${userData.avatar_url}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 100px; object-fit: cover;">` :
+                        `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-2x text-white"></i>
+                        </div>`;
+                    
+                    const pronounsText = userData.pronouns || '';
+                    
+                    modalBody.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-3">
+                                ${avatarHtml}
+                            </div>
+                            <div class="col-md-9">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h4 class="mb-0 d-flex align-items-center">
+                                            ${userData.name}
+                                            ${pronounsText ? `<small class="text-muted ms-2 fs-6">${pronounsText}</small>` : ''}
+                                        </h4>
+                                    </div>
+                                    <span class="badge ${roleBadge.class} fs-6">
+                                        ${roleBadge.text}
+                                    </span>
+                                </div>
+                                
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>User Email:</strong></td>
+                                        <td><code>${userData.email}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Member since:</strong></td>
+                                        <td>${new Date(userData.created_at).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        })}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Last Login:</strong></td>
+                                        <td>${userData.last_login ? new Date(userData.last_login).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        }) : 'Never'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>No-Show Count:</strong></td>
+                                        <td>
+                                            <span class="badge ${userData.no_show_count > 0 ? 'bg-warning' : 'bg-success'}">
+                                                <i class="fas ${userData.no_show_count > 0 ? 'fa-exclamation-triangle' : 'fa-check'} me-1"></i>
+                                                ${userData.no_show_count || 0}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <div class="alert alert-warning mt-3">
+                                    <small><i class="fas fa-exclamation-triangle me-1"></i>Failed to load application responses.</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                    modal.show();
+                });
+        })
+        .catch(error => {
+            console.error('Error in viewUser:', error);
+            console.error('Error details:', error.message);
+            showToast(`Error loading user details: ${error.message}`, 'error');
+            
+            // Still try to show a basic modal with error information
+            const modalBody = document.getElementById('userModalBody');
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Error Loading User Details</h6>
+                        <p>Failed to load user information: ${error.message}</p>
+                        <small>Check console for more details</small>
+                    </div>
+                `;
+                const modal = new bootstrap.Modal(document.getElementById('userModal'));
+                modal.show();
+            }
+        });
+}
+
+// Show user modal with data directly (without API call)
+function showUserModal(userData) {
+    const modalBody = document.getElementById('userModalBody');
+    if (!modalBody) {
+        console.error('Could not find userModalBody element');
+        return;
+    }
+    
+    // Get role badge color
+    const roleColors = {
+        'admin': 'bg-warning',
+        'organizer': 'bg-info',
+        'approved': 'bg-success',
+        'pending': 'bg-warning',
+        'rejected': 'bg-danger',
+        'new': 'bg-secondary'
+    };
+    
+    const roleColor = roleColors[userData.role] || 'bg-secondary';
+    const roleName = userData.role_display || userData.role;
+    
+    modalBody.innerHTML = `
+        <div class="d-flex align-items-center mb-3">
+            <div class="flex-grow-1">
+                <h5 class="mb-1">${userData.name}</h5>
+                <p class="mb-1 text-muted">${userData.email}</p>
+                <span class="badge ${roleColor}">${roleName}</span>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <strong>Email:</strong> ${userData.email}
+            </div>
+            <div class="col-md-6">
+                <strong>Role:</strong> ${roleName}
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i> 
+                Basic user information from search results. Click on the user in the table for detailed information including application details.
+            </small>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('userModal'));
+    modal.show();
+}
+
+function deleteUser(userId, userName) {
+    document.getElementById('deleteModalBody').innerHTML = 
+        `Are you sure you want to delete user <strong>${userName}</strong>? This action cannot be undone.`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+    
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        fetch(`/api/admin/delete-user`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_id: userId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            modal.hide();
+            if (data.success) {
+                showToast('User deleted successfully', 'success');
+                const activeTab = document.querySelector('.nav-link.active').getAttribute('data-bs-target').substring(1);
+                const activeRole = activeTab === 'members' ? 'approved' :
+                                  activeTab === 'organizers' ? 'organizer' : activeTab;
+                loadUsers(activeRole, currentPages[activeRole]);
+            } else {
+                if (data.hosted_events && data.hosted_events.length > 0) {
+                    // Show detailed error modal with hosted events
+                    showHostedEventsError(userName, data.error, data.hosted_events);
+                } else {
+                    showToast(data.error || 'Failed to delete user', 'error');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modal.hide();
+            showToast('Error deleting user', 'error');
+        });
+    };
+}
+
+function showHostedEventsError(userName, errorMessage, hostedEvents) {
+    const modalBody = document.getElementById('hostedEventsModalBody');
+    
+    let eventsHtml = '<div class="alert alert-warning">' + errorMessage + '</div>';
+    eventsHtml += '<h6>Events that need reassignment:</h6>';
+    eventsHtml += '<div class="list-group">';
+    
+    hostedEvents.forEach(event => {
+        eventsHtml += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${event.title}</strong>
+                    <br>
+                    <small class="text-muted">${event.date} • ${event.role}</small>
+                </div>
+                <a href="/events/${event.id}" target="_blank" class="btn btn-sm btn-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>View Event
+                </a>
+            </div>
+        `;
+    });
+    
+    eventsHtml += '</div>';
+    eventsHtml += '<div class="mt-3"><small class="text-muted">To delete this user, first reassign these events to another organizer using the "Change role" dropdown in each event, or edit the events directly.</small></div>';
+    
+    modalBody.innerHTML = eventsHtml;
+    
+    const modal = new bootstrap.Modal(document.getElementById('hostedEventsModal'));
+    modal.show();
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchIconButton = document.getElementById('search-icon-button');
+    const searchFormContainer = document.getElementById('search-form-container');
+    const closeSearchButton = document.getElementById('close-search-button');
+    const searchInput = document.getElementById('user-search-input');
+    const searchResultsContainer = document.getElementById('search-results-container');
+
+    searchIconButton.addEventListener('click', () => {
+        searchFormContainer.style.display = 'block';
+        searchInput.focus();
+    });
+
+    closeSearchButton.addEventListener('click', () => {
+        searchFormContainer.style.display = 'none';
+        searchInput.value = '';
+        searchResultsContainer.innerHTML = '';
+    });
+
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        const query = searchInput.value.trim();
+
+        if (query.length < 2) {
+            searchResultsContainer.innerHTML = '';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            fetch(`/api/users/search?q=${encodeURIComponent(query)}&limit=10&approved_only=false`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.users && data.users.length > 0) {
+                        let resultsHtml = `
+                            <div class="card">
+                                <div class="card-header">
+                                    Search results
+                                </div>
+                                <div class="card-body user-list">`;
+                        data.users.forEach(user => {
+                            resultsHtml += createUserCard(user);
+                        });
+                        resultsHtml += '</div></div>';
+                        searchResultsContainer.innerHTML = resultsHtml;
+                    } else {
+                        searchResultsContainer.innerHTML = `
+                            <div class="card">
+                                <div class="card-header">
+                                    Search results
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">No users found.</p>
+                                </div>
+                            </div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during search:', error);
+                    searchResultsContainer.innerHTML = '<p class="text-danger">An error occurred during search.</p>';
+                });
+        }, 300);
+    });
+});
+
+function highlightUser(userId) {
+    // Clear previous highlights
+    clearHighlight();
+    
+    // Find and highlight the user row
+    const userRows = document.querySelectorAll('tbody tr');
+    let userFound = false;
+    
+    userRows.forEach(row => {
+        const userIdCell = row.querySelector('td:first-child');
+        if (userIdCell && userIdCell.textContent.trim() === userId) {
+            row.classList.add('table-warning');
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            userFound = true;
+            
+            // Show which tab the user is in
+            const activeTab = document.querySelector('.tab-pane.active');
+            if (activeTab) {
+                const tabName = activeTab.id;
+                showToast(`Found user in ${tabName} tab`, 'success');
+            }
+        }
+    });
+    
+    // Show the user detail modal immediately
+    viewUser(userId);
+    
+    if (!userFound) {
+        showToast('Opening user details...', 'info');
+    }
+}
+
+// Helper function to clear highlights
+function clearHighlight() {
+    const highlightedRows = document.querySelectorAll('.table-warning');
+    highlightedRows.forEach(row => {
+        row.classList.remove('table-warning');
+    });
+}
+</script>
+{% endblock %}

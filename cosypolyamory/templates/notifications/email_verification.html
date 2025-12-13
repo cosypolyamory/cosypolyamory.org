@@ -1,0 +1,70 @@
+{% extends "notifications/base.html" %}
+
+{% block title %}Verify Your Email Address{% endblock %}
+
+{% block content %}
+<table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+        <td style="padding: 0;">
+            <h1 style="margin: 0 0 20px 0; font-size: 24px; line-height: 28px; font-weight: bold; color: #333333;">
+                Verify Your Email Address
+            </h1>
+            
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 24px; color: #555555;">
+                Hi {{ user_name }},
+            </p>
+            
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 24px; color: #555555;">
+                You requested to change your email address to <strong>{{ new_email }}</strong>.
+            </p>
+            
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 24px; color: #555555;">
+                To complete this change, please click the button below to verify your new email address:
+            </p>
+            
+            <!-- Button -->
+            <table role="presentation" style="margin: 25px 0;">
+                <tr>
+                    <td style="border-radius: 4px; background: #007bff;">
+                        <a href="{{ verification_url }}" target="_blank" 
+                           style="border: solid 1px #007bff; border-radius: 4px; color: #ffffff; 
+                                  display: inline-block; font-size: 16px; font-weight: bold; 
+                                  margin: 0; padding: 12px 25px; text-decoration: none;">
+                            Verify Email Address
+                        </a>
+                    </td>
+                </tr>
+            </table>
+            
+            <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 20px; color: #666666;">
+                Or copy and paste this link into your browser:
+            </p>
+            
+            <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 20px; color: #007bff; word-break: break-all;">
+                {{ verification_url }}
+            </p>
+            
+            <div style="margin: 25px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                <p style="margin: 0; font-size: 14px; line-height: 20px; color: #856404;">
+                    <strong>⚠️ Important:</strong> This link will expire in {{ hours_valid }} hours.
+                </p>
+            </div>
+            
+            <p style="margin: 20px 0 15px 0; font-size: 16px; line-height: 24px; color: #555555;">
+                If you didn't request this email change, you can safely ignore this email. 
+                Your current email address will remain unchanged.
+            </p>
+            
+            <div style="margin: 25px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                <p style="margin: 0 0 10px 0; font-size: 14px; line-height: 20px; color: #666666;">
+                    <strong>Security Note:</strong>
+                </p>
+                <p style="margin: 0; font-size: 13px; line-height: 18px; color: #666666;">
+                    For your security, this verification link can only be used once. 
+                    If you need to change your email again, you'll need to request a new verification link.
+                </p>
+            </div>
+        </td>
+    </tr>
+</table>
+{% endblock %}

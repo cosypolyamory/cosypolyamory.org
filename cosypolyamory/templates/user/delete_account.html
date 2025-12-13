@@ -1,0 +1,84 @@
+{%- extends 'layout/base.html' -%}
+{%- block title -%}Delete Account{% endblock %}
+{%- block content -%}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <h2 class="mb-4">
+      <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Delete Your Account
+    </h2>
+    
+    <div class="alert alert-danger mb-4">
+      <h5 class="alert-heading">
+        <i class="fas fa-warning me-2"></i>Warning: This action cannot be undone!
+      </h5>
+      <p class="mb-0">
+        Deleting your account will permanently remove all your data from our system, including your profile, event history, and any events you've organized.
+      </p>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
+    <form method="POST" action="{{ url_for('user.delete_account') }}">
+      <div class="mb-4">
+        <label for="confirmation" class="form-label">
+          <strong>To confirm account deletion, please type exactly:</strong>
+        </label>
+        <div class="text-center mb-3">
+          <code class="text-danger">delete my account</code>
+        </div>
+        <input type="text" 
+               class="form-control" 
+               id="confirmation" 
+               name="confirmation" 
+               placeholder="Type: delete my account"
+               autocomplete="off"
+               required>
+        <div class="form-text">
+          This confirmation is case-sensitive and must be typed exactly as shown above.
+        </div>
+      </div>
+      
+      <div class="d-flex justify-content-between">
+        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>Cancel
+        </a>
+        <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+          <i class="fas fa-trash me-1"></i>Delete My Account
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmationInput = document.getElementById('confirmation');
+    const deleteButton = document.getElementById('deleteButton');
+    const requiredText = 'delete my account';
+    
+    confirmationInput.addEventListener('input', function() {
+        if (this.value === requiredText) {
+            deleteButton.disabled = false;
+            deleteButton.classList.remove('btn-danger');
+            deleteButton.classList.add('btn-danger');
+        } else {
+            deleteButton.disabled = true;
+        }
+    });
+});
+
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Great News! You're now attending: {{ event_title }}{% endblock %}
+
+{% block content %}
+<h2>🎉 We've moved you from the waitlist!</h2>
+<p>Hello {{ name }},</p>
+
+<p>Great news! A spot has opened up and we've confirmed you for attending the following event:</p>
+
+<div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #155724;">📅 {{ event_title }}</h3>
+    <p><strong>When:</strong> {{ event_date }} at {{ event_time }}</p>
+    <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #155724;">Google Maps</a>){% endif %}</p>
+    {% if event_description %}
+    <p><strong>Description:</strong> {{ event_description }}</p>
+    {% endif %}
+</div>
+
+<p><strong>You're now confirmed to attend this event!</strong> 🎊</p>
+
+<p>If you can no longer attend, please update your attendance confirmation as soon as possible so that someone else from the waitlist can take your place.</p>
+
+<p>You can view the full event details and see other attendees here: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
+
+<p>Looking forward to seeing you there!</p>
+{% endblock %}

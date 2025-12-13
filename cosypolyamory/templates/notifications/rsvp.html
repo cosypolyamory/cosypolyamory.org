@@ -1,0 +1,29 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Cosy Polyamory: You're attending: {{ event_title }}{% endblock %}
+
+{% block content %}
+<h2>You're attending {{ event_title }}</h2>
+<p>Hello {{ name }},</p>
+<p>You're confirmed to attend {{ event_title }}!</p>
+
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0;">Event Details</h3>
+    <p><strong>📍 Location:</strong> {{ location }}{% if location %} (<a href="https://maps.google.com/maps?q={{ location | urlencode }}" style="color: #007bff;">Google Maps</a>){% endif %}</p>
+    <p><strong>🕐 Time:</strong> {{ date }}, {{ start_time }}{% if end_time %} - {{ end_time }}{% endif %}</p>
+    {% if location_tips %}
+    <p><strong>💡 Location notes:</strong> {{ location_tips }}</p>
+    {% endif %}
+</div>
+
+{% if event_description %}
+<div style="margin: 20px 0;">
+    <h3>Event Description</h3>
+    <div>{{ event_description | replace('\n', '<br>') | safe }}</div>
+</div>
+{% endif %}
+
+<p>For all the details, see here: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
+
+<p>We're looking forward to seeing you there!</p>
+{% endblock %}

@@ -1,18 +1,32 @@
-version: "3.3"
+volumes:
+  cosypolyamory:
 
 services:
 
   web:
     build: .
-    image: cosypolyamory.org
+    image: new-cosypolyamory-web
+    restart: unless-stopped
     expose:
       - "3031"
     volumes:
-      - .:/code/cosypolyamory.org:z
+      - cosypolyamory:/data
     environment:
-      - VIRTUAL_HOST=cosypolyamory.org
-      - LETSENCRYPT_HOST=cosypolyamory.org
+      - VIRTUAL_HOST=new.cosypolyamory.org
+      - LETSENCRYPT_HOST=new.cosypolyamory.org
       - LETSENCRYPT_EMAIL=mayhem@gmail.com
+      - DATABASE_PATH=/data/cosypolyamory.db
+    command: ["/code/cosypolyamory.org/docker_startup.sh"]
+
+  reminders:
+    build: .
+    image: new-cosypolyamory-reminders
+    volumes:
+      - cosypolyamory:/data
+    environment:
+      - DATABASE_PATH=/data/cosypolyamory.db
+
+    command: ["/code/cosypolyamory.org/send_event_reminders.py"]
 
 networks:
   default:

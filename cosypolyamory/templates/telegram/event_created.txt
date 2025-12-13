@@ -1,0 +1,9 @@
+**New Event Published!**
+
+**{{ event_title }}**
+
+📅 **Date:** {{ event_date }}
+🕐 **Time:** {{ event_time }}
+📍 **Location:** {{ event_location }}
+
+**Would you like to attend?** {{ event_url }}

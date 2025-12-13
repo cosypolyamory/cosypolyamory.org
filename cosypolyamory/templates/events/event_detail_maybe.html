@@ -1,0 +1,71 @@
+{# Render the maybe list for the event ("maybe" RSVPs) #}
+{% if rsvps_maybe %}
+    {% for rsvp in rsvps_maybe %}
+        <div class="mb-3">
+            <div class="d-flex align-items-center mb-2">
+                <div class="me-2">
+                    <i class="fas fa-user-circle fa-lg text-warning"></i>
+                </div>
+                <div>
+                    <strong>{{ rsvp.user.name }}</strong>
+                    {% if rsvp.user.pronouns %}
+                        <span class="text-muted">
+                            ({{ rsvp.user.pronouns }})
+                        </span>
+                    {% endif %}
+                    <br>
+                    <small class="text-muted">
+                        Maybe since {{ rsvp.created_at.strftime('%b %d') }}
+                    </small>
+                </div>
+            </div>
+            
+            {% if can_manage_rsvps %}
+                <div class="w-100">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100" type="button" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-cog me-1"></i>Manage RSVP
+                        </button>
+                                                <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'yes', '{{ rsvp.user.name }}')">
+                                    <i class="fas fa-check me-2"></i>Move to Attending
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'waitlist', '{{ rsvp.user.name }}')">
+                                    <i class="fas fa-clock me-2"></i>Move to Waitlist
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="moveRSVP({{ event.id }}, '{{ rsvp.user.id }}', 'no', '{{ rsvp.user.name }}')">
+                                    <i class="fas fa-times me-2"></i>Move to Can't Go
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="#" onclick="removeRSVP({{ event.id }}, '{{ rsvp.user.id }}', '{{ rsvp.user.name }}')">
+                                    <i class="fas fa-trash me-2"></i>Remove RSVP
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if rsvp.notes %}
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-comment me-1"></i>{{ rsvp.notes }}
+                    </small>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center text-muted">
+        <i class="fas fa-question-circle fa-2x mb-3"></i>
+        <p>No one has responded "maybe" yet.</p>
+    </div>
+{% endif %}

@@ -1,0 +1,119 @@
+{%- extends 'layout/base.html' -%}
+{%- block title -%}home{% endblock %}
+{%- block content -%}
+
+<div id="events-guide">
+  <div id="title">
+    <p class="font-italic font-weight-light"><small>Version 2025-06-05</small></p>
+    <h1 class="text-center">Cosy Polyamory Community Events Guide</h1>
+  </div>
+  <div class="col-xl-6" id="table-of-contents">
+    <ul class="list list-unstyled" role="list">
+      <li>
+        <a href="#official-event">
+          <span class="title">💜Official Event💜</span>
+        </a>
+      </li>
+      <li>
+        <a href="#chat-gathering">
+          <span class="title">☀️Cosy Chat Gathering☀️</span>
+        </a>
+      </li>
+      <li>
+        <a href="#general-invitation">
+          <span class="title">🫧Public Event / Private Event / General Invitation🫧</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="summary-table">
+    <h2>Summary Table</h2>
+      <table class="table align-middle text-center">
+        <thead>
+          <tr>
+            <th scope="row">Event Kind</th>
+            <th scope="row">Official Event</th>
+            <th scope="row">Cosy Chat Gathering</th>
+            <th scope="row">General Invitation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+          </tr>
+          <tr>
+
+            <th scope="row">Cosy <br>Code of Conduct</th>
+            <td>✅️ </td>
+            <td>✅️ <br><small>(additional CoC/rules may apply)</small></td>
+            <td>❌️👐<br><small>NOT covered by Cosy CoC<br>(unless stipulated by host)</small></td>
+          </tr>
+          <tr>
+            <th scope="row">Members</th>
+            <td>👥✅<br><small>Community Members <br> (Meetup & Telegram)</small></td>
+            <td>👥✅<br><small>Community Members <br> (only Telegram)</small></td>
+            <td>👥🔓<br><small>potentially accessible to anyone</small></td>
+          </tr>
+          <tr>
+            <th scope="row">Guests Policy</th>
+            <td>✅️<br><small>Cosy Policy</small></td>
+            <td>✅️<br><small>Cosy Policy <br> (or additional guest policies may apply)</small></td>
+            <td>👐<br><small>mandated by the initiator</small></td>
+          </tr>
+        </tbody>
+      </table>
+  </div>
+  <div id="official-event">
+    <h2>
+      <a class="back-to-top" href="#title">⇧</a>
+      💜 Official Event 💜
+    </h2>
+      <p>Official Cosy events are published on meetup</p>
+
+    <h5>Example:</h5>
+    <ul>
+      <li>
+        <a href="https://www.meetup.com/cosy-polyamory-community/events/307459713/">Cosy Beach 🏖</a>
+      </li>
+    </ul>
+    <h5>Disclaimer</h5>
+    <p>If a purely Cosy group decides to go out to a festival or go dancing or whatever, people who are not in our group haven't signed up to the  CoC and we can't follow up on any negative interactions with them. </p>
+  </div>
+  <div id="chat-gathering">
+    <h2>
+      <a class="back-to-top" href="#title">⇧</a>
+      ☀️ Cosy Chat Gathering ☀️
+    </h2>
+    <p>Cosy Chat Gatherings are organised in the Telegram chat by and for known members. Only members and personal guests will attend</p>
+    <h5>Example:</h5>
+    <ul>
+      <li>"I would like to organise a gathering regarding X <b>in this group</b>"</li>
+      <li>"Anyone in the chat up for X (drinks, dancing, museum etc)?"</li>
+    </ul>
+    <h5>Disclaimer:</h5>
+    <p>This is a Cosy Chat gathering. The Code of conduct still applies. In addition, please bear [external-policies] in mind. Cosy guest policy applies. There may not be an official Cosy Facilitator Team member present. The initiator and present members will follow the CoC.</p>
+  </div>
+  <div id="general-invitation">
+    <h2>
+      <a class="back-to-top" href="#title">⇧</a>
+      🫧 Public Event / Private Event / General Invitation  🫧
+    </h2>
+    <p>Individual invitation for events organised outside of Cosy (public or private)
+    </p>
+    <h5>Example:</h5>
+    <ul>
+      <li>"I'm going to event X, does any one want to join?"</li>
+      <li>"I'm organising event X, does anyone want to join?"</li>
+    </ul>
+    <h5>Disclaimer:</h5>
+    <p>This is not an official Cosy event. Individuals outside our community may be present. We cannot guarantee that all attendees have agreed to our Code of Conduct. As such, we are unable to take responsibility for any behavior that may violate our standards.</p>
+  </div>
+
+  <div class="col" id="back-to-home">
+    [ <a href="/">back to home page</a> ]
+  </div>
+</div>
+
+{% endblock%}
+
+{% block scripts %}
+{% endblock %}

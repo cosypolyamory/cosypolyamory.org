@@ -1,0 +1,28 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}You are now the {{ role }} for: {{ event_title }}{% endblock %}
+
+{% block content %}
+<h2>You are now {{ role|title }}</h2>
+<p>Hello {{ name }},</p>
+<p>You are now the <strong>{{ role }}</strong> for the following event:</p>
+
+<div style="background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #0c5460;">📅 {{ event_title }}</h3>
+    <p><strong>When:</strong> {{ event_date }} at {{ event_time }}</p>
+    <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #0c5460;">Google Maps</a>){% endif %}</p>
+</div>
+
+<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h4 style="margin-top: 0; color: #856404;">Your responsibilities as {{ role }}:</h4>
+    <ul style="margin-bottom: 0;">
+        <li>Help facilitate the event and ensure everyone feels welcome</li>
+        <li>Manage event logistics and answer questions from attendees</li>
+        <li>Be available before and during the event for coordination</li>
+    </ul>
+</div>
+
+<p>You can view and manage the event here: <a href="{{ event_url }}" style="color: #007bff;">{{ event_url }}</a></p>
+
+<p>Thank you for helping make our community events successful!</p>
+{% endblock %}

@@ -1,0 +1,9 @@
+**Event Updated!**
+
+**{{ event_title }}** has been updated with the following changes:
+
+{{ update_details }}
+
+Please check the event page for full details.
+
+**Event Link:** {{ event_url }}

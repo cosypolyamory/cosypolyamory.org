@@ -1,0 +1,194 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Event Notes{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <h1 class="mb-4">Event Notes</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <p>
+            Event notes aim to reduce the amount of copy-and-paste needed to describe an event. A drinks event can have rules/guidelines
+            that are different from a hiking event, so event notes allow the organizers to have pre-created standard notes that 
+            apply to a certain type of event.
+        </p>
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>All Event Notes</span>
+                <a href="{{ url_for('admin.add_event_note') }}" class="btn btn-primary btn-sm">Add New Note</a>
+            </div>
+            <div class="card-body">
+                {% if event_notes %}
+                    {% for note in event_notes %}
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ note.name }}</h6>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin.edit_event_note', note_id=note.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal{{ note.id }}">Delete</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-0 text-muted">
+                                {% set note_text = note.note %}
+                                {% if note_text | length > 600 %}
+                                    {% set truncated_text = note_text[:600] %}
+                                    <!-- Find the last complete paragraph or sentence -->
+                                    {% if '\n\n' in truncated_text %}
+                                        {% set last_paragraph_end = truncated_text.rfind('\n\n') %}
+                                        {% set display_text = truncated_text[:last_paragraph_end] %}
+                                    {% else %}
+                                        {% set display_text = truncated_text %}
+                                    {% endif %}
+                                    {% for paragraph in display_text.split('\n\n') %}
+                                        {% if paragraph.strip() %}
+                                            <p class="mb-2">{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <p class="mb-0"><em>...</em></p>
+                                {% else %}
+                                    {% for paragraph in note_text.split('\n\n') %}
+                                        {% if paragraph.strip() %}
+                                            <p class="mb-2">{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delete Confirmation Modal -->
+                    <div class="modal fade" id="deleteModal{{ note.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ note.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteModalLabel{{ note.id }}">Delete Event Note</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to delete the event note "<strong>{{ note.name }}</strong>"?</p>
+                                    
+                                    <div id="noteUsageCheck{{ note.id }}">
+                                        <div class="d-flex justify-content-center">
+                                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            Checking if note is in use...
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="noteUsageResult{{ note.id }}" style="display: none;">
+                                        <!-- Results will be loaded here -->
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form method="POST" action="{{ url_for('admin.delete_event_note', note_id=note.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-danger" id="confirmDelete{{ note.id }}" disabled>Delete Note</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">No event notes found.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle delete modal show event
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to all delete modals
+    document.querySelectorAll('[id^="deleteModal"]').forEach(function(modal) {
+        modal.addEventListener('shown.bs.modal', function() {
+            const noteId = this.id.replace('deleteModal', '');
+            checkNoteUsage(noteId);
+        });
+    });
+});
+
+function checkNoteUsage(noteId) {
+    const checkDiv = document.getElementById('noteUsageCheck' + noteId);
+    const resultDiv = document.getElementById('noteUsageResult' + noteId);
+    const deleteBtn = document.getElementById('confirmDelete' + noteId);
+    
+    // Show loading, hide results
+    checkDiv.style.display = 'block';
+    resultDiv.style.display = 'none';
+    deleteBtn.disabled = true;
+    
+    // Check if note is in use
+    fetch(`/api/admin/event-note/${noteId}/usage`)
+        .then(response => response.json())
+        .then(data => {
+            checkDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            
+            if (data.success) {
+                if (data.events_using_note && data.events_using_note.length > 0) {
+                    // Note is in use
+                    let eventsList = data.events_using_note.map(event => 
+                        `<li><strong>${event.title}</strong> (${new Date(event.exact_time).toLocaleDateString()})</li>`
+                    ).join('');
+                    
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>Cannot Delete Note</h6>
+                            <p class="mb-2">This note is currently being used by the following events:</p>
+                            <ul class="mb-0">${eventsList}</ul>
+                            <p class="mt-2 mb-0"><small>Please remove this note from all events before deleting it.</small></p>
+                        </div>
+                    `;
+                    deleteBtn.disabled = true;
+                } else {
+                    // Note is not in use
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>This note is not currently being used by any events and can be safely deleted.
+                        </div>
+                    `;
+                    deleteBtn.disabled = false;
+                }
+            } else {
+                // Error checking usage
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>Error checking note usage. Please try again.
+                    </div>
+                `;
+                deleteBtn.disabled = true;
+            }
+        })
+        .catch(error => {
+            console.error('Error checking note usage:', error);
+            checkDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>Error checking note usage. Please try again.
+                </div>
+            `;
+            deleteBtn.disabled = true;
+        });
+}
+</script>
+
+{% endblock %}

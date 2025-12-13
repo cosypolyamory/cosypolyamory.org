@@ -1,0 +1,86 @@
+{% extends 'notifications/base.html' %}
+
+{% block subject %}Event Feedback: {{ event_title }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <h2 style="color: #5d0096; margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">
+        Event Feedback Received
+    </h2>
+    <p style="color: #666; margin: 0; font-size: 14px;">
+        Feedback has been submitted for one of your community events
+    </p>
+</div>
+
+<!-- Event Information -->
+<div style="background: #f8f9fa; border-left: 4px solid #5d0096; padding: 20px; margin: 20px 0; border-radius: 0 6px 6px 0;">
+    <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px; font-weight: 600;">
+        Event Details
+    </h3>
+    
+    <div style="margin-bottom: 12px;">
+        <strong style="color: #5d0096; display: inline-block; min-width: 80px;">Event:</strong>
+        <span style="color: #333; font-weight: 600;">{{ event_title }}</span>
+    </div>
+    
+    <div style="margin-bottom: 12px;">
+        <strong style="color: #5d0096; display: inline-block; min-width: 80px;">Date:</strong>
+        <span style="color: #333;">{{ event_date }}</span>
+    </div>
+    
+    {% if event_location %}
+    <div style="margin-bottom: 0;">
+        <strong style="color: #5d0096; display: inline-block; min-width: 80px;">Location:</strong>
+        <span style="color: #333;">{{ event_location }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Feedback Information -->
+<div style="background: #fff; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin: 20px 0;">
+    <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px; font-weight: 600;">
+        Feedback Details
+    </h3>
+    
+    <div style="margin-bottom: 16px;">
+        <strong style="color: #5d0096; display: inline-block; min-width: 120px;">From:</strong>
+        <span style="color: #333;">{{ sender_email if not is_anonymous else 'Anonymous Submission' }}</span>
+    </div>
+    
+    <div style="margin-bottom: 16px;">
+        <strong style="color: #5d0096; display: inline-block; min-width: 120px;">Type:</strong>
+        {% set badge_color = '#7a9b7a' %}
+        {% if feedback_type == 'concern' or feedback_type == 'violation' %}
+            {% set badge_color = '#c17a7a' %}
+        {% elif feedback_type == 'suggestion' %}
+            {% set badge_color = '#9a7aa3' %}
+        {% endif %}
+        <span style="background: {{ badge_color }}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 13px; font-weight: 600;">
+            {{ {
+                'general': 'General Feedback',
+                'suggestion': 'Suggestion',
+                'concern': 'Safety/Behavior Concern', 
+                'violation': 'Code of Conduct Violation'
+            }.get(feedback_type, feedback_type.title()) }}
+        </span>
+    </div>
+    
+    <div style="margin-bottom: 16px;">
+        <strong style="color: #5d0096; display: inline-block; min-width: 120px;">Subject:</strong>
+        <span style="color: #333;">{{ subject }}</span>
+    </div>
+    
+    <div style="margin-bottom: 0;">
+        <strong style="color: #5d0096; display: block; margin-bottom: 8px;">Details:</strong>
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 6px; border: 1px solid #e9ecef; white-space: pre-line; color: #333; line-height: 1.6;">{{ message }}</div>
+    </div>
+</div>
+
+<div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+    <p style="color: #666; font-size: 13px; margin: 0;">
+        <strong>Submitted:</strong> {{ timestamp.strftime('%A, %B %d, %Y at %I:%M %p') }}<br>
+        <strong>Submission:</strong> {{ 'Anonymous' if is_anonymous else 'Identified' }}<br>
+        <strong>Sent to:</strong> All organizers and administrators
+    </p>
+</div>
+{% endblock %}

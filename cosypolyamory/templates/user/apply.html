@@ -1,0 +1,238 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Community Application{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <h1>Join Our Community</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Community Application</h5>
+                <p class="card-text">
+                    Welcome! To join our community, please take a few minutes to answer these questions. 
+                    This helps us maintain a safe and welcoming space for everyone.
+                </p>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-book me-2"></i>
+                    <strong>Please read our <a href="{{ url_for('pages.coc') }}" target="_blank" rel="noopener noreferrer">Code of Conduct</a> before answering the questions below.</strong>
+                    <br>
+                    <small>Understanding our community guidelines will help you provide better answers and show that you're aligned with our values.</small>
+                </div>
+                
+                <form method="POST" action="{{ url_for('user.submit_application') }}">
+                    {% for question_key, question_text in questions.items() %}
+                    <div class="mb-4">
+                        <label for="{{ question_key }}" class="form-label">
+                            <strong>{{ question_text }}</strong>
+                        </label>
+                        <textarea class="form-control" id="{{ question_key }}" name="{{ question_key }}" rows="4" required 
+                                  minlength="{{ character_limits[question_key].min }}"
+                                  data-min="{{ character_limits[question_key].min }}"
+                                  data-max="{{ character_limits[question_key].max }}">{{ form_data[question_key] if form_data else '' }}</textarea>
+                        <div class="form-text">
+                            <span class="char-counter" data-target="{{ question_key }}">0</span> / {{ character_limits[question_key].min }} characters minimum (max: {{ character_limits[question_key].max }})
+                            <i class="fas fa-check-circle text-success ms-2 check-icon" style="display: none;"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="agree_terms" required>
+                            <label class="form-check-label" for="agree_terms">
+                                I agree to follow the community <a href="{{ url_for('pages.coc') }}" target="_blank">Code of Conduct</a> 
+                                and understand that my application will be reviewed by community organizers.
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <div id="submit-error-message" class="alert alert-warning d-none" style="margin-bottom: 1rem;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Please fix the validation errors above before submitting your application.
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Submit Application
+                        </button>
+                        <a href="{{ url_for('pages.index') }}" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="alert alert-info mt-4">
+            <h6><i class="fas fa-info-circle me-2"></i>What happens next?</h6>
+            <ul class="mb-0">
+                <li>Your application will be reviewed by our community organizers</li>
+                <li>We typically respond within 3-5 business days</li>
+                <li>Once approved, you'll have full access to event details and community features</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const submitErrorMessage = document.getElementById('submit-error-message');
+    const textareas = form.querySelectorAll('textarea[required]');
+    
+    // Initialize character counters
+    textareas.forEach(textarea => {
+        const counter = document.querySelector(`[data-target="${textarea.id}"]`);
+        const parentDiv = textarea.closest('.mb-4');
+        const checkIcon = parentDiv.querySelector('.check-icon');
+        const minLength = parseInt(textarea.getAttribute('data-min')) || 100;
+        const maxLength = parseInt(textarea.getAttribute('data-max')) || 1000;
+        
+        // Update counter on input
+        textarea.addEventListener('input', function() {
+            updateCharacterCount(textarea, counter, checkIcon, minLength, maxLength);
+            updateSubmitButton();
+        });
+        
+        // Initial count
+        updateCharacterCount(textarea, counter, checkIcon, minLength, maxLength);
+    });
+    
+    // Prevent form submission if validation fails
+    form.addEventListener('submit', function(e) {
+        let hasErrors = false;
+        
+        textareas.forEach(textarea => {
+            const length = textarea.value.trim().length;
+            const minLength = parseInt(textarea.getAttribute('data-min')) || 100;
+            const maxLength = parseInt(textarea.getAttribute('data-max')) || 1000;
+            
+            if (length < minLength || length > maxLength) {
+                hasErrors = true;
+            }
+        });
+        
+        if (hasErrors) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Show alert
+            showValidationAlert();
+            
+            // Scroll to first incomplete field
+            const firstIncomplete = Array.from(textareas).find(textarea => {
+                const length = textarea.value.trim().length;
+                const minLength = parseInt(textarea.getAttribute('data-min')) || 100;
+                const maxLength = parseInt(textarea.getAttribute('data-max')) || 1000;
+                return length < minLength || length > maxLength;
+            });
+            if (firstIncomplete) {
+                firstIncomplete.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstIncomplete.focus();
+            }
+        }
+    });
+    
+    function updateCharacterCount(textarea, counter, checkIcon, minLength, maxLength) {
+        const length = textarea.value.trim().length;
+        counter.textContent = length;
+        
+        // Remove previous states
+        counter.classList.remove('text-danger', 'text-success', 'text-warning');
+        textarea.classList.remove('border-danger', 'border-success');
+        
+        if (length >= minLength && length <= maxLength) {
+            counter.classList.add('text-success');
+            textarea.classList.add('border-success');
+            checkIcon.style.display = 'inline';
+        } else if (length > maxLength) {
+            counter.classList.add('text-warning');
+            textarea.classList.add('border-danger');
+            checkIcon.style.display = 'none';
+        } else {
+            counter.classList.add('text-danger');
+            textarea.classList.add('border-danger');
+            checkIcon.style.display = 'none';
+        }
+    }
+    
+    function updateSubmitButton() {
+        const allValid = Array.from(textareas).every(textarea => {
+            const length = textarea.value.trim().length;
+            const minLength = parseInt(textarea.getAttribute('data-min')) || 100;
+            const maxLength = parseInt(textarea.getAttribute('data-max')) || 1000;
+            return length >= minLength && length <= maxLength;
+        });
+        
+        if (allValid) {
+            submitButton.disabled = false;
+            submitButton.classList.remove('btn-primary');
+            submitButton.classList.add('btn-primary');
+            submitErrorMessage.classList.add('d-none');
+        } else {
+            submitButton.disabled = true;
+            submitButton.classList.remove('btn-primary');
+            submitButton.classList.add('btn-primary');
+            submitErrorMessage.classList.remove('d-none');
+        }
+    }
+    
+    function showValidationAlert() {
+        // Remove existing alerts
+        const existingAlert = document.querySelector('.validation-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // Create new alert
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show validation-alert';
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Please complete all fields:</strong> Each answer must meet the character requirements (minimum and maximum) to provide meaningful responses.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Insert after the Code of Conduct alert
+        const cocAlert = document.querySelector('.alert-info');
+        cocAlert.parentNode.insertBefore(alert, cocAlert.nextSibling);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Initial validation check
+    updateSubmitButton();
+});
+</script>
+{% endblock %}

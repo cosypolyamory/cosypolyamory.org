@@ -1,0 +1,93 @@
+  <nav class="navbar navbar-expand-lg navbar-light navbar-dark navbar-color">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">
+        <img src="/static/img/cosypolyamory.org.svg" alt="Cosy Polyamory Hearth-plus-Infinite-shaped Logo">
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon nav-link-col"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+              <a class="nav-link {{ 'active aria-current="page"' if page == "home" }}" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ 'active aria-current="page"' if page == "events" }}" href="/events">Events</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ 'active aria-current="page"' if page == "values" }}" href="/values">Values</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ 'active aria-current="page"' if page == "docs" }}" href="/structure">Structure</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {{ 'active aria-current="page"' if page == "contact" }}" href="/contact">Contact</a>
+          </li>
+        </ul>
+        
+        <!-- Authentication links -->
+        <ul class="navbar-nav ms-auto">
+          {% if current_user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="max-width: 200px;">
+                <span class="text-truncate">{{ current_user.name }}</span>
+                {% if current_user.role == 'admin' %}
+                  <span class="badge bg-orange ms-1 flex-shrink-0">Admin</span>
+                {% elif current_user.role == 'organizer' %}
+                  <span class="badge bg-purple ms-1 flex-shrink-0">Org</span>
+                {% elif current_user.role == 'pending' %}
+                  <span class="badge bg-warning ms-1 flex-shrink-0">Pending</span>
+                {% endif %}
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                  <i class="fas fa-user me-2"></i>My Profile
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth.my_events') }}">
+                  <i class="fas fa-calendar-check me-2"></i>My Events
+                </a></li>
+                
+                
+                <!-- Admin/Organizer tools -->
+                {% if current_user.role in ['admin', 'organizer'] %}
+                  <li><hr class="dropdown-divider"></li>
+                  <li><h6 class="dropdown-header">Organizer Tools</h6></li>
+                  <li><a class="dropdown-item" href="{{ url_for('admin.moderate_applications') }}">
+                    <i class="fas fa-gavel me-2"></i>Review Applications
+                  </a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}">
+                    <i class="fas fa-cog me-2"></i>Manage members
+                  </a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('events.create_event') }}">
+                    <i class="fas fa-calendar-plus me-2"></i>Create Event
+                  </a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('admin.event_notes') }}">
+                    <i class="fas fa-sticky-note me-2"></i>Event Notes
+                  </a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('admin.community_insights') }}">
+                    <i class="fas fa-chart-pie me-2"></i>Community Insights
+                  </a></li>
+                {% endif %}
+                
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                  <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </a></li>
+              </ul>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.login') }}">
+                <i class="fas fa-sign-in-alt me-1"></i>Login
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.join') }}">
+                <i class="fas fa-user-plus me-1"></i>Join Community
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>

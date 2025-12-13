@@ -1,0 +1,19 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}Application Status Reset{% endblock %}
+
+{% block content %}
+<h2>Hello {{ user.name }},</h2>
+
+<p>We've reset your application status to <strong>Pending Review</strong> in the Cosy Polyamory community system.</p>
+
+<p><strong>Important:</strong> As part of this reset, we've removed your previous application responses. If you wish to reapply for community membership, you'll need to complete a fresh application with new responses.</p>
+
+<p>What this means:</p>
+<ul>
+    <li>You can submit a fresh application if you choose</li>
+    <li>You'll need to provide new responses to all application questions</li>
+</ul>
+
+<p>Thank you for your understanding.</p>
+{% endblock %}

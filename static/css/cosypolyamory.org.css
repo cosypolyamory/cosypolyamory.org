@@ -1,3 +1,131 @@
+/* Make all input/textarea placeholders a lighter gray for field hints */
+input::placeholder,
+textarea::placeholder {
+  color: #adb5bd !important;
+  opacity: 1;
+}
+
+/* Override Bootstrap's blue checkbox color with custom secondary grey */
+.form-check-input:checked {
+  background-color: #dee2e6 !important;
+  border-color: #dee2e6 !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23212529' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e") !important;
+}
+
+.form-check-input:focus {
+  border-color: #dee2e6 !important;
+  box-shadow: 0 0 0 0.25rem rgba(222, 226, 230, 0.25) !important;
+}
+
+/* Override Bootstrap's blue progress bar color with custom primary purple */
+.progress-bar {
+  background-color: #7a4da8 !important;
+}
+
+/* Override Bootstrap Primary Color - replaces default blue */
+.btn-primary {
+  background-color: #7a4da8 !important;
+  border-color: #7a4da8 !important;
+  color: white !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: #6a3f94 !important;
+  border-color: #6a3f94 !important;
+  color: white !important;
+}
+
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: #9d7dba !important;
+  border-color: #9d7dba !important;
+}
+
+.btn-outline-primary {
+  color: #7a4da8 !important;
+  border-color: #7a4da8 !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+  background-color: #7a4da8 !important;
+  border-color: #7a4da8 !important;
+  color: white !important;
+}
+
+.bg-primary {
+  background-color: #7a4da8 !important;
+}
+
+.text-primary {
+  color: #7a4da8 !important;
+}
+
+.border-primary {
+  border-color: #7a4da8 !important;
+}
+
+/* Override Bootstrap Secondary Color - replaces default grey */
+.btn-secondary {
+  background-color: #e9ecef !important;
+  border-color: #e9ecef !important;
+  color: #212529 !important;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus,
+.btn-secondary:active {
+  background-color: #dee2e6 !important;
+  border-color: #dee2e6 !important;
+  color: #212529 !important;
+}
+
+.btn-secondary:disabled,
+.btn-secondary.disabled {
+  background-color: #f8f9fa !important;
+  border-color: #f8f9fa !important;
+  color: #6c757d !important;
+}
+
+.btn-outline-secondary {
+  color: #212529 !important;
+  border-color: #dee2e6 !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus,
+.btn-outline-secondary:active {
+  background-color: #e9ecef !important;
+  border-color: #e9ecef !important;
+  color: #212529 !important;
+}
+
+.bg-secondary {
+  background-color: #e9ecef !important;
+}
+
+.text-secondary {
+  color: #6c757d !important;
+}
+
+.border-secondary {
+  border-color: #dee2e6 !important;
+}
+
+/* Custom icon colors for host/co-host */
+.text-custom-primary {
+  color: #7a4da8 !important;
+}
+
+.text-custom-secondary {
+  color: #6c757d !important;
+}
+
 body {
   font-family: 'Montserrat', sans-serif !important;
   background: #FCFBFB;
@@ -50,6 +178,132 @@ h4 {
     font-weight: bold;
 }
 
+/* Brighter navbar links */
+.navbar a,
+.navbar .nav-link,
+.navbar-color a,
+.navbar-color .nav-link {
+    color: #ddd3e7 !important;
+    text-shadow: 0 0 4px rgba(255,255,255,0.5);
+}
+
+.navbar a:hover,
+.navbar .nav-link:hover,
+.navbar-color a:hover,
+.navbar-color .nav-link:hover {
+    color: #ffffee !important;
+    text-shadow: 0 0 8px rgba(255,255,255,0.7);
+}
+
+/* Keep dropdown menu links black */
+.navbar .dropdown-menu a,
+.navbar .dropdown-menu .dropdown-item,
+.navbar-color .dropdown-menu a,
+.navbar-color .dropdown-menu .dropdown-item {
+    color: #212529 !important;
+    text-shadow: none !important;
+}
+
+.navbar .dropdown-menu a:hover,
+.navbar .dropdown-menu .dropdown-item:hover,
+.navbar-color .dropdown-menu a:hover,
+.navbar-color .dropdown-menu .dropdown-item:hover {
+    color: #1e2125 !important;
+    text-shadow: none !important;
+    background-color: #f8f9fa !important;
+}
+
+/* Make dropdown menu bigger and scrollable */
+.navbar .dropdown-menu,
+.navbar-color .dropdown-menu {
+    max-height: 70vh;
+    min-width: 250px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* User Search Component Styles */
+.user-search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ced4da;
+    border-top: none;
+    border-radius: 0 0 0.375rem 0.375rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.user-search-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.15s ease;
+}
+
+.user-search-suggestion:last-child {
+    border-bottom: none;
+}
+
+.user-search-suggestion:hover,
+.user-search-suggestion.active {
+    background-color: #f8f9fa;
+}
+
+.user-search-item-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-search-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.user-search-avatar-placeholder {
+    background-color: #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.user-search-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-search-item-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-search-item-email {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-search-item-role {
+    font-size: 0.75rem;
+}
+
 .navbar-brand img {
   position: relative;
   bottom: 20%;
@@ -64,4 +318,511 @@ h4 {
   text-decoration: none;
   font-size: 50%;
   font-weight: 100;
+}
+
+/* Ensure navbar dropdown appears above quick actions */
+.navbar .dropdown-menu {
+  z-index: 1050 !important;
+}
+
+/* Custom role badge colors */
+.bg-purple {
+  background-color: #6f42c1 !important;
+}
+
+.bg-orange {
+  background-color: #fd7e14 !important;
+}
+
+/* Hidden class for event filtering */
+.hidden {
+  display: none !important;
+}
+
+/* Additional event card filtering */
+.event-card.hidden { 
+  display: none !important; 
+}
+
+/* Event card styling for consistent layout */
+.event-card .card {
+  height: 100%;
+}
+
+.event-card .event-description {
+  height: 14rem; /* Increased from 10rem to 14rem for more text visibility */
+  overflow: hidden;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+  padding-top: 5px;
+  font-size: 1rem; /* Slightly smaller font size for better fit */
+}
+
+/* Responsive margin adjustments for medium screens (~900px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  #content {
+    /* Reduce margins significantly for tablets and medium screens */
+    max-width: 95% !important;
+    width: 95% !important;
+  }
+  
+  .container-md {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 767px) {
+  #content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .container-md {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+.btn-close {
+    font-size: 0.7rem;
+    padding: 0.25rem;
+}
+
+/* Event description styles - enhanced for list view */
+.event-description {
+    font-size: 1.4rem;
+    line-height: 1.6;
+}
+
+.event-description:hover {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+/* Mobile optimization - reduce margins and padding */
+@media (max-width: 768px) {
+    /* Override base template's container constraints on mobile */
+    body > .container-md {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    /* Override the col-md-8 mx-auto wrapper from base template */
+    #content {
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+    
+    .container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    .row {
+        margin-left: -4px !important;
+        margin-right: -4px !important;
+    }
+    
+    .row > [class*="col-"] {
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+    
+    /* Reduce card padding on mobile */
+    .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    /* Reduce margins between elements */
+    .mb-4 {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    /* Chart container responsive sizing */
+    .chart-container {
+        height: 250px; /* Mobile optimized height */
+        margin-bottom: 20px;
+    }
+}
+
+/* Chart container styles */
+.chart-container {
+    position: relative;
+    height: 300px; /* Default desktop height */
+    margin: 0 auto;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.chart-container canvas {
+    max-height: 100%;
+}
+
+/* Community stats and table styling */
+.display-6 {
+    font-weight: bold;
+}
+
+.border {
+    border-color: #dee2e6 !important;
+}
+
+/* Top attendees/flakes table styling */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.025);
+}
+
+.table th {
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Scrollable attendance table styling */
+.table-responsive[style*="max-height"] {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.table-responsive[style*="max-height"] .table {
+    margin-bottom: 0;
+}
+
+/* Sticky header for scrollable tables */
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+/* Form character counter styles */
+.char-counter {
+    font-weight: 500;
+}
+.char-counter.text-success {
+    color: #198754 !important;
+}
+.char-counter.text-danger {
+    color: #dc3545 !important;
+}
+.char-counter.text-warning {
+    color: #fd7e14 !important;
+}
+.form-control.border-danger {
+    border-width: 1px !important;
+}
+
+/* User card styles for admin pages */
+.user-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #fff;
+    position: relative;
+    overflow: visible;
+}
+
+.user-card:hover {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.user-card.dropdown-open {
+    z-index: 1000;
+}
+
+.user-card .dropdown {
+    position: static;
+}
+
+.user-card .btn-group {
+    position: relative;
+}
+
+.user-list {
+    padding-bottom: 50px;
+}
+
+/* Role and tab badge styles */
+.role-badge {
+    font-size: 0.75rem;
+}
+
+.tab-badge {
+    font-size: 0.7rem;
+}
+
+/* Enhanced dropdown menu styles */
+.dropdown-menu {
+    z-index: 1050 !important;
+    min-width: 180px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.card-body {
+    overflow: visible;
+}
+
+/* Map and share text styles */
+#map {
+    height: 400px;
+    width: 100%;
+}
+
+.share-text {
+    white-space: pre-wrap;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: monospace;
+}
+
+/* Form validation error styles */
+.has-error .btn {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.has-error .btn-outline-secondary {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.has-error .btn-outline-secondary:hover,
+.has-error .btn-outline-secondary:focus {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Application review buttons - ensure consistency across all breakpoints */
+.application-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 0.75rem !important;
+    margin-top: 2rem !important;
+    border-top: 1px solid #dee2e6 !important;
+    padding-top: 1rem !important;
+}
+
+.application-actions .btn {
+    min-width: 80px !important;
+    font-weight: 500 !important;
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.875rem !important;
+}
+
+/* Keep buttons side-by-side on all screen sizes */
+@media (max-width: 480px) {
+    .application-actions {
+        gap: 0.5rem !important;
+    }
+    
+    .application-actions .btn {
+        min-width: 70px !important;
+        padding: 0.375rem 0.5rem !important;
+        font-size: 0.8rem !important;
+    }
+    
+    .application-actions .btn i {
+        margin-right: 0.25rem !important;
+    }
+}
+
+/* On very small screens, show only icons */
+@media (max-width: 350px) {
+    .application-actions .btn {
+        min-width: 40px !important;
+        padding: 0.375rem 0.5rem !important;
+    }
+    
+    .application-actions .btn .btn-text {
+        display: none !important;
+    }
+    
+    .application-actions .btn i {
+        margin-right: 0 !important;
+    }
+}
+
+/* RSVP State Custom Colors */
+.btn-rsvp-yes {
+    background-color: #7a9b7a !important;
+    border-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.btn-rsvp-yes:hover,
+.btn-rsvp-yes:focus,
+.btn-rsvp-yes:active {
+    background-color: #6d8b6d !important;
+    border-color: #6d8b6d !important;
+    color: white !important;
+}
+
+.btn-rsvp-no {
+    background-color: #c17a7a !important;
+    border-color: #c17a7a !important;
+    color: white !important;
+}
+
+.btn-rsvp-no:hover,
+.btn-rsvp-no:focus,
+.btn-rsvp-no:active {
+    background-color: #b36d6d !important;
+    border-color: #b36d6d !important;
+    color: white !important;
+}
+
+.btn-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    border-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.btn-rsvp-maybe:hover,
+.btn-rsvp-maybe:focus,
+.btn-rsvp-maybe:active {
+    background-color: #8a6d92 !important;
+    border-color: #8a6d92 !important;
+    color: white !important;
+}
+
+.btn-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    border-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.btn-rsvp-waitlisted:hover,
+.btn-rsvp-waitlisted:focus,
+.btn-rsvp-waitlisted:active {
+    background-color: #edcb2b !important;
+    border-color: #edcb2b !important;
+    color: #333 !important;
+}
+
+/* For no RSVP state, use custom secondary style */
+.btn-rsvp-none {
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+    color: #212529 !important;
+}
+
+.btn-rsvp-none:hover,
+.btn-rsvp-none:focus,
+.btn-rsvp-none:active {
+    background-color: #dee2e6 !important;
+    border-color: #c6cbd1 !important;
+    color: #212529 !important;
+}
+
+.btn-rsvp-none:hover,
+.btn-rsvp-none:focus,
+.btn-rsvp-none:active {
+    background-color: #5a6268 !important;
+    border-color: #5a6268 !important;
+    color: white !important;
+}
+
+/* Add visible borders between no-RSVP buttons in button groups */
+.btn-group .btn-rsvp-none + .btn-rsvp-none {
+    border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Badge classes using the same custom colors */
+.badge-rsvp-host {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-cohost {
+    background-color: #5d0096 !important;
+    color: white !important;
+}
+
+.badge-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+.badge-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.badge-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+/* Card header classes using the same custom colors */
+.card-header-rsvp-yes {
+    background-color: #7a9b7a !important;
+    color: white !important;
+}
+
+.card-header-rsvp-maybe {
+    background-color: #9a7aa3 !important;
+    color: white !important;
+}
+
+.card-header-rsvp-waitlisted {
+    background-color: #f0d24a !important;
+    color: #333 !important;
+}
+
+.card-header-rsvp-no {
+    background-color: #c17a7a !important;
+    color: white !important;
+}
+
+/* Custom Button Colors - Site-wide consistency */
+/* Event filter button group - add visible borders between buttons */
+.event-filter-group .btn-secondary + .btn-secondary,
+.event-filter-group .btn-secondary + .btn-outline-secondary,
+.event-filter-group .btn-outline-secondary + .btn-secondary {
+    border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Add visible borders between secondary buttons in btn-group */
+.btn-group .btn-secondary + .btn-secondary {
+    border-left: 1px solid #adb5bd !important;
+}
+
+/* Add visible borders between RSVP buttons */
+.btn-group .btn-rsvp-none + .btn-rsvp-none,
+.btn-group .btn-rsvp-none + .btn-rsvp-yes,
+.btn-group .btn-rsvp-none + .btn-rsvp-no,
+.btn-group .btn-rsvp-none + .btn-rsvp-maybe,
+.btn-group .btn-rsvp-yes + .btn-rsvp-none,
+.btn-group .btn-rsvp-no + .btn-rsvp-none,
+.btn-group .btn-rsvp-maybe + .btn-rsvp-none {
+    border-left: 1px solid #adb5bd !important;
 }

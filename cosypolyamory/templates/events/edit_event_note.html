@@ -1,0 +1,78 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Edit Event Note{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <h2 class="mb-4">Edit Event Note</h2>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message|safe }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">Note Name</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ note.name }}" required maxlength="100">
+            </div>
+            <div class="mb-3">
+                <label for="note" class="form-label">Note Text</label>
+                <textarea class="form-control" id="note" name="note" rows="15" required maxlength="5000">{{ note.note }}</textarea>
+                <div class="form-text">
+                    <span id="note-counter">0</span>/5000 characters
+                </div>
+            </div>
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('admin.event_notes') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character counter for note text
+    function updateCharacterCounter(inputId, counterId, maxLength) {
+        const input = document.getElementById(inputId);
+        const counter = document.getElementById(counterId);
+        
+        if (input && counter) {
+            function updateCount() {
+                const currentLength = input.value.length;
+                counter.textContent = currentLength;
+                
+                // Change color based on usage
+                if (currentLength > maxLength * 0.9) {
+                    counter.style.color = '#dc3545'; // Red
+                } else if (currentLength > maxLength * 0.75) {
+                    counter.style.color = '#fd7e14'; // Orange
+                } else {
+                    counter.style.color = '#6c757d'; // Gray
+                }
+            }
+            
+            // Update on page load
+            updateCount();
+            
+            // Update on input
+            input.addEventListener('input', updateCount);
+        }
+    }
+    
+    // Initialize character counter
+    updateCharacterCounter('note', 'note-counter', 5000);
+});
+</script>
+{% endblock %}
