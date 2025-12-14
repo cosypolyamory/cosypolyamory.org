@@ -11,8 +11,9 @@
     <h3 style="margin-top: 0;">Event Details</h3>
     <p><strong>📍 Location:</strong> {{ location }}{% if location %} (<a href="https://maps.google.com/maps?q={{ location | urlencode }}" style="color: #007bff;">Google Maps</a>){% endif %}</p>
     <p><strong>🕐 Time:</strong> {{ date }}, {{ start_time }}{% if end_time %} - {{ end_time }}{% endif %}</p>
-    {% if location_tips %}
-    <p><strong>💡 Location notes:</strong> {{ location_tips }}</p>
+    <p><a href="{{ event_url }}#calendar" style="color: #007bff;">Add to Calendar</a></p>
+    {% if venue_notes %}
+      <p><strong>💡 Venue notes:</strong> {{ venue_notes }}</p>
     {% endif %}
 </div>
 

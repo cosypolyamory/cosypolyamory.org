@@ -384,6 +384,20 @@
                             </div>
                         </div>
                     {% endif %}
+
+                    <!-- venue notes  -->
+                    {% if can_see_details and event.location_notes %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6><i class="fas fa-solid fa-triangle-exclamation me-2 text-primary"></i>Venue notes</h6>
+                                    {% for paragraph in event.location_notes.split('\n\n') %}
+                                        {% if paragraph.strip() %}
+                                            <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
                     
                     <!-- Description Section -->
                     <div class="row mb-4">
@@ -401,37 +415,16 @@
                         </div>
                     </div>
 
-                    <!-- Important notes about our events Section -->
-                    {% if event.event_note or (event.tips_for_attendees and event.tips_for_attendees.strip()) %}
+                    <!-- event notes  -->
+                    {% if can_see_details and event.event_note %}
                         <div class="row mb-4">
                             <div class="col-12">
-                                <div class="card border-warning bg-light">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">
-                                            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
-                                            Important notes about our events
-                                        </h5>
-                                        <div class="card-text">
-                                            {% if event.event_note %}
-                                                {% for paragraph in event.event_note.note.split('\n\n') %}
-                                                    {% if paragraph.strip() %}
-                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endif %}
-                                            {% if event.event_note and event.tips_for_attendees and event.tips_for_attendees.strip() %}
-                                                <p></p>
-                                            {% endif %}
-                                            {% if event.tips_for_attendees and event.tips_for_attendees.strip() %}
-                                                {% for paragraph in event.tips_for_attendees.split('\n\n') %}
-                                                    {% if paragraph.strip() %}
-                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
+                                <h6><i class="fas fa-solid fa-file me-2 text-primary"></i>Additional notes about this event</h6>
+                                    {% for paragraph in event.event_note.note.split('\n\n') %}
+                                        {% if paragraph.strip() %}
+                                            <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                        {% endif %}
+                                    {% endfor %}
                             </div>
                         </div>
                     {% endif %}
@@ -867,6 +860,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let eventCoHostId = {% if event.co_host %}"{{ event.co_host.id }}"{% else %}null{% endif %};
     let isHostOrCohost = currentUserId && (currentUserId === eventOrganizerId || (eventCoHostId && currentUserId === eventCoHostId));
 
+    // Check for #calendar hash and open modal if present
+    if (window.location.hash === '#calendar') {
+        const calendarModal = document.getElementById('addToCalendarModal');
+        if (calendarModal) {
+            const modal = new bootstrap.Modal(calendarModal);
+            modal.show();
+        }
+    }
+
     // Override page-specific functions for event detail page
     window.updateAttendeeInfo = function(eventId, data) {
         // Update the consolidated attendance list if provided
@@ -1022,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', function() {
         location: {{ calendar_location|tojson }},
         description: {{ event.description|tojson }}
         {% if can_see_details and event.tips_for_attendees %}
-        + "\n\nTips for attendees: " + {{ event.tips_for_attendees|tojson }}
+        + "\n\nVenue notes: " + {{ event.tips_for_attendees|tojson }}
         {% endif %}
         {% if not can_see_details %}
         + "\n\n" + {{ event.time_period|tojson }}
@@ -1151,7 +1153,7 @@ function formatDateForOutlook(dateString) {
                             {% endif %}
                         </div>
                         {% if can_see_details and event.tips_for_attendees %}
-                            <h6 class="mb-2 mt-3">Tips for attendees:</h6>
+                            <h6 class="mb-2 mt-3">Venue notes:</h6>
                             <div class="text-muted">
                                 {% set tips_lines = event.tips_for_attendees.split('\n') %}
                                 {% set tips_excerpt = tips_lines[:2] %}
@@ -1190,5 +1192,5 @@ function formatDateForOutlook(dateString) {
         </div>
     </div>
 </div>
-
+ 
 {% endblock %}
