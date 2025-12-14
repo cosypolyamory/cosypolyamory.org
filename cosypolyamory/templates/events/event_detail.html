@@ -384,6 +384,33 @@
                             </div>
                         </div>
                     {% endif %}
+
+                    <!-- venue notes  -->
+                    {% if can_see_details and (event.event_note or (event.tips_for_attendees and event.tips_for_attendees.strip())) %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6><i class="fas fa-solid fa-triangle-exclamation me-2 text-primary"></i>Venue notes</h6>
+                                    {% if event.event_note %}
+                                        {% for paragraph in event.event_note.note.split('\n\n') %}
+                                            {% if paragraph.strip() %}
+                                                <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if event.event_note and event.tips_for_attendees and event.tips_for_attendees.strip() %}
+                                        <p></p>
+                                    {% endif %}
+                                    {% if event.tips_for_attendees and event.tips_for_attendees.strip() %}
+                                        {% for paragraph in event.tips_for_attendees.split('\n\n') %}
+                                            {% if paragraph.strip() %}
+                                                <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
                     
                     <!-- Description Section -->
                     <div class="row mb-4">
@@ -400,42 +427,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Important notes about our events Section -->
-                    {% if event.event_note or (event.tips_for_attendees and event.tips_for_attendees.strip()) %}
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card border-warning bg-light">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">
-                                            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
-                                            Important notes about our events
-                                        </h5>
-                                        <div class="card-text">
-                                            {% if event.event_note %}
-                                                {% for paragraph in event.event_note.note.split('\n\n') %}
-                                                    {% if paragraph.strip() %}
-                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endif %}
-                                            {% if event.event_note and event.tips_for_attendees and event.tips_for_attendees.strip() %}
-                                                <p></p>
-                                            {% endif %}
-                                            {% if event.tips_for_attendees and event.tips_for_attendees.strip() %}
-                                                {% for paragraph in event.tips_for_attendees.split('\n\n') %}
-                                                    {% if paragraph.strip() %}
-                                                        <p>{{ paragraph.strip() | replace('\n', '<br>') | safe }}</p>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-
                     {% if current_user.is_authenticated and current_user.role not in ['pending', 'rejected'] %}
                     <!-- Google Maps Preview - full width under time/location -->
                     <div class="row mb-4">

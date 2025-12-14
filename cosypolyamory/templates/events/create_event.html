@@ -643,7 +643,7 @@
                         
                         <div class="col-12 mb-3">
                             <div id="selected_event_note_box" class="border rounded bg-light p-2 mb-2" style="display:none; white-space:pre-line;"></div>
-                            <label for="tips_for_attendees" class="form-label">Additional notes for this event</label>
+                            <label for="tips_for_attendees" class="form-label">Venue notes for this event</label>
                             <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3" maxlength="5000"
                                       placeholder="Add any event-specific notes here">{% if clone_data %}{{ clone_data.tips_for_attendees }}{% elif event and event.tips_for_attendees %}{{ event.tips_for_attendees }}{% endif %}</textarea>
                             <div class="form-text">You can add extra notes for this event. The selected standard note will be shown above. <span id="tips-counter">0</span>/5000 characters</div>
