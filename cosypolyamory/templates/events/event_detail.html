@@ -858,6 +858,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let eventCoHostId = {% if event.co_host %}"{{ event.co_host.id }}"{% else %}null{% endif %};
     let isHostOrCohost = currentUserId && (currentUserId === eventOrganizerId || (eventCoHostId && currentUserId === eventCoHostId));
 
+    // Check for #calendar hash and open modal if present
+    if (window.location.hash === '#calendar') {
+        const calendarModal = document.getElementById('addToCalendarModal');
+        if (calendarModal) {
+            const modal = new bootstrap.Modal(calendarModal);
+            modal.show();
+        }
+    }
+
     // Override page-specific functions for event detail page
     window.updateAttendeeInfo = function(eventId, data) {
         // Update the consolidated attendance list if provided
@@ -1013,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', function() {
         location: {{ calendar_location|tojson }},
         description: {{ event.description|tojson }}
         {% if can_see_details and event.tips_for_attendees %}
-        + "\n\nTips for attendees: " + {{ event.tips_for_attendees|tojson }}
+        + "\n\nVenue notes: " + {{ event.tips_for_attendees|tojson }}
         {% endif %}
         {% if not can_see_details %}
         + "\n\n" + {{ event.time_period|tojson }}
@@ -1142,7 +1151,7 @@ function formatDateForOutlook(dateString) {
                             {% endif %}
                         </div>
                         {% if can_see_details and event.tips_for_attendees %}
-                            <h6 class="mb-2 mt-3">Tips for attendees:</h6>
+                            <h6 class="mb-2 mt-3">Venue notes:</h6>
                             <div class="text-muted">
                                 {% set tips_lines = event.tips_for_attendees.split('\n') %}
                                 {% set tips_excerpt = tips_lines[:2] %}
