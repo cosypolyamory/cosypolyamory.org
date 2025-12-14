@@ -125,7 +125,8 @@ def get_template_info() -> dict:
         'host_removed': 'Notification when user is removed as host/co-host of an event',
         'rsvp_updated': 'Notification when attendance is updated or waitlisted', 
         'event_updated': 'Notification when an attended event is updated',
-        'event_cancelled': 'Notification when an attended event is cancelled'
+        'event_cancelled': 'Notification when an attended event is cancelled',
+        'new_event': 'Notification when a new event is published'
     }
 
 
@@ -601,3 +602,52 @@ def notify_event_cancelled(user, event, cancellation_reason=None, reschedule_inf
     except EmailError as e:
         current_app.logger.error(f"Error sending event cancellation notification to {user.email}: {e}")
         return False
+
+
+def notify_event_published(event):
+    """
+    Send notification to all admins, organizers, and approved members when a new event is published.
+    
+    Args:
+        event: Event model instance
+    
+    Returns:
+        int: Number of notifications successfully sent
+    """
+    from cosypolyamory.models.user import User
+    from flask import url_for
+    
+    try:
+        # Get all users who should receive the notification
+        eligible_users = User.select().where(User.role.in_(['admin', 'organizer', 'approved']))
+        
+        success_count = 0
+        for user in eligible_users:
+            try:
+                success = send_notification_email(
+                    to_email=user.email,
+                    template_name="new_event",
+                    name=user.name,
+                    event_title=event.title,
+                    event_date=event.date.strftime('%A, %B %d, %Y'),
+                    event_time=event.exact_time.strftime('%I:%M %p') if event.exact_time else "TBD",
+                    event_location=event.establishment_name,
+                    event_description=event.description,
+                    event_url=url_for('events.event_detail', event_id=event.id, _external=True),
+                    base_url=current_app.config.get('BASE_URL', 'https://cosypolyamory.org')
+                )
+                
+                if success:
+                    success_count += 1
+                    
+            except Exception as e:
+                current_app.logger.error(f"Failed to send new event notification to {user.email}: {e}")
+                continue
+        
+        current_app.logger.info(f"New event notification sent to {success_count} users for event: {event.title}")
+        return success_count
+        
+    except Exception as e:
+        current_app.logger.error(f"Error sending new event notifications for {event.title}: {e}")
+        return 0
+

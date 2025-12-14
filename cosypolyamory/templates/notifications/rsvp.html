@@ -12,8 +12,8 @@
     <p><strong>📍 Location:</strong> {{ location }}{% if location %} (<a href="https://maps.google.com/maps?q={{ location | urlencode }}" style="color: #007bff;">Google Maps</a>){% endif %}</p>
     <p><strong>🕐 Time:</strong> {{ date }}, {{ start_time }}{% if end_time %} - {{ end_time }}{% endif %}</p>
     <p><a href="{{ event_url }}#calendar" style="color: #007bff;">Add to Calendar</a></p>
-    {% if location_tips %}
-    <p><strong>💡 Venue notes:</strong> {{ venue_notes }}</p>
+    {% if venue_notes %}
+      <p><strong>💡 Venue notes:</strong> {{ venue_notes }}</p>
     {% endif %}
 </div>
 

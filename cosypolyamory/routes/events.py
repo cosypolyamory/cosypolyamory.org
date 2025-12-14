@@ -570,6 +570,13 @@ def create_event_post():
                 notify_event_created(event)
             except Exception as e:
                 current_app.logger.error(f"Failed to send Telegram announcement for new event {event.id}: {e}")
+            
+            # Send email notification to all eligible members
+            try:
+                from cosypolyamory.notification import notify_event_published
+                notify_event_published(event)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send email notifications for new event {event.id}: {e}")
         else:
             flash(f'Event "{title}" has been created as a draft! Use the "Publish" option to make it visible to users.', 'success')
 
@@ -1032,6 +1039,13 @@ def edit_event_post(event_id):
                     notify_event_created(event)
                 except Exception as e:
                     current_app.logger.error(f"Failed to send Telegram announcement for newly published event {event.id}: {e}")
+                
+                # Send email notification to all eligible members
+                try:
+                    from cosypolyamory.notification import notify_event_published
+                    notify_event_published(event)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send email notifications for newly published event {event.id}: {e}")
             else:
                 # Event was unpublished - send unpublish notification
                 try:
@@ -1224,6 +1238,13 @@ def publish_event(event_id):
                 notify_event_created(event)
             except Exception as e:
                 current_app.logger.error(f"Failed to send Telegram announcement for published event {event_id}: {e}")
+            
+            # Send email notification to all eligible members
+            try:
+                from cosypolyamory.notification import notify_event_published
+                notify_event_published(event)
+            except Exception as e:
+                current_app.logger.error(f"Failed to send email notifications for published event {event_id}: {e}")
                 
         elif action == 'unpublish':
             event.published = False
