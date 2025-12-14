@@ -572,6 +572,7 @@ def create_event_post():
                 current_app.logger.error(f"Failed to send Telegram announcement for new event {event.id}: {e}")
         else:
             flash(f'Event "{title}" has been created as a draft! Use the "Publish" option to make it visible to users.', 'success')
+
         return redirect(url_for('events.event_detail', event_id=event.id))
 
     except ValueError as e:

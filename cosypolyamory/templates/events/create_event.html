@@ -584,11 +584,32 @@
                         </div>
                         
                         <div class="col-12 mb-3">
-                            <label for="location_notes" class="form-label">Location Notes</label>
+                            <label for="location_notes" class="form-label">Venue Notes</label>
                             <textarea class="form-control" id="location_notes" name="location_notes" rows="2" maxlength="1000"
                                       placeholder="e.g., Enter via side door, look for the group in the back room, second floor">{% if clone_data %}{{ clone_data.location_notes }}{% elif event %}{{ event.location_notes }}{% endif %}</textarea>
                             <div class="form-text">Additional directions or meeting details. <span id="location-notes-counter">0</span>/1000 characters</div>
                         </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Event Notes</label>
+                            <select class="form-select mb-2" id="event_note_select" name="event_note_id">
+                                <option value="">Do not include an event note</option>
+                                {% for note in event_notes %}
+                                    <option value="{{ note.id }}" data-note='{{ note.note|tojson }}'{% if event and event.event_note_id == note.id %} selected{% endif %}>{{ note.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <a href="{{ url_for('admin.event_notes') }}" target="_blank" class="btn btn-secondary">
+                                    Edit event notes
+                                    <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75em;"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
                     </div>
                     
                     <!-- Event Settings -->
@@ -619,34 +640,6 @@
                                    min="1" placeholder="Unlimited"
                                    value="{% if clone_data %}{{ clone_data.max_attendees }}{% elif event and event.max_attendees %}{{ event.max_attendees }}{% endif %}">
                             <div class="form-text">Leave empty for unlimited capacity</div>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Event Notes</label>
-                            <select class="form-select mb-2" id="event_note_select" name="event_note_id">
-                                <option value="">Do not include an event note</option>
-                                {% for note in event_notes %}
-                                    <option value="{{ note.id }}" data-note='{{ note.note|tojson }}'{% if event and event.event_note_id == note.id %} selected{% endif %}>{{ note.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="d-grid">
-                                <a href="{{ url_for('admin.event_notes') }}" target="_blank" class="btn btn-secondary">
-                                    Edit event notes
-                                    <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75em;"></i>
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <div id="selected_event_note_box" class="border rounded bg-light p-2 mb-2" style="display:none; white-space:pre-line;"></div>
-                            <label for="tips_for_attendees" class="form-label">Venue notes for this event</label>
-                            <textarea class="form-control" id="tips_for_attendees" name="tips_for_attendees" rows="3" maxlength="5000"
-                                      placeholder="Add any event-specific notes here">{% if clone_data %}{{ clone_data.tips_for_attendees }}{% elif event and event.tips_for_attendees %}{{ event.tips_for_attendees }}{% endif %}</textarea>
-                            <div class="form-text">You can add extra notes for this event. The selected standard note will be shown above. <span id="tips-counter">0</span>/5000 characters</div>
                         </div>
                     </div>
                     

@@ -205,7 +205,7 @@ def send_rsvp_confirmation(user, event, rsvp):
             date=event.date.strftime('%A, %B %d, %Y'),
             start_time=event.exact_time.strftime('%I:%M %p') if event.exact_time else "TBD",
             end_time=event.end_time.strftime('%I:%M %p') if event.end_time else None,
-            location_tips=event.tips_for_attendees or "",
+            venue_notes=event.location_notes or "",
             event_description=event.description or "",
             event_url=url_for('events.event_detail', event_id=event.id, _external=True)
         )
@@ -239,7 +239,7 @@ def send_event_reminder(user, event):
             event_date=event.date.strftime('%A, %B %d, %Y'),
             event_time=event.exact_time.strftime('%I:%M %p') if event.exact_time else "TBD",
             event_location=event.establishment_name or "Location will be provided to attendees",
-            location_tips=event.tips_for_attendees or "",
+            venue_notes=event.location_notes or "",
             event_description=event.description or "Event details available on the website."
         )
         
@@ -271,6 +271,7 @@ def send_waitlist_promotion_notification(user, event):
             event_time=event.exact_time.strftime('%I:%M %p') if event.exact_time else "TBD",
             event_location=event.establishment_name or "Location will be provided to attendees",
             event_description=event.description or "",
+            venue_notes=event.location_notes or "",
             event_url=url_for('events.event_detail', event_id=event.id, _external=True)
         )
         
@@ -307,6 +308,7 @@ def send_rsvp_update_notification(user, event, status, reason=None):
             event_location=event.establishment_name or "Location will be provided to attendees",
             status=status,
             reason=reason,
+            venue_notes=event.location_notes or "",
             event_url=url_for('events.event_detail', event_id=event.id, _external=True)
         )
         
