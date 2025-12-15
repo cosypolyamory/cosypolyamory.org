@@ -240,6 +240,7 @@ def community_insights():
     """Community statistics and insights for organizers/admins"""
     try:
         from cosypolyamory.models.user import User
+        from datetime import timedelta
         
         # Get all approved users with pronouns
         approved_users = (User
@@ -251,11 +252,12 @@ def community_insights():
         
         # Calculate pronoun statistics for all approved users
         # Extract first two words only for graphing (e.g., "they/them" from "they/them/theirs")
+        # Normalize to lowercase for consistent grouping
         pronoun_counts = {}
         
         for user in approved_users:
             if user.pronouns:
-                pronouns = user.pronouns.strip()
+                pronouns = user.pronouns.strip().lower()
                 # Split by slash and take only first two words
                 parts = pronouns.split('/')
                 if len(parts) >= 2:
@@ -285,6 +287,71 @@ def community_insights():
             'total_users_with_pronouns': total_users_with_pronouns,
             'total_community_members': total_approved + total_organizers + total_admins
         }
+        
+        # Calculate user growth statistics - get all time data
+        # We'll calculate monthly data points from the earliest user to now
+        user_growth_data = []
+        today = datetime.now().date()
+        
+        # Find the earliest user creation date
+        earliest_user = User.select(User.created_at).order_by(User.created_at.asc()).first()
+        if earliest_user and earliest_user.created_at:
+            earliest_date = earliest_user.created_at
+            # Calculate how many months to go back (only to when data exists)
+            months_diff = (today.year - earliest_date.year) * 12 + (today.month - earliest_date.month)
+            max_months = months_diff  # Only go back to when data exists
+        else:
+            max_months = 0  # No users, just show current month
+        
+        # Go back to earliest data, month by month
+        for months_ago in range(max_months, -1, -1):
+            # Calculate the date for this data point (end of month)
+            if months_ago == 0:
+                # Current month - use today
+                cutoff_date = datetime.now()
+                month_label = cutoff_date.strftime('%b %Y')
+            else:
+                # Previous months - use first day of that many months ago
+                year = today.year
+                month = today.month - months_ago
+                while month <= 0:
+                    month += 12
+                    year -= 1
+                cutoff_date = datetime(year, month, 1)
+                month_label = cutoff_date.strftime('%b %Y')
+            
+            # Total registered users (all users created before cutoff)
+            total_registered = User.select().where(
+                User.created_at <= cutoff_date
+            ).count()
+            
+            # Total users with applications submitted
+            total_with_applications = User.select().where(
+                (User.created_at <= cutoff_date) &
+                (User.role.in_(['pending', 'approved', 'organizer', 'admin', 'rejected']))
+            ).count()
+            
+            # Total approved users (approved, organizer, admin roles)
+            total_approved_at_date = User.select().where(
+                (User.created_at <= cutoff_date) &
+                (User.role.in_(['approved', 'organizer', 'admin']))
+            ).count()
+            
+            # Active users (logged in within last 2 weeks from cutoff date)
+            two_weeks_before_cutoff = cutoff_date - timedelta(days=14)
+            active_users = User.select().where(
+                (User.created_at <= cutoff_date) &
+                (User.last_login >= two_weeks_before_cutoff) &
+                (User.last_login <= cutoff_date)
+            ).count()
+            
+            user_growth_data.append({
+                'month': month_label,
+                'total_registered': total_registered,
+                'total_with_applications': total_with_applications,
+                'total_approved': total_approved_at_date,
+                'active_users': active_users
+            })
         
         # Calculate attendance and hosting statistics
         from cosypolyamory.models.rsvp import RSVP
@@ -396,10 +463,12 @@ def community_insights():
         top_attendees = []
         top_organizers = []
         top_flakes = []
+        user_growth_data = []
     
     return render_template('admin/community_insights.html',
                            pronoun_stats=pronoun_stats,
                            community_stats=community_stats,
                            top_attendees=top_attendees,
                            top_organizers=top_organizers,
-                           top_flakes=top_flakes)
+                           top_flakes=top_flakes,
+                           user_growth_data=user_growth_data)
