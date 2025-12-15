@@ -31,7 +31,7 @@ class Event(BaseModel):
     
     # Event settings
     max_attendees = IntegerField(null=True)  # Optional capacity limit
-    tips_for_attendees = TextField(null=True)  # Changed from requirements
+    tips_for_attendees = TextField(null=True)  # not used, too lazy to remove ATM
     event_note = ForeignKeyField(EventNote, null=True, backref='events')
     is_active = BooleanField(default=True)
     requires_approval = BooleanField(default=True)  # Only approved users can see full details

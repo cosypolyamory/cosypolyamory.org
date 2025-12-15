@@ -10,10 +10,14 @@
 
 <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #155724;">📅 {{ event_title }}</h3>
-    <p><strong>When:</strong> {{ event_date }} at {{ event_time }}</p>
-    <p><strong>Where:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #155724;">Google Maps</a>){% endif %}</p>
+    <p><strong>Time:</strong> {{ event_date }} at {{ event_time }}</p>
+    <p><a href="{{ event_url }}#calendar" style="color: #007bff;">Add to Calendar</a></p>
+    <p><strong>Location:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #155724;">Google Maps</a>){% endif %}</p>
+    {% if venue_notes %}
+      <p><strong>💡 Venue notes:</strong> {{ venue_notes }}</p>
+    {% endif %}
     {% if event_description %}
-    <p><strong>Description:</strong> {{ event_description }}</p>
+      <p><strong>Description:</strong> {{ event_description }}</p>
     {% endif %}
 </div>
 

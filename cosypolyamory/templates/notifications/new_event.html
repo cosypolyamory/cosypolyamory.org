@@ -1,0 +1,30 @@
+{% extends "notifications/base.html" %}
+
+{% block subject %}New Event: {{ event_title }}{% endblock %}
+
+{% block content %}
+<h2>New Event Published!</h2>
+<p>Hello {{ name }},</p>
+<p>We've just published a new event that you might be interested in:</p>
+
+<div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #155724;">🎉 {{ event_title }}</h3>
+    <p><strong>📅 Time:</strong> {{ event_date }} at {{ event_time }}</p>
+    <p><strong>📍 Location:</strong> {{ event_location }}{% if event_location %} (<a href="https://maps.google.com/maps?q={{ event_location | urlencode }}" style="color: #155724;">Google Maps</a>){% endif %}</p>
+</div>
+
+{% if event_description %}
+<div style="margin: 20px 0;">
+    <h4>About this event:</h4>
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #6f42c1; border-radius: 0 5px 5px 0;">
+        {{ event_description | truncate(500) | replace('\n', '<br>') | safe }}
+    </div>
+</div>
+{% endif %}
+
+<p style="text-align: center; margin: 30px 0;">
+    <a href="{{ event_url }}" style="display: inline-block; background-color: #007bff; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Event</a>
+</p>
+
+<p>Don't miss out — spaces may be limited!</p>
+{% endblock %}
