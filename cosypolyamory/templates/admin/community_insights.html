@@ -69,6 +69,34 @@
     </div>
     {% endif %}
 
+    <!-- User Growth Statistics -->
+    {% if user_growth_data %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-start flex-wrap">
+                    <div>
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-chart-line me-2"></i>User Growth Over Time
+                        </h4>
+                        <p class="text-muted mb-0">User statistics over time</p>
+                    </div>
+                    <div class="btn-group mt-2 mt-md-0" role="group" aria-label="Time range">
+                        <button type="button" class="btn btn-outline-primary btn-sm active" data-range="6">6 Months</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-range="12">12 Months</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-range="all">All Time</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="userGrowthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Top Attendees and Top Organizers -->
     <div class="row mb-4">
         <div class="col-lg-6 mb-4">
@@ -297,6 +325,143 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+    });
+    {% endif %}
+    
+    // User Growth Line Chart
+    {% if user_growth_data %}
+    const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+    
+    // Store all data for filtering
+    const allUserGrowthData = {
+        labels: {{ user_growth_data | map(attribute='month') | list | tojson }},
+        totalRegistered: {{ user_growth_data | map(attribute='total_registered') | list | tojson }},
+        totalWithApplications: {{ user_growth_data | map(attribute='total_with_applications') | list | tojson }},
+        totalApproved: {{ user_growth_data | map(attribute='total_approved') | list | tojson }},
+        activeUsers: {{ user_growth_data | map(attribute='active_users') | list | tojson }}
+    };
+    
+    function getFilteredData(range) {
+        let startIndex = 0;
+        const totalPoints = allUserGrowthData.labels.length;
+        
+        if (range === 6) {
+            startIndex = Math.max(0, totalPoints - 7);  // 7 points for 6 months (including current)
+        } else if (range === 12) {
+            startIndex = Math.max(0, totalPoints - 13);  // 13 points for 12 months
+        }
+        // 'all' uses startIndex = 0
+        
+        return {
+            labels: allUserGrowthData.labels.slice(startIndex),
+            datasets: [
+                {
+                    label: 'Total Registered Users',
+                    data: allUserGrowthData.totalRegistered.slice(startIndex),
+                    borderColor: '#36A2EB',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Users with Applications',
+                    data: allUserGrowthData.totalWithApplications.slice(startIndex),
+                    borderColor: '#FFCE56',
+                    backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Approved Users',
+                    data: allUserGrowthData.totalApproved.slice(startIndex),
+                    borderColor: '#4BC0C0',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Users logged in (last 2 weeks)',
+                    data: allUserGrowthData.activeUsers.slice(startIndex),
+                    borderColor: '#FF6384',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        };
+    }
+    
+    const userGrowthChart = new Chart(userGrowthCtx, {
+        type: 'line',
+        data: getFilteredData(6),  // Default to 6 months
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Users'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Handle range button clicks
+    document.querySelectorAll('[data-range]').forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active state
+            document.querySelectorAll('[data-range]').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Get range value
+            const range = this.dataset.range === 'all' ? 'all' : parseInt(this.dataset.range);
+            
+            // Update chart data
+            const newData = getFilteredData(range);
+            userGrowthChart.data = newData;
+            userGrowthChart.update();
+        });
     });
     {% endif %}
 });
