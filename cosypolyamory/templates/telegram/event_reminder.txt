@@ -1,6 +1,9 @@
 ⏰ **Event Reminder**
-
+{% if hours_before == 0 %}
+**{{ event_title }}** is happening TODAY!
+{% else %}
 Don't forget! **{{ event_title }}** is happening {{ time_text }}!
+{% endif %}
 
 📅 **Date:** {{ event_date }}
 🕐 **Time:** {{ event_time }}
