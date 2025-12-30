@@ -1227,19 +1227,25 @@ def publish_event(event_id):
             event.save()
             flash(f'Event "{event.title}" has been published and is now visible to users!', 'success')
             
-            # Send Telegram notification for newly published events
-            try:
-                from cosypolyamory.telegram_integration import notify_event_created
-                notify_event_created(event)
-            except Exception as e:
-                current_app.logger.error(f"Failed to send Telegram announcement for published event {event_id}: {e}")
+            # Check if notifications should be sent (default to True if checkbox not present)
+            send_notifications = request.form.get('do_not_notify') != 'on'
             
-            # Send email notification to all eligible members
-            try:
-                from cosypolyamory.notification import notify_event_published
-                notify_event_published(event)
-            except Exception as e:
-                current_app.logger.error(f"Failed to send email notifications for published event {event_id}: {e}")
+            if send_notifications:
+                # Send Telegram notification for newly published events
+                try:
+                    from cosypolyamory.telegram_integration import notify_event_created
+                    notify_event_created(event)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send Telegram announcement for published event {event_id}: {e}")
+                
+                # Send email notification to all eligible members
+                try:
+                    from cosypolyamory.notification import notify_event_published
+                    notify_event_published(event)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send email notifications for published event {event_id}: {e}")
+            else:
+                current_app.logger.info(f"Skipped notifications for published event {event_id} due to do_not_notify flag")
                 
         elif action == 'unpublish':
             event.published = False
