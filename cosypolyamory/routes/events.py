@@ -1229,7 +1229,6 @@ def publish_event(event_id):
             
             # Check if notifications should be sent (default to True if checkbox not present)
             send_notifications = request.form.get('do_not_notify') != 'on'
-            
             if send_notifications:
                 # Send Telegram notification for newly published events
                 try:
