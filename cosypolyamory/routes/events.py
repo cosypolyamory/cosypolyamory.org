@@ -404,11 +404,6 @@ def create_event_post():
             flash('Selected organizer not found.', 'error')
             return redirect(url_for('events.create_event'))
 
-        # Check permission: only admins or the selected organizer can create events for that organizer
-        if not (current_user.role == 'admin' or current_user.id == organizer_id):
-            flash('You can only create events as yourself unless you are an admin.', 'error')
-            return redirect(url_for('events.create_event'))
-
         # Handle co-host early, before capacity validation
         co_host = None
         if co_host_id:
