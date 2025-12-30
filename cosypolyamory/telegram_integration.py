@@ -204,6 +204,7 @@ class TelegramNotificationService:
                 "event_reminder.txt",
                 event_title=event.title,
                 time_text=time_text,
+                hours_before=hours_before,
                 event_date=event.date.strftime('%A, %B %d, %Y'),
                 event_time=event.exact_time.strftime('%H:%M') if event.exact_time else 'TBD',
                 event_location=event.establishment_name or event.barrio,
@@ -295,6 +296,21 @@ class TelegramNotificationService:
             return loop.run_until_complete(self.send_event_unpublished_notification(event))
         except Exception as e:
             logger.error(f"Error in sync event unpublished notification: {e}")
+            return False
+    
+    def send_event_reminder_sync(self, event, hours_before: int = 24) -> bool:
+        """Synchronous wrapper for event reminder notification."""
+        try:
+            # Create a new event loop for this thread
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            return loop.run_until_complete(self.send_event_reminder(event, hours_before))
+        except Exception as e:
+            logger.error(f"Error in sync event reminder notification: {e}")
             return False
     
     def send_custom_announcement_sync(self, message: str) -> bool:

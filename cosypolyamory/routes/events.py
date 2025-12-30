@@ -404,11 +404,6 @@ def create_event_post():
             flash('Selected organizer not found.', 'error')
             return redirect(url_for('events.create_event'))
 
-        # Check permission: only admins or the selected organizer can create events for that organizer
-        if not (current_user.role == 'admin' or current_user.id == organizer_id):
-            flash('You can only create events as yourself unless you are an admin.', 'error')
-            return redirect(url_for('events.create_event'))
-
         # Handle co-host early, before capacity validation
         co_host = None
         if co_host_id:
@@ -1232,19 +1227,25 @@ def publish_event(event_id):
             event.save()
             flash(f'Event "{event.title}" has been published and is now visible to users!', 'success')
             
-            # Send Telegram notification for newly published events
-            try:
-                from cosypolyamory.telegram_integration import notify_event_created
-                notify_event_created(event)
-            except Exception as e:
-                current_app.logger.error(f"Failed to send Telegram announcement for published event {event_id}: {e}")
+            # Check if notifications should be sent (default to True if checkbox not present)
+            send_notifications = request.form.get('do_not_notify') != 'on'
             
-            # Send email notification to all eligible members
-            try:
-                from cosypolyamory.notification import notify_event_published
-                notify_event_published(event)
-            except Exception as e:
-                current_app.logger.error(f"Failed to send email notifications for published event {event_id}: {e}")
+            if send_notifications:
+                # Send Telegram notification for newly published events
+                try:
+                    from cosypolyamory.telegram_integration import notify_event_created
+                    notify_event_created(event)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send Telegram announcement for published event {event_id}: {e}")
+                
+                # Send email notification to all eligible members
+                try:
+                    from cosypolyamory.notification import notify_event_published
+                    notify_event_published(event)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send email notifications for published event {event_id}: {e}")
+            else:
+                current_app.logger.info(f"Skipped notifications for published event {event_id} due to do_not_notify flag")
                 
         elif action == 'unpublish':
             event.published = False

@@ -31,6 +31,7 @@ from cosypolyamory.models.event import Event
 from cosypolyamory.models.rsvp import RSVP
 from cosypolyamory.models.user import User
 from cosypolyamory.notification import send_event_reminder
+from cosypolyamory.telegram_integration import TelegramNotificationService
 
 # Configuration
 TIMEZONE = pytz.timezone("Europe/Amsterdam")
@@ -116,10 +117,13 @@ def send_reminders_for_today():
         'events_processed': 0,
         'reminders_sent': 0,
         'reminders_failed': 0,
+        'telegram_sent': 0,
+        'telegram_failed': 0,
         'errors': []
     }
     
     events = get_events_for_today()
+    telegram_service = TelegramNotificationService()
     
     for event in events:
         summary['events_processed'] += 1
@@ -127,6 +131,7 @@ def send_reminders_for_today():
         
         attendees = get_attendees_for_event(event)
         
+        # Send individual email reminders
         for user in attendees:
             try:
                 # Send reminder within Flask app context
@@ -145,6 +150,22 @@ def send_reminders_for_today():
                 error_msg = f"Error sending reminder to {user.email} for {event.title}: {e}"
                 logger.error(error_msg)
                 summary['errors'].append(error_msg)
+        
+        # Send Telegram group notification for this event
+        try:
+            # Use hours_before=0 since it's day-of reminder
+            telegram_success = telegram_service.send_event_reminder_sync(event, hours_before=0)
+            if telegram_success:
+                summary['telegram_sent'] += 1
+                logger.info(f"Sent Telegram reminder for {event.title}")
+            else:
+                summary['telegram_failed'] += 1
+                logger.warning(f"Failed to send Telegram reminder for {event.title}")
+        except Exception as e:
+            summary['telegram_failed'] += 1
+            error_msg = f"Error sending Telegram reminder for {event.title}: {e}"
+            logger.error(error_msg)
+            summary['errors'].append(error_msg)
     
     return summary
 
@@ -161,7 +182,9 @@ def send_daily_reminders():
         logger.info("=== Daily reminder process completed ===")
         logger.info(f"Summary: {summary['events_processed']} events processed, "
                    f"{summary['reminders_sent']} reminders sent, "
-                   f"{summary['reminders_failed']} failed")
+                   f"{summary['reminders_failed']} failed, "
+                   f"{summary['telegram_sent']} Telegram reminders sent, "
+                   f"{summary['telegram_failed']} Telegram reminders failed")
         
         if summary['errors']:
             logger.error(f"Errors encountered: {summary['errors']}")
