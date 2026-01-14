@@ -387,7 +387,16 @@
                             <div class="col-md-5">
                                 <h6><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h6>
                                 {% if can_see_details %}
-                                    <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
+                                    {% if event.google_maps_link %}
+                                        <p>
+                                            <a href="{{ event.google_maps_link }}" target="_blank">
+                                                {{ event.establishment_name }}
+                                            </a>
+                                            {% if event.barrio %}<span class="text-muted">({{ event.barrio }})</span>{% endif %}
+                                        </p>
+                                    {% else %}
+                                        <p>{{ event.establishment_name }}{% if event.barrio %} <span class="text-muted">({{ event.barrio }})</span>{% endif %}</p>
+                                    {% endif %}
                                 {% else %}
                                     <p>{{ event.barrio }}</p>
                                 {% endif %}
