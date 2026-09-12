@@ -1,5 +1,8 @@
 volumes:
   cosypolyamory:
+  proxy_conf:
+  proxy_vhost:
+  proxy_html:
 
 services:
 
@@ -30,7 +33,26 @@ services:
 
     command: ["/code/cosypolyamory.org/send_event_reminders.py"]
 
+  # Reverse proxy that terminates TLS and routes by Host header. Opt in with
+  # `--profile proxy`, or set COMPOSE_PROFILES=proxy in .env to always include it.
+  # Certificates are read from ./certs, named <hostname>.crt / <hostname>.key.
+  # Add the acme-companion service below once the hostname resolves publicly
+  # and inbound port 80 is open, to get certificates from Let's Encrypt.
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:latest
+    container_name: nginx-proxy
+    profiles: ["proxy"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./certs:/etc/nginx/certs:ro
+      - proxy_conf:/etc/nginx/conf.d
+      - proxy_vhost:/etc/nginx/vhost.d
+      - proxy_html:/usr/share/nginx/html
+
 networks:
   default:
     name: nginx-proxy
-    external: true
