@@ -1,0 +1,5 @@
+.git
+.ve
+*.db
+*.pyc
+__pycache__

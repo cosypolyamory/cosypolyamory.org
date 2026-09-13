@@ -11,16 +11,11 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.getcwd(), '.env')
 load_dotenv(dotenv_path=dotenv_path)
 
-# Database configuration - require explicit DATABASE_PATH
+# Database configuration - defaults to a local sqlite file so .env is optional for local dev
 DATABASE_PATH = os.getenv('DATABASE_PATH')
 if not DATABASE_PATH:
-    print("❌ DATABASE_PATH environment variable is not set!")
-    print("💡 Please set DATABASE_PATH in your .env file or environment variables")
-    print("   Example: DATABASE_PATH=cosypolyamory.db")
-    print(f"   Current working directory: {os.getcwd()}")
-    print(f"   Looked for .env file in: {os.path.join(os.getcwd(), '.env')}")
-    import sys
-    sys.exit(1)
+    DATABASE_PATH = './cosypolyamory.db'
+    print("ℹ️  DATABASE_PATH not set, defaulting to './cosypolyamory.db' (set it in .env to override)")
 
 database = SqliteDatabase(DATABASE_PATH)
 

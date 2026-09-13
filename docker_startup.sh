@@ -3,4 +3,4 @@
 chown -R www-data:www-data /data
 uwsgi --gid=www-data --uid=www-data --http-socket :3031 \
       --vhost --module=cosypolyamory.app --callable=app --chdir=/code/cosypolyamory.org \
-      --enable-threads --processes=8 --buffer-size=8192
+      --enable-threads --processes="${UWSGI_PROCESSES:-8}" --buffer-size=8192
