@@ -1,7 +1,7 @@
 #!/bin/bash
 
 docker compose --profile proxy stop
-echo 'pulling the enable-aws-ec2-deployment branch'
+echo 'pulling the latest changes'
 git pull
 echo
 echo '~~~'
